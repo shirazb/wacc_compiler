@@ -1,11 +1,32 @@
 module Definitions where
+import Control.Monad
+import Control.Applicative
+
 --- DATA DEFINITION FOR WACC HASKELL COMPILER PROJECT --
 -- DEFINITIONS FOR PARSER
-data ParseState = P Pos String
-type Pos = (Row,Column)
-type Row = Int
-type Column = Int
 newtype Parser a = Parser {parse :: String -> [(a,String)]}
+
+instance Functor Parser where
+  fmap f p = p >>= \x -> return (f x)
+
+instance Applicative Parser where
+  pure v = Parser $ \inp -> [(v, inp)]
+  Parser p1 <*> Parser p2 = Parser $ \inp -> [(f a, s'')| (f, s') <- p1 inp, (a, s'') <- p2 s']
+
+instance Alternative Parser where
+  empty = mzero
+  p <|> q = Parser $ \s ->
+     case parse p s of
+       [] -> parse q s
+       res -> res
+
+instance Monad Parser where
+  p >>= f  = Parser $ \s -> concatMap (\(a,s') -> parse (f a) s') $ parse p s
+  return v = Parser $ \inp -> [(v, inp)]
+
+instance MonadPlus Parser where
+  mzero = Parser $ const []
+  mplus p q = Parser $ \inp -> parse p inp ++ parse q inp
 
 -- WACC SYNTAX -- ABSTRACT SYNTAX TREE
 data Program = Program [Func] Stat deriving (Show, Eq)
