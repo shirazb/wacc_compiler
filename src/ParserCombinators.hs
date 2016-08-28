@@ -210,7 +210,7 @@ bracketedExpr :: Parser Expr
 bracketedExpr = do
   traceM $ "ENTER BRACKETING FUNCTION"
   x <- bracket (char '(') parseExpr (char ')')
-  traceM $ "LEAVING BRACKETING FUNCTION"
+  traceM $ "LEAVING BRACKETING FUNCTION, having parsed " ++ show x
   return x
 
 parseTest :: Parser Expr
