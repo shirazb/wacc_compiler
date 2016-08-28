@@ -31,7 +31,7 @@ instance MonadPlus Parser where
 
 -- WACC SYNTAX -- ABSTRACT SYNTAX TREE
 data Program = Program [Func] Stat deriving (Show, Eq)
-data Ident   = Ident String deriving (Show, Eq)
+type Ident = String
 data Func    = Func Type Ident ParamList Stat deriving (Show, Eq)
 data ParamList = ParamList [Param] deriving (Show, Eq)
 data Param   = Param Type Ident deriving (Show, Eq)
@@ -75,14 +75,13 @@ data Expr = StringLit String
             | ExprArray ArrayElem
             | UnaryOp UnOp Expr
             | BinaryOp BinOp Expr Expr
-            | Expr Expr
             deriving (Show, Eq)
 
 data ArrayLit = ArrayLit [Expr] deriving (Show, Eq)
 data ArrayElem = ArrayElem Ident [Expr] deriving (Show, Eq)
 -- data Expr    = LiteralExpr Literal | UnExpr UnOp Expr | BinExpr BinOp Expr Expr  deriving (Show, Eq)
 -- data Literal = StringLit String | CharLit Char | IntLit Int | BoolLit Bool | ArrayLit [Expr]  deriving (Show, Eq)
-data UnOp    = Exclatation | Neg | Len | Ord | Chr  deriving (Show, Eq)
-data BinOp   = Mul | Div | Mod | Add | Sub | AND | OR | LT | LTE | EQ | GTE | GT  deriving (Show, Eq)
+data UnOp    = Not | Neg | Len | Ord | Chr  deriving (Show, Eq)
+data BinOp   = Mul | Div | Mod | Add | Sub | AND | OR | LT | LTE | EQ | GTE | GT | NEQ  deriving (Show, Eq)
 -- data ArOp    = Mul | Div | Mod | Add | Sub          deriving (Show, Eq) -- too much factoring
 -- data BoolOp  = AND | OR | LT | LTE | EQ | GTE | GT  deriving (Show, Eq) -- too much factoring
