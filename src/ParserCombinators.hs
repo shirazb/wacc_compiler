@@ -2,6 +2,7 @@ module ParserCombinators where
 
 import           Control.Applicative
 import           Control.Monad
+import           Data.Char
 import           Data.Maybe
 import           Debug.Trace
 import           Definitions
@@ -117,7 +118,7 @@ ident = do
   rest  <- many letter
   return $ Ident $ first:rest
 
-identifier :: [String] -> Parser String
+identifier :: [String] -> Parser Ident
 identifier ks = do
   x <- ident
   guard $ notElem x ks
