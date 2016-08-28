@@ -88,23 +88,21 @@ chainr1 p op = (do
 --chainl p op v = chainl1 p op <|> return v
 
 bracket :: Parser a -> Parser b -> Parser c -> Parser b
-bracket open p close = do {open; x <- p; close; return x }
+bracket open p close = do
+  open
+  x <- p
+  close
+  return x
 
 intLiter :: Parser Expr
 intLiter = do
-  traceM $ "INT LITER FUNCTION" ++ "dfs"
-  sign <- string "-" <|> return []
-  traceM $ "Retrieving Sign in intLiter, the value of sign is: " ++ show sign
   digits <- some digit
-  traceM $ "The value of digits is: " ++ show digits
-  return $ IntLit (read (sign ++ digits))
+  return $ IntLit $ read digits
 
 
 boolLiter :: Parser Expr
 boolLiter = do
-  traceM $ "HITS THE BOOL LITER FUNCTION" ++ "Dfds"
   boolean <- string "true" <|> string "false"
-  traceM $ "THE VALUE OF BOOLEAN is: " ++ show boolean
   if boolean == "true"
     then return $ BoolLit True
     else return $ BoolLit False
