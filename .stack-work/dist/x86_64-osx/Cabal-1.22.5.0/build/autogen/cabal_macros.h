@@ -7,13 +7,6 @@
   (major1) == 4 && (major2) <  8 || \
   (major1) == 4 && (major2) == 8 && (minor) <= 2)
 
-/* package HUnit-1.3.1.1 */
-#define VERSION_HUnit "1.3.1.1"
-#define MIN_VERSION_HUnit(major1,major2,minor) (\
-  (major1) <  1 || \
-  (major1) == 1 && (major2) <  3 || \
-  (major1) == 1 && (major2) == 3 && (minor) <= 1)
-
 /* tool cpphs-1.20.1 */
 #define TOOL_VERSION_cpphs "1.20.1"
 #define MIN_TOOL_VERSION_cpphs(major1,major2,minor) (\
@@ -77,5 +70,5 @@
   (major1) == 1 && (major2) <  24 || \
   (major1) == 1 && (major2) == 24 && (minor) <= 0)
 
-#define CURRENT_PACKAGE_KEY "WACCH_1VLtU0vTqd24FV32RR1rN7"
+#define CURRENT_PACKAGE_KEY "WACCH_4D8jym07S8F37B90YtUWJJ"
 

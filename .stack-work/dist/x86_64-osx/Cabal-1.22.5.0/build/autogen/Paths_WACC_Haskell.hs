@@ -16,11 +16,11 @@ version :: Version
 version = Version [0,1,0,0] []
 bindir, libdir, datadir, libexecdir, sysconfdir :: FilePath
 
-bindir     = "/Users/zubairchowdhury/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/bin"
-libdir     = "/Users/zubairchowdhury/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/lib/x86_64-osx-ghc-7.10.3/WACC-Haskell-0.1.0.0-1VLtU0vTqd24FV32RR1rN7"
-datadir    = "/Users/zubairchowdhury/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/share/x86_64-osx-ghc-7.10.3/WACC-Haskell-0.1.0.0"
-libexecdir = "/Users/zubairchowdhury/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/libexec"
-sysconfdir = "/Users/zubairchowdhury/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/etc"
+bindir     = "/Users/sarahbaka/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/bin"
+libdir     = "/Users/sarahbaka/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/lib/x86_64-osx-ghc-7.10.3/WACC-Haskell-0.1.0.0-4D8jym07S8F37B90YtUWJJ"
+datadir    = "/Users/sarahbaka/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/share/x86_64-osx-ghc-7.10.3/WACC-Haskell-0.1.0.0"
+libexecdir = "/Users/sarahbaka/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/libexec"
+sysconfdir = "/Users/sarahbaka/Desktop/WACC-Haskell/.stack-work/install/x86_64-osx/lts-6.11/7.10.3/etc"
 
 getBinDir, getLibDir, getDataDir, getLibexecDir, getSysconfDir :: IO FilePath
 getBinDir = catchIO (getEnv "WACC_Haskell_bindir") (\_ -> return bindir)
