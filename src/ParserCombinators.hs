@@ -88,7 +88,7 @@ chainr1 p op = (do
 --chainl p op v = chainl1 p op <|> return v
 
 bracket :: Parser a -> Parser b -> Parser c -> Parser b
-bracket open p close = do { open; x <- p; close; return x }
+bracket open p close = do {open; x <- p; close; return x }
 
 intLiter :: Parser Expr
 intLiter = do
