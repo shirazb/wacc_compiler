@@ -2,6 +2,7 @@ module ParserCombinators where
 
 import           Control.Applicative
 import           Control.Monad
+import           Data.Maybe
 import           Debug.Trace
 import           Definitions
 
@@ -70,7 +71,7 @@ boolLiter = do
 character :: Parser Char
 character = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
 
-{-}
+{-
 escapeChar :: Parser Char
 escapeChar = do
   traceM "we are in the escape char function"
@@ -79,9 +80,8 @@ escapeChar = do
   escaped_char <- item
   --traceM $ "Show the value of escaped_char:" ++ show escaped_char
   return $ read $ x:[escaped_char]
--}
 
-{-
+
 escapeChar :: Parser Char
 escapeChar = do
   escaped_char <- item
@@ -95,6 +95,17 @@ escapeChar = do
            , ('\"','\"'), ('\'','\''), ('0', '\0')]
 -}
 
+escapeChar :: Parser Char
+escapeChar = do
+  char '\\'
+  escaped_char <- item
+  return $ fromJust $ lookup escaped_char escapeCharAssoc
+  where
+    escapeCharAssoc = [('b','\b'), ('n','\n'), ('f','\f')
+                      , ('r','\r'), ('t','\t'), ('\\','\\')
+                      , ('\"','\"'), ('\'','\''), ('0', '\0')]
+-- We need to do error handling
+
 pairLiter :: Parser Expr
 pairLiter = do
   string "null"
@@ -103,5 +114,32 @@ pairLiter = do
 ident :: Parser Ident
 ident = do
   first <- char '_' <|> letter
-  rest <- many letter
+  rest  <- many letter
   return $ Ident $ first:rest
+
+identifier :: [String] -> Parser String
+identifier ks = do
+  x <- ident
+  guard $ notElem x ks
+  return x
+-- implement token func
+
+spaces :: Parser ()
+spaces = do
+  many $ satisfy isSpace
+  return ()
+
+stringLiter :: Parser String
+stringLiter = bracket (char '\"') (many character) (char '\"')
+
+bracket :: Parser a -> Parser b -> Parser c -> Parser b
+bracket open p close = do { open; x <- p; close; return x }
+
+sepby1 :: Parser a -> Parser b -> Parser [a]
+sepby1 p sep = do
+  x <- p
+  xs <- many (do {sep; p;})
+  return (x:xs)
+
+sepby :: Parser a -> Parser b -> Parser [a]
+sepby p sep = sepby1 p sep <|> return []
