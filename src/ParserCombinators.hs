@@ -95,7 +95,7 @@ intLiter = do
   traceM $ "INT LITER FUNCTION" ++ "dfs"
   sign <- string "-" <|> return []
   traceM $ "Retrieving Sign in intLiter, the value of sign is: " ++ show sign
-  digits <- many digit
+  digits <- some digit
   traceM $ "The value of digits is: " ++ show digits
   return $ IntLit (read (sign ++ digits))
 
