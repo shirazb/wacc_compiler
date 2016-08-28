@@ -99,7 +99,6 @@ intLiter = do
   digits <- some digit
   return $ IntLit $ read digits
 
-
 boolLiter :: Parser Expr
 boolLiter = do
   boolean <- string "true" <|> string "false"
@@ -109,12 +108,11 @@ boolLiter = do
 
 charLit :: Parser Expr
 charLit = do
-  chr <- bracket (char '\'') chararcter (char '\'')
+  chr <- bracket (char '\'') character (char '\'')
   return $ CharLit chr
 
-chararcter :: Parser Char
-chararcter = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
-
+character :: Parser Char
+character = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
 
 escapeChar :: Parser Char
 escapeChar = do
@@ -135,7 +133,7 @@ pairLiter = do
 ident :: Parser String
 ident = do
   first <- char '_' <|> letter
-  rest  <- many letter
+  rest  <- many (alphanum <|> char '_')
   return $ first:rest
 
 -- this is slyly broken
@@ -145,14 +143,12 @@ identifier = do
   guard $ notElem x ks
   return x
 -- implement token func
-ks = ["this","is","filler"]
+ks = ["while","if","else"]
 
 exprIdent :: Parser Expr
 exprIdent = do
-  traceM $ "exprIDENT"
   var <- identifier
   return $ ExprI var
-
 
 spaces :: Parser ()
 spaces = do
@@ -161,9 +157,8 @@ spaces = do
 
 stringLiter :: Parser Expr
 stringLiter = do
-  string <- bracket (char '\"') (many chararcter) (char '\"')
+  string <- bracket (char '\"') (many character) (char '\"')
   return $ StringLit string
--- data UnOp    = Exclatation | Neg | Len | Ord | Chr  deriving (Show, Eq)
 
 parseUnaryOp :: Parser UnOp
 parseUnaryOp = do
