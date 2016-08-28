@@ -73,8 +73,8 @@ data Expr = StringLit String
             | PairLiteral
             | ExprI Ident
             | ExprArray ArrayElem
-            | UnaryOp UnOp Expr
-            | BinaryOp BinOp Expr Expr
+            | UnaryApp UnOp Expr
+            | BinaryApp BinOp Expr Expr
             deriving (Show, Eq)
 
 data ArrayLit = ArrayLit [Expr] deriving (Show, Eq)

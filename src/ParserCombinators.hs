@@ -66,20 +66,20 @@ sepby1 p sep = do
 sepby :: Parser a -> Parser b -> Parser [a]
 sepby p sep = sepby1 p sep <|> return []
 
-chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
-chainl1 p op = do { x <- p; rest x}
-  where
-    rest x = (do
-      f <- op
-      y <- p
-      rest (BinaryOp f x y)) <|> return x
-
-chainr1 ::Parser Expr -> Parser BinOp -> Parser Expr
-chainr1 p op = (do
-  x <- p
-  f <- op
-  acc <- chainr1 p op
-  return (BinaryOp f x acc)) <|> p
+-- chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
+-- chainl1 p op = do { x <- p; rest x}
+--   where
+--     rest x = (do
+--       f <- op
+--       y <- p
+--       rest (BinaryApp f x y)) <|> return x
+--
+-- chainr1 ::Parser Expr -> Parser BinOp -> Parser Expr
+-- chainr1 p op = (do
+--   x <- p
+--   f <- op
+--   acc <- chainr1 p op
+--   return (BinaryApp f x acc)) <|> p
 
 --chainr :: (Show a) => Parser a -> Parser (a -> a -> a) -> a -> Parser a
 --chainr p op v = chainr1 p op <|> return v
@@ -162,49 +162,59 @@ stringLiter = do
 
 parseUnaryOp :: Parser UnOp
 parseUnaryOp = do
-  un_op <- string "!" <|> string "-" <|> string "len" <|> string "ord" <|> string "chr"
-  let astOp = fromJust $ lookup un_op un_op_assoc
+  unOp <- string "!" <|> string "-" <|> string "len" <|> string "ord" <|> string "chr"
+  let astOp = fromJust $ lookup unOp unOpAssoc
   return astOp
   where
-    un_op_assoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
+    unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
 
 unaryExpr:: Parser Expr
 unaryExpr = do
   un_op <- parseUnaryOp
   expr <- parseExpr
-  return $ UnaryOp un_op expr
+  return $ UnaryApp un_op expr
 
 parseBinaryOp :: Parser BinOp
 parseBinaryOp = do
-  bin_op <- string "*" <|> string "/" <|> string "%" <|> string "+" <|> string "-"
-            <|> string ">" <|> string ">=" <|> string "<" <|> string "<="
+  binOp <- string "*" <|> string "/" <|> string "%" <|> string "+" <|> string "-"
+            <|> string ">=" <|> string ">" <|> string "<=" <|> string "<"
             <|> string "==" <|> string "!=" <|> string "&&" <|> string "||"
-  let astOp = fromJust $ lookup bin_op bin_op_assoc
+  let astOp = fromJust $ lookup binOp binOps
   return astOp
   where
-    bin_op_assoc = [("*", Mul), ("/", Div), ("%", Mod), ("+", Add),
+    binOps        = [("*", Mul), ("/", Div), ("%", Mod), ("+", Add),
                     ("-", Sub), (">", Definitions.GT), (">=", GTE), ("<", Definitions.LT),
                     ("<=", LTE), ("==", Definitions.EQ), ("!=", NEQ), ("&&", AND),
                     ("||", OR)]
-binaryExpr :: Parser Expr
-binaryExpr = do
-  traceM $ "Hello we are in binaryExpr"
-  expr <- parseExpr
-  traceM $ "The value of the first expr is: " ++ show expr
-  bin_op <- parseBinaryOp
-  traceM $ "The value of the op is: " ++ show bin_op
-  expr' <- parseExpr
-  traceM $ "The value of expr' is: " ++ show expr'
-  let x = BinaryOp bin_op expr expr'
-  traceM $ "This is the end result of the function: " ++ show x
-  return x
 
+
+-- from binary expressions onwards, we are not sure if they work
+
+-- DEBUGGING ---
+chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
+chainl1 p op = do { x <- p; rest x}
+  where
+    rest x = (do
+      f <- op
+      y <- p
+      rest $ BinaryApp f x y) <|> return x
+
+-- how do you do operator precedence????
+parseAdd = chainl1 intLiter parseBinaryOp
+
+binaryExpr :: Parser Expr
+binaryExpr = chainl1 parseExpr parseBinaryOp
+
+ -- binaryExpr :: Parser Expr
+-- binaryExpr = do
+--   expr <- parseExpr
+--   binOp <- parseBinaryOp
+--   expr' <- parseExpr
+--   return $ BinaryApp binOp expr expr'
+
+-- the concept of bracketedExpr works
 bracketedExpr :: Parser Expr
-bracketedExpr = do
-  traceM $ "ENTER BRACKETING FUNCTION"
-  x <- bracket (char '(') parseExpr (char ')')
-  traceM $ "LEAVING BRACKETING FUNCTION, having parsed " ++ show x
-  return x
+bracketedExpr = bracket (char '(') parseExpr (char ')')
 
 parseTest :: Parser Expr
 parseTest = Parser $ \s -> do
@@ -224,4 +234,4 @@ parseExpr =
   `mplus` exprIdent
   `mplus` unaryExpr
   `mplus` bracketedExpr
-  `mplus` chainl1 factor parseBinaryOp
+  --`mplus` chainl1 factor parseBinaryOp
