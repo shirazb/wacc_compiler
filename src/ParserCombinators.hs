@@ -92,15 +92,19 @@ bracket open p close = do { open; x <- p; close; return x }
 
 intLiter :: Parser Expr
 intLiter = do
+  traceM $ "INT LITER FUNCTION" ++ "dfs"
   sign <- string "-" <|> return []
+  traceM $ "Retrieving Sign in intLiter, the value of sign is: " ++ show sign
   digits <- many digit
-  traceM $ "Do we get here?"
+  traceM $ "The value of digits is: " ++ show digits
   return $ IntLit (read (sign ++ digits))
 
 
 boolLiter :: Parser Expr
 boolLiter = do
+  traceM $ "HITS THE BOOL LITER FUNCTION" ++ "Dfds"
   boolean <- string "true" <|> string "false"
+  traceM $ "THE VALUE OF BOOLEAN is: " ++ show boolean
   if boolean == "true"
     then return $ BoolLit True
     else return $ BoolLit False
@@ -147,6 +151,7 @@ ks = ["this","is","filler"]
 
 exprIdent :: Parser Expr
 exprIdent = do
+  traceM $ "exprIDENT"
   var <- identifier
   return $ ExprI var
 
@@ -190,13 +195,23 @@ parseBinaryOp = do
                     ("||", OR)]
 binaryExpr :: Parser Expr
 binaryExpr = do
+  traceM $ "Hello we are in binaryExpr"
   expr <- parseExpr
+  traceM $ "The value of the first expr is: " ++ show expr
   bin_op <- parseBinaryOp
+  traceM $ "The value of the op is: " ++ show bin_op
   expr' <- parseExpr
-  return $ BinaryOp bin_op expr expr'
+  traceM $ "The value of expr' is: " ++ show expr'
+  let x = BinaryOp bin_op expr expr'
+  traceM $ "This is the end result of the function: " ++ show x
+  return x
 
 bracketedExpr :: Parser Expr
-bracketedExpr = bracket (char '(') parseExpr (char ')')
+bracketedExpr = do
+  traceM $ "ENTER BRACKETING FUNCTION"
+  x <- bracket (char '(') parseExpr (char ')')
+  traceM $ "LEAVING BRACKETING FUNCTION"
+  return x
 
 parseTest :: Parser Expr
 parseTest = Parser $ \s -> do
@@ -204,7 +219,7 @@ parseTest = Parser $ \s -> do
                            return (last xs)
 
 
-factor = boolLiter <|> charLit <|> stringLiter <|> pairLiter <|> exprIdent <|> bracketedExpr
+factor = boolLiter `mplus` charLit `mplus` stringLiter `mplus` pairLiter `mplus` bracketedExpr
 
 parseExpr :: Parser Expr
 parseExpr =
