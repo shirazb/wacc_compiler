@@ -5,7 +5,12 @@ import           Control.Monad
 import           Data.Char
 import           Data.Maybe
 import           Debug.Trace
-import           Definitions
+import           Exploratory
+
+
+
+
+
 
 -- Consumes the first character if the input string is non-empty, fails
 -- otherwise
@@ -94,19 +99,19 @@ bracket open p close = do
   close
   return x
 
-intLiteral :: Parser Expr
+intLiteral :: Parser Factor
 intLiteral = do
   digits <- some digit
   return $ IntLit $ read digits
 
-boolLiteral :: Parser Expr
+boolLiteral :: Parser Factor
 boolLiteral = do
   boolean <- string "true" <|> string "false"
   if boolean == "true"
     then return $ BoolLit True
     else return $ BoolLit False
 
-charLiteral :: Parser Expr
+charLiteral :: Parser Factor
 charLiteral = do
   chr <- bracket (char '\'') character (char '\'')
   return $ CharLit chr
@@ -125,7 +130,7 @@ escapeChar = do
                       , ('\"','\"'), ('\'','\''), ('0', '\0')]
 -- We need to do error handling
 
-pairLiteral :: Parser Expr
+pairLiteral :: Parser Factor
 pairLiteral = do
   string "null"
   return PairLiteral
@@ -145,8 +150,8 @@ identifier = do
 -- implement token func
 ks = ["while","if","else"]
 
-exprIdent :: Parser Expr
-exprIdent = do
+factorIdent :: Parser Factor
+factorIdent = do
   var <- identifier
   return $ ExprI var
 
@@ -155,7 +160,7 @@ spaces = do
   many $ satisfy isSpace
   return ()
 
-stringLiter :: Parser Expr
+stringLiter :: Parser Factor
 stringLiter = do
   string <- bracket (char '\"') (many character) (char '\"')
   return $ StringLit string
@@ -177,8 +182,8 @@ parseBinaryOp = do
   return astOp
   where
     binOps        = [("*", Mul), ("/", Div), ("%", Mod), ("+", Add),
-                    ("-", Sub), (">", Definitions.GT), (">=", GTE), ("<", Definitions.LT),
-                    ("<=", LTE), ("==", Definitions.EQ), ("!=", NEQ), ("&&", AND),
+                    ("-", Sub), (">", Exploratory.GT), (">=", GTE), ("<", Exploratory.LT),
+                    ("<=", LTE), ("==", Exploratory.EQ), ("!=", NEQ), ("&&", AND),
                     ("||", OR)]
 
 
@@ -186,25 +191,29 @@ parseBinaryOp = do
 
 -- DEBUGGING ---
 
-unaryExpr:: Parser Expr
-unaryExpr = do
-  un_op <- parseUnaryOp
-  expr <- parseExpr
-  return $ UnaryApp un_op expr
-
-chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
-chainl1 p op = do { x <- p; rest x}
-  where
-    rest x = (do
-      f <- op
-      y <- p
-      rest $ BinaryApp f x y) <|> return x
+unaryExpr :: Parser Factor
+unaryExpr = mzero
+-- unaryExpr:: Parser Factor
+-- unaryExpr = do
+--   un_op <- parseUnaryOp
+--   expr <- parseExpr
+--   return $ UnaryApp un_op expr
+--
+-- chainl1 :: Parser Factor -> Parser BinOp -> Parser Factor
+-- chainl1 = mzero
+-- 1 + 2 + 3 + 4 + 5 + 6
+-- chainl1 p op = do { x <- p; rest x}
+--   where
+--     rest x = (do
+--       f <- op
+--       y <- p
+--       rest $ BinApp f x y) <|> return x
 
 -- -- how do you do operator precedence????
 -- parseAdd = chainl1 intLiter parseBinaryOp
 --
-binaryExpr :: Parser Expr
-binaryExpr = chainl1 parseExpr parseBinaryOp
+-- binaryExpr :: Parser Expr
+-- binaryExpr = chainl1 parseExpr parseBinaryOp
 
  -- binaryExpr :: Parser Expr
 -- binaryExpr = do
@@ -213,30 +222,31 @@ binaryExpr = chainl1 parseExpr parseBinaryOp
 --   expr' <- parseExpr
 --   return $ BinaryApp binOp expr expr'
 
--- the concept of bracketedExpr works
-bracketedExpr :: Parser Expr
-bracketedExpr = bracket (char '(') parseExpr (char ')')
---
--- parseTest :: Parser Expr
--- parseTest = Parser $ \s -> do
---                            let xs = parse parseExpr s
---                            return (last xs)
---
---
--- factor = boolLiter `mplus` charLit `mplus` stringLiter `mplus` pairLiter `mplus` bracketedExpr
+-- -- the concept of bracketedExpr works
+-- bracketedExpr :: Parser Expr
+-- bracketedExpr = bracket (char '(') parseExpr (char ')')
+arrayElem :: Parser Factor
+arrayElem = mzero
+binaryExpr :: Parser Expr
+binaryExpr = mzero
 
-
--- this is broken because we need to remove left recursion from the grammar
--- parseExpr' = return [] <|>  parseBinaryOp `mplus` parseExpr
---
 parseExpr :: Parser Expr
 parseExpr =
-   intLiteral
-  <|> boolLiteral
+  parseFactorWrapInExpr
+  <|> binaryExpr
+
+parseFactorWrapInExpr :: Parser Expr
+parseFactorWrapInExpr = do
+  p <- parseFactor
+  return $ Factor p
+
+
+parseFactor =
+  intLiteral
   <|> charLiteral
+  <|> boolLiteral
   <|> stringLiter
   <|> pairLiteral
-  <|> exprIdent
+  <|> factorIdent
+  <|> arrayElem
   <|> unaryExpr
-  <|> bracketedExpr
-  <|> binaryExpr
