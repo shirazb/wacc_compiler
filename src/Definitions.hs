@@ -54,4 +54,4 @@ data ArrayElem = ArrayElem Ident [Expr] deriving (Show, Eq)
 data UnOp    = Not | Neg | Len | Ord | Chr  deriving (Show, Eq)
 data BinOp   = Mul | Div | Mod | Add | Sub | AND | OR | LT | LTE | EQ | GTE | GT | NEQ  deriving (Show, Eq)
 
-ks = ["while","if","else"]
+keywords = ["while","if","else"]

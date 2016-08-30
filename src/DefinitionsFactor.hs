@@ -42,7 +42,8 @@ data BaseType = BaseInt | BaseBool | BaseChar | BaseString deriving (Show, Eq)
 data ArrayType = ArrayType Type deriving (Show, Eq)
 data PairType = PairType PairElemType PairElemType deriving (Show, Eq)
 data PairElemType = BaseP BaseType | BaseA ArrayType | Pair deriving (Show, Eq)
-data Expr = Factor Factor | BinApp Expr BinOp Factor deriving (Show, Eq)
+
+data Expr = Factor Factor | BinApp BinOp Expr Expr deriving (Show, Eq)
 data Factor = StringLit String
             | CharLit Char
             | IntLit Int
@@ -58,4 +59,8 @@ data ArrayElem = ArrayElem Ident [Expr] deriving (Show, Eq)
 data UnOp    = Not | Neg | Len | Ord | Chr  deriving (Show, Eq)
 data BinOp   = Mul | Div | Mod | Add | Sub | AND | OR | LT | LTE | EQ | GTE | GT | NEQ  deriving (Show, Eq)
 
-ks = ["while","if","else"]
+keywords = ["while","if","else"]
+binOps   =  [("*", Mul), ("/", Div), ("%", Mod), ("+", Add),
+             ("-", Sub), (">", DefinitionsFactor.GT), (">=", GTE), ("<", DefinitionsFactor.LT),
+             ("<=", LTE), ("==", DefinitionsFactor.EQ), ("!=", NEQ), ("&&", AND),
+             ("||", OR)]

@@ -39,7 +39,7 @@ ident = do
 identifier :: Parser String
 identifier = do
   x <- ident
-  guard $ notElem x ks
+  guard $ notElem x keywords
   return x
 
 exprIdent :: Parser Expr
