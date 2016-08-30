@@ -5,99 +5,9 @@ import           Control.Monad
 import           Data.Char
 import           Data.Maybe
 import           Debug.Trace
-import           Exploratory
+import           DefinitionsFactor
+import           BasicCombinators
 
-
-
-
-
-
--- Consumes the first character if the input string is non-empty, fails
--- otherwise
-item :: Parser Char
-item = Parser $ \inp -> case inp of
-                        [] -> []
-                        x:xs -> [(x, xs)]
-
--- Consumes a single character if it satisfies the predicate, fails otherwise
-satisfy :: (Char -> Bool) -> Parser Char
-satisfy p = item >>= \x -> if p x then return x else mzero
-
--- Parser for specific characters
-char :: Char -> Parser Char
-char c = satisfy (c ==)
-
-oneOf :: String -> Parser Char
-oneOf s = satisfy ( `elem` s)
-
--- Parser for specific single digits
-digit :: Parser Char
-digit = satisfy (\x -> '0' <= x && x <= '9')
-
--- Parser for specific lower-case letters
-lower :: Parser Char
-lower = satisfy (\x -> 'a' <= x && x <= 'z')
-
--- Parser for specific upper-case letters
-upper :: Parser Char
-upper = satisfy (\x -> 'A' <= x && x <= 'Z')
-
--- Parser for letters
-letter :: Parser Char
-letter =  lower <|> upper
-
--- Parser for alpha-numeric characters
-alphanum :: Parser Char
-alphanum = letter <|> digit
-
--- Parser for words
-word :: Parser String
-word = many letter
-
-string :: String -> Parser String
-string [] = return []
-string (x:xs) = do
-  char x
-  string xs
-  return (x:xs)
-
--- generic combinators
-sepby1 :: Parser a -> Parser b -> Parser [a]
-sepby1 p sep = do
-    x <- p
-    xs <- many (do {sep; p;})
-    return (x:xs)
-
-sepby :: Parser a -> Parser b -> Parser [a]
-sepby p sep = sepby1 p sep <|> return []
-
--- chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
--- chainl1 p op = do { x <- p; rest x}
---   where
---     rest x = (do
---       f <- op
---       y <- p
---       rest (BinaryApp f x y)) <|> return x
---
--- chainr1 ::Parser Expr -> Parser BinOp -> Parser Expr
--- chainr1 p op = (do
---   x <- p
---   f <- op
---   acc <- chainr1 p op
---   return (BinaryApp f x acc)) <|> p
-
---chainr :: (Show a) => Parser a -> Parser (a -> a -> a) -> a -> Parser a
---chainr p op v = chainr1 p op <|> return v
-
---chainl :: (Show a) => Parser a -> Parser (a -> a -> a) -> a -> Parser a
---chainl p op v = chainl1 p op <|> return v
-
-bracket :: Parser a -> Parser b -> Parser c -> Parser b
-bracket open p close = do
-  open
-  x <- p
-  close
-  return x
 
 intLiteral :: Parser Factor
 intLiteral = do
@@ -182,8 +92,8 @@ parseBinaryOp = do
   return astOp
   where
     binOps        = [("*", Mul), ("/", Div), ("%", Mod), ("+", Add),
-                    ("-", Sub), (">", Exploratory.GT), (">=", GTE), ("<", Exploratory.LT),
-                    ("<=", LTE), ("==", Exploratory.EQ), ("!=", NEQ), ("&&", AND),
+                    ("-", Sub), (">", DefinitionsFactor.GT), (">=", GTE), ("<", DefinitionsFactor.LT),
+                    ("<=", LTE), ("==", DefinitionsFactor.EQ), ("!=", NEQ), ("&&", AND),
                     ("||", OR)]
 
 
