@@ -13,22 +13,22 @@ intLiteral = do
   digits <- some digit
   return $ Factor $ IntLit $ read digits
 
-boolLiteral :: Parser Factor
+boolLiteral :: Parser Expr
 boolLiteral = do
   boolean <- string "true" <|> string "false"
   if boolean == "true"
-    then return $ BoolLit True
-    else return $ BoolLit False
+    then return $ Factor $ BoolLit True
+    else return $ Factor $ BoolLit False
 
-charLiteral :: Parser Factor
+charLiteral :: Parser Expr
 charLiteral = do
   chr <- bracket (char '\'') character (char '\'')
-  return $ CharLit chr
+  return $ Factor $ CharLit chr
 
-pairLiteral :: Parser Factor
+pairLiteral :: Parser Expr
 pairLiteral = do
   string "null"
-  return PairLiteral
+  return $ Factor PairLiteral
 
 ident :: Parser String
 ident = do
@@ -42,20 +42,20 @@ identifier = do
   guard $ notElem x keywords
   return x
 
-factorIdent :: Parser Factor
+factorIdent :: Parser Expr
 factorIdent = do
   var <- identifier
-  return $ ExprI var
+  return $ Factor $ ExprI var
 
 spaces :: Parser ()
 spaces = do
   many $ satisfy isSpace
   return ()
 
-stringLiter :: Parser Factor
+stringLiter :: Parser Expr
 stringLiter = do
   string <- bracket (char '\"') (many character) (char '\"')
-  return $ StringLit string
+  return $ Factor $ StringLit string
 
 parseUnaryOp :: Parser UnOp
 parseUnaryOp = do
@@ -91,31 +91,36 @@ lowBinaryExpr :: Parser Expr
 lowBinaryExpr = highBinaryExpr `chainl1` parseBinaryOpLow
 
 highBinaryExpr :: Parser Expr
-highBinaryExpr = intLiteral `chainl1` parseBinaryOpHigh
+highBinaryExpr = parseFactor `chainl1` parseBinaryOpHigh
 
-unaryExpr :: Parser Factor
-unaryExpr = mzero
-arrayElem :: Parser Factor
-arrayElem = mzero
+unaryExpr :: Parser Expr
+unaryExpr = do
+  op <- parseUnaryOp
+  expr <- parseExpr
+  return $ Factor $ UnaryApp op expr
+
+bracketedExpr :: Parser Expr
+bracketedExpr = bracket (char '(') parseExpr (char ')')
+
+arrayElem :: Parser Expr
+arrayElem = do
+  array_name <- identifier
+  arraynotation <- some $ bracket (char '[') parseExpr (char ']')
+  return $ Factor $ ExprArray $ ArrayElem array_name arraynotation
+
 binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
 
---parseExpr :: Parser Expr
---parseExpr =
---  parseFactorWrapInExpr
---  <|> binaryExpr
+parseFactor =
+      arrayElem   
+  <|> unaryExpr
+  <|> bracketedExpr
+  <|> charLiteral
+  <|> boolLiteral
+  <|> stringLiter
+  <|> pairLiteral
+  <|> factorIdent
+  <|> intLiteral
 
---parseFactorWrapInExpr :: Parser Expr
---parseFactorWrapInExpr = do
---  p <- parseFactor
---  return $ Factor p
 
---parseFactor =
---  intLiteral
---  <|> charLiteral
---  <|> boolLiteral
---  <|> stringLiter
---  <|> pairLiteral
---  <|> factorIdent
---  <|> arrayElem
---  <|> unaryExpr
+parseExpr = binaryExpr <|> parseFactor
