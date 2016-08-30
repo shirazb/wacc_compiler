@@ -43,16 +43,19 @@ data ArrayType = ArrayType Type deriving (Show, Eq)
 data PairType = PairType PairElemType PairElemType deriving (Show, Eq)
 data PairElemType = BaseP BaseType | BaseA ArrayType | Pair deriving (Show, Eq)
 
-data Expr = Factor Factor | BinApp BinOp Expr Expr deriving (Show, Eq)
-data Factor = StringLit String
-            | CharLit Char
-            | IntLit Int
-            | BoolLit Bool
-            | PairLiteral
-            | ExprI Ident
-            | ExprArray ArrayElem
-            | UnaryApp UnOp Expr
-            deriving (Show, Eq)
+data Expr =
+            BinApp BinOp Expr Expr 
+	      | CharLit Char
+	      | IntLit Int
+	      | BoolLit Bool
+	      | PairLiteral
+	      | ExprI Ident
+	      | ExprArray ArrayElem
+	      | StringLit String
+	      | UnaryApp UnOp Expr
+	      deriving (Show, Eq)
+
+
 
 data ArrayLit = ArrayLit [Expr] deriving (Show, Eq)
 data ArrayElem = ArrayElem Ident [Expr] deriving (Show, Eq)

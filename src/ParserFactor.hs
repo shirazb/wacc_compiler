@@ -11,24 +11,24 @@ import           BasicCombinators
 intLiteral :: Parser Expr
 intLiteral = do
   digits <- some digit
-  return $ Factor $ IntLit $ read digits
+  return $ IntLit $ read digits
 
 boolLiteral :: Parser Expr
 boolLiteral = do
   boolean <- string "true" <|> string "false"
   if boolean == "true"
-    then return $ Factor $ BoolLit True
-    else return $ Factor $ BoolLit False
+    then return $ BoolLit True
+    else return $ BoolLit False
 
 charLiteral :: Parser Expr
 charLiteral = do
   chr <- bracket (char '\'') character (char '\'')
-  return $ Factor $ CharLit chr
+  return $ CharLit chr
 
 pairLiteral :: Parser Expr
 pairLiteral = do
   string "null"
-  return $ Factor PairLiteral
+  return PairLiteral
 
 ident :: Parser String
 ident = do
@@ -45,7 +45,7 @@ identifier = do
 factorIdent :: Parser Expr
 factorIdent = do
   var <- identifier
-  return $ Factor $ ExprI var
+  return $ ExprI var
 
 spaces :: Parser ()
 spaces = do
@@ -55,7 +55,7 @@ spaces = do
 stringLiter :: Parser Expr
 stringLiter = do
   string <- bracket (char '\"') (many character) (char '\"')
-  return $ Factor $ StringLit string
+  return $ StringLit string
 
 parseUnaryOp :: Parser UnOp
 parseUnaryOp = do
@@ -67,7 +67,8 @@ parseUnaryOp = do
 
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow = do
-  binOp <- string "+" <|> string "-"
+  binOp <- string "+" <|> string "-" <|> string ">=" <|> string ">" <|> string "<=" <|> string "<" 
+            <|> string "==" <|> string "!=" <|> string "&&" <|> string "||"
   let astOp = fromJust $ lookup binOp binOps
   return astOp
 
@@ -77,8 +78,6 @@ parseBinaryOpHigh = do
   let astOp = fromJust $ lookup binOp binOps
   return astOp
  
--- NOT IMPLEMENTED
-
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op = do {x <- p; rest x}
   where
@@ -91,13 +90,13 @@ lowBinaryExpr :: Parser Expr
 lowBinaryExpr = highBinaryExpr `chainl1` parseBinaryOpLow
 
 highBinaryExpr :: Parser Expr
-highBinaryExpr = parseFactor `chainl1` parseBinaryOpHigh
+highBinaryExpr = parseExpr' `chainl1` parseBinaryOpHigh
 
 unaryExpr :: Parser Expr
 unaryExpr = do
   op <- parseUnaryOp
   expr <- parseExpr
-  return $ Factor $ UnaryApp op expr
+  return $ UnaryApp op expr
 
 bracketedExpr :: Parser Expr
 bracketedExpr = bracket (char '(') parseExpr (char ')')
@@ -106,12 +105,12 @@ arrayElem :: Parser Expr
 arrayElem = do
   array_name <- identifier
   arraynotation <- some $ bracket (char '[') parseExpr (char ']')
-  return $ Factor $ ExprArray $ ArrayElem array_name arraynotation
+  return $ ExprArray $ ArrayElem array_name arraynotation
 
 binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
 
-parseFactor =
+parseExpr' =
       arrayElem   
   <|> unaryExpr
   <|> bracketedExpr
@@ -123,4 +122,4 @@ parseFactor =
   <|> intLiteral
 
 
-parseExpr = binaryExpr <|> parseFactor
+parseExpr = binaryExpr <|> parseExpr'
