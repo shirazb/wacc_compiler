@@ -2,6 +2,7 @@ module BasicCombinators where
 
 import           Control.Applicative
 import           Control.Monad
+import           Data.Maybe
 
 newtype Parser a = Parser {parse :: String -> [(a,String)]}
 
@@ -66,6 +67,21 @@ letter =  lower <|> upper
 alphanum :: Parser Char
 alphanum = letter <|> digit
 
+-- parser for all characters & escape chars
+character :: Parser Char
+character = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
+
+escapeChar :: Parser Char
+escapeChar = do
+  char '\\'
+  escaped_char <- item
+  return $ fromJust $ lookup escaped_char escapeCharAssoc
+  where
+    escapeCharAssoc = [('b','\b'), ('n','\n'), ('f','\f')
+                      , ('r','\r'), ('t','\t'), ('\\','\\')
+                      , ('\"','\"'), ('\'','\''), ('0', '\0')]
+
+
 -- Parser for words
 word :: Parser String
 word = many letter
@@ -94,3 +110,4 @@ bracket open p close = do
   x <- p
   close
   return x
+

@@ -1,5 +1,4 @@
 module ParserCombinators where
-
 import           Control.Applicative
 import           Control.Monad
 import           Data.Char
@@ -26,20 +25,6 @@ charLiteral = do
   chr <- bracket (char '\'') character (char '\'')
   return $ CharLit chr
 
-character :: Parser Char
-character = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
-
-escapeChar :: Parser Char
-escapeChar = do
-  char '\\'
-  escaped_char <- item
-  return $ fromJust $ lookup escaped_char escapeCharAssoc
-  where
-    escapeCharAssoc = [('b','\b'), ('n','\n'), ('f','\f')
-                      , ('r','\r'), ('t','\t'), ('\\','\\')
-                      , ('\"','\"'), ('\'','\''), ('0', '\0')]
--- We need to do error handling
-
 pairLiteral :: Parser Factor
 pairLiteral = do
   string "null"
@@ -51,14 +36,11 @@ ident = do
   rest  <- many (alphanum <|> char '_')
   return $ first:rest
 
--- this is slyly broken
 identifier :: Parser String
 identifier = do
   x <- ident
   guard $ notElem x ks
   return x
--- implement token func
-ks = ["while","if","else"]
 
 factorIdent :: Parser Factor
 factorIdent = do

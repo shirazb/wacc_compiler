@@ -1,11 +1,9 @@
 module DefinitionsFactor where
-
-
 import Control.Monad
 import Control.Applicative
 
 --- DATA DEFINITION FOR WACC HASKELL COMPILER PROJECT --
--- DEFINITIONS FOR PARSER
+--  DEFINITIONS FOR PARSER USING FACTOR DATA-TYPE
 
 
 -- WACC SYNTAX -- ABSTRACT SYNTAX TREE
@@ -44,18 +42,6 @@ data BaseType = BaseInt | BaseBool | BaseChar | BaseString deriving (Show, Eq)
 data ArrayType = ArrayType Type deriving (Show, Eq)
 data PairType = PairType PairElemType PairElemType deriving (Show, Eq)
 data PairElemType = BaseP BaseType | BaseA ArrayType | Pair deriving (Show, Eq)
--- this is subject to change --
-{- data Expr = StringLit String
-            | CharLit Char
-            | IntLit Int
-            | BoolLit Bool
-            | PairLiteral
-            | ExprI Ident
-            | ExprArray ArrayElem
-            | UnaryApp UnOp Expr
-            | BinaryApp BinOp Expr Expr
-            deriving (Show, Eq) -}
-
 data Expr = Factor Factor | BinApp Expr BinOp Factor deriving (Show, Eq)
 data Factor = StringLit String
             | CharLit Char
@@ -69,18 +55,7 @@ data Factor = StringLit String
 
 data ArrayLit = ArrayLit [Expr] deriving (Show, Eq)
 data ArrayElem = ArrayElem Ident [Expr] deriving (Show, Eq)
--- data Expr    = LiteralExpr Literal | UnExpr UnOp Expr | BinExpr BinOp Expr Expr  deriving (Show, Eq)
--- data Literal = StringLit String | CharLit Char | IntLit Int | BoolLit Bool | ArrayLit [Expr]  deriving (Show, Eq)
 data UnOp    = Not | Neg | Len | Ord | Chr  deriving (Show, Eq)
 data BinOp   = Mul | Div | Mod | Add | Sub | AND | OR | LT | LTE | EQ | GTE | GT | NEQ  deriving (Show, Eq)
--- data ArOp    = Mul | Div | Mod | Add | Sub          deriving (Show, Eq) -- too much factoring
--- data BoolOp  = AND | OR | LT | LTE | EQ | GTE | GT  deriving (Show, Eq) -- too much factoring
 
--- parseFactor =
---   intLiteral
---   <|> charLiteral
---   <|> boolLiteral
---   <|> stringLiter
---   <|> pairLiteral
---   <|> identifier
---   <|>
+ks = ["while","if","else"]
