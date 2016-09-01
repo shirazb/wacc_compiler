@@ -228,8 +228,8 @@ assignToExpr = do
 -- CONSTRUCTOR IS VERY COMMON. CAN WE ABSTRACT IT OUT?
 -- POSSIBLY:
 
-wrapIn :: (a -> f a) -> Parser a -> Parser (f a)
-wrapIn wrapper p = do
+wrapIn :: (a -> f a) -> (Parser a -> Parser (f a))
+wrapIn wrapper = \p -> do
   x <- p
   return $ wrapper x
 
