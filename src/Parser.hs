@@ -116,9 +116,9 @@ parseSkip = string "skip" >> return Skip
 
 parseType :: Parser Type
 parseType =
-  baseToType parseBaseType
-  <|> pairToType  parsePairType
+      pairToType  parsePairType
   <|> arrayToType parseArrayType
+  <|> baseToType parseBaseType
 
 parseBaseType :: Parser BaseType
 parseBaseType = parseFromMap baseTypes
@@ -136,8 +136,7 @@ pairToType :: Parser PairType -> Parser Type
 pairToType parserPairType = PairT <$> parserPairType
 
 parseArrayType :: Parser ArrayType
-parseArrayType
-  = bracket (char '[') parseType (char ']')
+parseArrayType = 
 
 parsePairType :: Parser PairType
 parsePairType = do
@@ -168,11 +167,11 @@ parseDeclaration = do
 
 parseRHS :: Parser AssignRHS
 parseRHS
-  = assignToExpr
-  <|> assignToNewPair
+  =   assignToNewPair
   <|> assignToPairElem
   <|> assignToFuncCall
   <|> assignToArrayLit
+  <|> assignToExpr
 
 assignToExpr :: Parser AssignRHS
 assignToExpr = ExprAssign <$> parseExpr
@@ -190,20 +189,21 @@ assignToFuncCall :: Parser AssignRHS
 assignToFuncCall = do
   string "call"
   name <- identifier
-  arglist <- parseArglist
+  arglist <- parseExprList '(' ')'
   return $ FuncCallAssign name arglist
 
-parseArglist :: Parser ArgList
-parseArglist = ArgList <$> parseExprList '(' ')'
-
 assignToArrayLit :: Parser AssignRHS
-assignToArrayLit = ArrayLitAssign <$> parseToArrayLit
+assignToArrayLit = ArrayLitAssign <$> parseExprList '[' ']'
 
 assignToNewPair :: Parser AssignRHS
-assignToNewPair = assignToNewPair
-
-parseToArrayLit :: Parser ArrayLit
-parseToArrayLit = ArrayLit <$> parseExprList '[' ']'
+assignToNewPair = do
+  string "newpair"
+  char '('
+  expr1 <- parseExpr
+  char ','
+  expr2 <- parseExpr
+  char ')'
+  return $ NewPairAssign expr1 expr2
 
 parseExprList :: Char -> Char -> Parser [Expr]
 parseExprList open close = bracket (char open) (sepby parseExpr (char ',')) (char close)

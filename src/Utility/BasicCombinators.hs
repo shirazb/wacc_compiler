@@ -1,25 +1,25 @@
-module BasicCombinators where
+module Utility.BasicCombinators where
 
-import Control.Applicative
-import Control.Monad
-import Data.Maybe
+import           Control.Applicative
+import           Control.Monad
+import           Data.Maybe
 
 {- LOCAL IMPORTS -}
 
-import Declarations
+import           Utility.Declarations
 
 {- GENERIC PREDICATE COMBINATORS -}
 
 -- PRE:  None
--- POST: Consumes the first character if the input string is non-empty, fails 
+-- POST: Consumes the first character if the input string is non-empty, fails
 -- otherwise (denoted by empty string)
-item :: Parser Char 
-item  = Parser $ \s -> case s of 
-                         []   -> []
-			 x:xs -> [(x, xs)]
+item :: Parser Char
+item  = Parser $ \s -> case s of
+                       []   -> []
+                       (x:xs) -> [(x, xs)]
 
 -- PRE:  None
--- POST: Consumes a single character if it satisfies the predicate, fails 
+-- POST: Consumes a single character if it satisfies the predicate, fails
 --       otherwise (denoted by empty string)
 satisfy  :: (Char -> Bool) -> Parser Char
 satisfy p = item >>= \x -> if p x then return x else mzero
@@ -96,7 +96,7 @@ character  = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
                char '\\'
                escaped_char <- item
                return $ fromJust $ lookup escaped_char escapeCharAssoc
-            
+
              escapeCharAssoc = [('b','\b'), ('n','\n'), ('f','\f'),
 	                        ('r','\r'), ('t','\t'), ('\\','\\'),
 			        ('\"','\"'), ('\'','\''), ('0', '\0')]

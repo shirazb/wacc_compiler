@@ -8,9 +8,7 @@ data Program   = Program [Func] Stat                deriving (Show, Eq)
 data Func      = Func Type Ident ParamList Stat     deriving (Show, Eq)
 data ParamList = ParamList [Param]                  deriving (Show, Eq)
 data Param     = Param Type Ident                   deriving (Show, Eq)
-data ArgList   = ArgList [Expr]                        deriving (Show, Eq)
 type ArrayType = Type
-data ArrayLit  = ArrayLit [Expr]                    deriving (Show, Eq)
 data ArrayElem = ArrayElem Ident [Expr]             deriving (Show, Eq)
 data PairType  = PairType PairElemType PairElemType deriving (Show, Eq)
 
@@ -38,10 +36,10 @@ data AssignLHS
 
 data AssignRHS
   = ExprAssign      Expr
-  | ArrayLitAssign  ArrayLit
+  | ArrayLitAssign  [Expr]
   | NewPairAssign   Expr Expr
   | PairElemAssign  PairElem
-  | FuncCallAssign  Ident ArgList
+  | FuncCallAssign  Ident [Expr]
   deriving (Show, Eq)
 
 data PairElem
