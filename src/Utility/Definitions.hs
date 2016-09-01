@@ -108,6 +108,6 @@ keywords = ["while", "if", "else"]
 
 binOps   =  [("*", Mul), ("/", Div), ("%", Mod), ("+", Add), ("-", Sub),  
              (">", Utility.Definitions.GT),  (">=", GTE), 
-	           ("<", Utility.Definitions.LT), ("<=", LTE), 
-	           ("==", Utility.Definitions.EQ), ("!=", NEQ), ("&&", AND),
-	           ("||", OR)]
+             ("<", Utility.Definitions.LT), ("<=", LTE), 
+             ("==", Utility.Definitions.EQ), ("!=", NEQ), ("&&", AND),
+             ("||", OR)]

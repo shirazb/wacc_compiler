@@ -6,7 +6,6 @@ import           Data.Char
 import           Data.Maybe
 import           Debug.Trace
 
-
 {- Local Imports -}
 
 import Utility.Definitions
@@ -73,7 +72,7 @@ parseUnaryOp = do
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow = do
   binOp <- string "+" <|> string "-" <|> string ">=" <|> string ">" <|> string "<=" <|> string "<"
-            <|> string "==" <|> string "!=" <|> string "&&" <|> string "||"
+           <|> string "==" <|> string "!=" <|> string "&&" <|> string "||"
   let astOp = fromJust $ lookup binOp binOps
   return astOp
 
