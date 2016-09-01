@@ -214,10 +214,10 @@ parseDeclaration = do
 parseRHS :: Parser AssignRHS
 parseRHS
   = assignToExpr
-  <|> assignToArrayLit
   <|> assignToNewPair
-  <|> assignToPairElem
-  <|> assignToFuncCall
+--  <|> assignToPairElem
+--  <|> assignToFuncCall
+--   <|> assignToArrayLit
 
 assignToExpr :: Parser AssignRHS
 assignToExpr = do
@@ -232,11 +232,11 @@ wrapIn :: (a -> f a) -> (Parser a -> Parser (f a))
 wrapIn wrapper = \p -> do
   x <- p
   return $ wrapper x
-
+{-
 assignToArrayLit :: Parser AssignRHS
 assignToArrayLit = do
   arrayLit <- parseArrayLit
-  return $ ArrayLitAssign arrayLit
+  return $ ArrayLitAssign arrayLit -}
 
 assignToNewPair :: Parser AssignRHS
 assignToNewPair = do
