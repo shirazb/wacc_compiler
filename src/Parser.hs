@@ -136,7 +136,7 @@ pairToType :: Parser PairType -> Parser Type
 pairToType parserPairType = PairT <$> parserPairType
 
 parseArrayType :: Parser ArrayType
-parseArrayType = 
+parseArrayType = undefined
 
 parsePairType :: Parser PairType
 parsePairType = do
