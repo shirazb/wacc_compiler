@@ -86,14 +86,19 @@ unaryExpr = UnaryApp <$> parseUnaryOp <*> parseExpr
 bracketedExpr :: Parser Expr
 bracketedExpr = bracket (char '(') parseExpr (char ')')
 
-arrayElem :: Parser Expr
-arrayElem = ((ExprArray.) . ArrayElem) <$> identifier <*> some (bracket (char '[') parseExpr (char ']'))
+arrayElem :: Parser ArrayElem
+arrayElem =  ArrayElem <$> identifier <*> some (bracket (char '[') parseExpr (char ']'))
+
+arrayElemExpr :: Parser Expr
+arrayElemExpr
+  = ExprArray <$> arrayElem
 
 binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
 
+parseExpr' :: Parser Expr
 parseExpr' =
-      arrayElem
+      arrayElemExpr
   <|> unaryExpr
   <|> bracketedExpr
   <|> charLiteral
@@ -103,10 +108,12 @@ parseExpr' =
   <|> exprIdent
   <|> intLiteral
 
+parseExpr :: Parser Expr
 parseExpr = binaryExpr <|> parseExpr'
 
 -- PRE:  None
 -- POST: Source code is a valid statement <-> parse parseStatement parses statement into AST
+parseStatement :: Parser Stat
 parseStatement = error "TODO"
 
 -- PRE:  None
@@ -125,18 +132,24 @@ parseBaseType = parseFromMap baseTypes
 
 -- Wraps the parsed BaseType into a Type
 baseToType :: Parser BaseType -> Parser Type
-baseToType parserBaseType = BaseT <$> parserBaseType
+baseToType
+  = fmap BaseT
 
 -- Wraps the parsed ArrayType into a Type
 arrayToType :: Parser ArrayType -> Parser Type
-arrayToType parserArrayType = ArrayT <$> parserArrayType
+arrayToType
+  = fmap ArrayT
 
 -- Wraps the parsed ArrayType into a Type
 pairToType :: Parser PairType -> Parser Type
-pairToType parserPairType = PairT <$> parserPairType
+pairToType
+  = fmap PairT
 
 parseArrayType :: Parser ArrayType
-parseArrayType = 
+parseArrayType = do
+  t <- parseType  -- TODO: FIX LEFT RECURSION HERE
+  string "[]"
+  return t
 
 parsePairType :: Parser PairType
 parsePairType = do
@@ -172,18 +185,22 @@ parseRHS
   <|> assignToFuncCall
   <|> assignToArrayLit
   <|> assignToExpr
+  -- x=foo() treats foo as an Ident
 
 assignToExpr :: Parser AssignRHS
 assignToExpr = ExprAssign <$> parseExpr
 
-assignToPairElem :: Parser AssignRHS
-assignToPairElem = do
+pairElem :: Parser PairElem
+pairElem = do
   fstOrSnd <- string "fst" <|> string "snd"
   expr    <- parseExpr
   if fstOrSnd == "fst"
-    then return $ PairElemAssign $ First expr
-    else return $ PairElemAssign $ Second expr
+    then return $ First expr
+    else return $ Second expr
 
+assignToPairElem :: Parser AssignRHS
+assignToPairElem
+  = PairElemAssign <$> pairElem
 
 assignToFuncCall :: Parser AssignRHS
 assignToFuncCall = do
@@ -206,4 +223,18 @@ assignToNewPair = do
   return $ NewPairAssign expr1 expr2
 
 parseExprList :: Char -> Char -> Parser [Expr]
-parseExprList open close = bracket (char open) (sepby parseExpr (char ',')) (char close)
+parseExprList open close
+  = bracket (char open) (sepby parseExpr (char ',')) (char close)
+
+parseAssignment :: Parser Stat
+parseAssignment = do
+    lhs <- parseLHS
+    char '='
+    rhs <- parseRHS
+    return $ Assignment lhs rhs
+
+parseLHS :: Parser AssignLHS
+parseLHS
+  =   ArrayDeref <$> arrayElem
+  <|> PairDeref  <$> pairElem
+  <|> Var        <$> identifier
