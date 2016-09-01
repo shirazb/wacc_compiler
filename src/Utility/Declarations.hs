@@ -1,4 +1,4 @@
-module Declarations where
+module Utility.Declarations where
 
 import Control.Applicative
 import Control.Monad

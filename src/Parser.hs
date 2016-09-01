@@ -5,8 +5,13 @@ import           Control.Monad
 import           Data.Char
 import           Data.Maybe
 import           Debug.Trace
-import           Utility.Definitions
-import           Utility.BasicCombinators
+
+
+{- Local Imports -}
+
+import Utility.Definitions
+import Utility.BasicCombinators
+import Utility.Declarations
 
 intLiteral :: Parser Expr
 intLiteral = do
@@ -67,7 +72,7 @@ parseUnaryOp = do
 
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow = do
-  binOp <- string "+" <|> string "-" <|> string ">=" <|> string ">" <|> string "<=" <|> string "<" 
+  binOp <- string "+" <|> string "-" <|> string ">=" <|> string ">" <|> string "<=" <|> string "<"
             <|> string "==" <|> string "!=" <|> string "&&" <|> string "||"
   let astOp = fromJust $ lookup binOp binOps
   return astOp
@@ -120,7 +125,7 @@ binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
 
 parseExpr' =
-      arrayElem   
+      arrayElem
   <|> unaryExpr
   <|> bracketedExpr
   <|> charLiteral
