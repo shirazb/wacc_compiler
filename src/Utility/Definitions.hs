@@ -55,3 +55,7 @@ data UnOp    = Not | Neg | Len | Ord | Chr  deriving (Show, Eq)
 data BinOp   = Mul | Div | Mod | Add | Sub | AND | OR | LT | LTE | EQ | GTE | GT | NEQ  deriving (Show, Eq)
 
 keywords = ["while","if","else"]
+binOps   =  [("*", Mul),  ("/", Div), ("%", Mod), ("+", Add),
+             ("-", Sub),  (">", Utility.Definitions.GT),  (">=", GTE), ("<", Utility.Definitions.LT),
+             ("<=", LTE), ("==", Utility.Definitions.EQ), ("!=", NEQ), ("&&", AND),
+             ("||", OR)]

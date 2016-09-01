@@ -65,29 +65,24 @@ parseUnaryOp = do
   where
     unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
 
-parseBinaryOp :: Parser BinOp
-parseBinaryOp = do
-  binOp <- string "*" <|> string "/" <|> string "%" <|> string "+" <|> string "-"
-            <|> string ">=" <|> string ">" <|> string "<=" <|> string "<"
+parseBinaryOpLow :: Parser BinOp
+parseBinaryOpLow = do
+  binOp <- string "+" <|> string "-" <|> string ">=" <|> string ">" <|> string "<=" <|> string "<" 
             <|> string "==" <|> string "!=" <|> string "&&" <|> string "||"
   let astOp = fromJust $ lookup binOp binOps
   return astOp
-  where
-    binOps        = [("*", Mul), ("/", Div), ("%", Mod), ("+", Add),
-                    ("-", Sub), (">", Utility.Definitions.GT), (">=", GTE), ("<", Utility.Definitions.LT),
-                    ("<=", LTE), ("==", Utility.Definitions.EQ), ("!=", NEQ), ("&&", AND),
-                    ("||", OR)]
 
+parseBinaryOpHigh :: Parser BinOp
+parseBinaryOpHigh = do
+  binOp <- string "*" <|> string "/" <|> string "%"
+  let astOp = fromJust $ lookup binOp binOps
+  return astOp
 
--- from binary expressions onwards, we are not sure if they work
-
--- DEBUGGING ---
-
-unaryExpr:: Parser Expr
-unaryExpr = do
-  un_op <- parseUnaryOp
-  expr <- parseExpr
-  return $ UnaryApp un_op expr
+parseBinaryOpHigher :: Parser BinOp
+parseBinaryOpHigher = do
+  binOp <- string "/" <|> string "%"
+  let astOp = fromJust $ lookup binOp binOps
+  return astOp
 
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op = do { x <- p; rest x}
@@ -97,43 +92,44 @@ chainl1 p op = do { x <- p; rest x}
       y <- p
       rest $ BinaryApp f x y) <|> return x
 
--- -- how do you do operator precedence????
--- parseAdd = chainl1 intLiter parseBinaryOp
---
-binaryExpr :: Parser Expr
-binaryExpr = chainl1 parseExpr parseBinaryOp
+lowBinaryExpr :: Parser Expr
+lowBinaryExpr = highBinaryExpr `chainl1` parseBinaryOpLow
 
- -- binaryExpr :: Parser Expr
--- binaryExpr = do
---   expr <- parseExpr
---   binOp <- parseBinaryOp
---   expr' <- parseExpr
---   return $ BinaryApp binOp expr expr'
+highBinaryExpr :: Parser Expr
+highBinaryExpr = higherBinaryExpr `chainl1` parseBinaryOpHigh
 
--- the concept of bracketedExpr works
+higherBinaryExpr :: Parser Expr
+higherBinaryExpr = parseExpr' `chainl1` parseBinaryOpHigher
+
+unaryExpr :: Parser Expr
+unaryExpr = do
+  op <- parseUnaryOp
+  expr <- parseExpr
+  return $ UnaryApp op expr
+
 bracketedExpr :: Parser Expr
 bracketedExpr = bracket (char '(') parseExpr (char ')')
---
--- parseTest :: Parser Expr
--- parseTest = Parser $ \s -> do
---                            let xs = parse parseExpr s
---                            return (last xs)
---
---
--- factor = boolLiter `mplus` charLit `mplus` stringLiter `mplus` pairLiter `mplus` bracketedExpr
+
+arrayElem :: Parser Expr
+arrayElem = do
+  array_name <- identifier
+  arraynotation <- some $ bracket (char '[') parseExpr (char ']')
+  return $ ExprArray $ ArrayElem array_name arraynotation
+
+binaryExpr :: Parser Expr
+binaryExpr = lowBinaryExpr
 
 
--- this is broken because we need to remove left recursion from the grammar
--- parseExpr' = return [] <|>  parseBinaryOp `mplus` parseExpr
---
-parseExpr :: Parser Expr
-parseExpr =
-   intLiteral
-  <|> boolLiteral
+parseExpr' =
+      arrayElem   
+  <|> unaryExpr
+  <|> bracketedExpr
   <|> charLiteral
+  <|> boolLiteral
   <|> stringLiter
   <|> pairLiteral
   <|> exprIdent
-  <|> unaryExpr
-  <|> bracketedExpr
-  <|> binaryExpr
+  <|> intLiteral
+
+
+parseExpr = binaryExpr <|> parseExpr'
