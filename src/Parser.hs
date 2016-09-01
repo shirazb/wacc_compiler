@@ -121,29 +121,15 @@ parseStatement = error "TODO"
 parseSkip :: Parser Stat
 parseSkip = string "skip" >> return Skip
 
+
 parseType :: Parser Type
 parseType =
-      pairToType  parsePairType
-  <|> arrayToType parseArrayType
-  <|> baseToType parseBaseType
+      PairT <$>  parsePairType
+  <|> BaseT <$> parseBaseType
+--   <|> ArrayT <$> parseArrayType
 
 parseBaseType :: Parser BaseType
 parseBaseType = parseFromMap baseTypes
-
--- Wraps the parsed BaseType into a Type
-baseToType :: Parser BaseType -> Parser Type
-baseToType
-  = fmap BaseT
-
--- Wraps the parsed ArrayType into a Type
-arrayToType :: Parser ArrayType -> Parser Type
-arrayToType
-  = fmap ArrayT
-
--- Wraps the parsed ArrayType into a Type
-pairToType :: Parser PairType -> Parser Type
-pairToType
-  = fmap PairT
 
 parseArrayType :: Parser ArrayType
 parseArrayType = do
@@ -166,9 +152,8 @@ parseNestedPairType = string "pair" >> return Pair
 
 parsePairElemType :: Parser PairElemType
 parsePairElemType
-  = parseNestedPairType <|>
-  do { baseType  <- parseBaseType;  return $ BaseP  baseType  } <|>
-  do { arrayType <- parseArrayType; return $ ArrayP arrayType }
+  = parseNestedPairType <|> (BaseP <$> parseBaseType) <|> (ArrayP <$> parseArrayType)
+
 
 parseDeclaration :: Parser Stat
 parseDeclaration = do
@@ -185,7 +170,6 @@ parseRHS
   <|> assignToFuncCall
   <|> assignToArrayLit
   <|> assignToExpr
-  -- x=foo() treats foo as an Ident
 
 assignToExpr :: Parser AssignRHS
 assignToExpr = ExprAssign <$> parseExpr
