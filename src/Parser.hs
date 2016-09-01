@@ -46,33 +46,22 @@ spaces = void $ many (satisfy isSpace)
 stringLiter :: Parser Expr
 stringLiter = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
--- parseOps mindfuck
-parseOps :: [String] -> Parser String
-parseOps = foldr1 (<|>) . map string
+parseFromMap :: [(String, a)] -> Parser a
+parseFromMap ops = do
+  op <- foldr1 (<|>) $ map (string.fst) ops
+  return $ fromJust $ lookup op ops
 
 parseUnaryOp :: Parser UnOp
-parseUnaryOp = do
-  unOp <- parseOps ["!", "-", "len", "ord", "chr"]
-  let astOp = fromJust $ lookup unOp unOpAssoc
-  return astOp
+parseUnaryOp = parseFromMap unOpAssoc
 
 parseBinaryOpLow :: Parser BinOp
-parseBinaryOpLow = do
-  binOp <- parseOps ["+", "-", ">=", ">", "<=", "<", "==", "!=", "&&", "||"]
-  let astOp = fromJust $ lookup binOp binOps
-  return astOp
+parseBinaryOpLow = parseFromMap lowBinOps
 
 parseBinaryOpHigh :: Parser BinOp
-parseBinaryOpHigh = do
-  binOp <- string "*" <|> string "/" <|> string "%"
-  let astOp = fromJust $ lookup binOp binOps
-  return astOp
+parseBinaryOpHigh = parseFromMap highBinOps
 
 parseBinaryOpHigher :: Parser BinOp
-parseBinaryOpHigher = do
-  binOp <- string "/" <|> string "%"
-  let astOp = fromJust $ lookup binOp binOps
-  return astOp
+parseBinaryOpHigher = parseFromMap higherBinOps
 
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op = do { x <- p; rest x}
@@ -97,11 +86,8 @@ unaryExpr = UnaryApp <$> parseUnaryOp <*> parseExpr
 bracketedExpr :: Parser Expr
 bracketedExpr = bracket (char '(') parseExpr (char ')')
 
--- arrayElem :: Parser Expr
-arrayElem = do
-  array_name <- identifier
-  arraynotation <- some $ bracket (char '[') parseExpr (char ']')
-  return $ ExprArray $ ArrayElem array_name arraynotation
+arrayElem :: Parser Expr
+arrayElem = ((ExprArray.) . ArrayElem) <$> identifier <*> some (bracket (char '[') parseExpr (char ']'))
 
 binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
@@ -135,10 +121,7 @@ parseType =
   <|> arrayToType parseArrayType
 
 parseBaseType :: Parser BaseType
-parseBaseType = do
-  baseType <- string "int" <|> string "bool" <|> string "char" <|> string "string"
-  let baseT = fromJust $ lookup baseType baseTypes
-  return baseT
+parseBaseType = parseFromMap baseTypes
 
 -- Wraps the parsed BaseType into a Type
 baseToType :: Parser BaseType -> Parser Type
@@ -167,9 +150,7 @@ parsePairType = do
   return $ PairType t1 t2
 
 parseNestedPairType :: Parser PairElemType
-parseNestedPairType = do
-  string "pair"
-  return Pair
+parseNestedPairType = string "pair" >> return Pair
 
 parsePairElemType :: Parser PairElemType
 parsePairElemType
