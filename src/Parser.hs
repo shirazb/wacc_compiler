@@ -169,28 +169,40 @@ parseRHS :: Parser AssignRHS
 parseRHS
   = assignToExpr
   <|> assignToNewPair
---  <|> assignToPairElem
---  <|> assignToFuncCall
---  <|> assignToArrayLitg
+  <|> assignToPairElem
+  <|> assignToFuncCall
+  <|> assignToArrayLit
 
 assignToExpr :: Parser AssignRHS
 assignToExpr = ExprAssign <$> parseExpr
 
-  {- do
-  expr <- parseExpr
-  return $ ExprAssign expr -}
+assignToPairElem :: Parser AssignRHS
+assignToPairElem = do
+  fstOrSnd <- string "fst" <|> string "snd"
+  expr    <- parseExpr
+  if fstOrSnd == "fst"
+    then return $ PairElemAssign $ First expr
+    else return $ PairElemAssign $ Second expr
 
--- THIS PATTERN OF USING ANOTHER PARSER THEN WRAPPING ITS RESULT IN A
--- CONSTRUCTOR IS VERY COMMON. CAN WE ABSTRACT IT OUT?
--- POSSIBLY:
 
+assignToFuncCall :: Parser AssignRHS
+assignToFuncCall = do
+  string "call"
+  name <- identifier
+  arglist <- parseArglist
+  return $ FuncCallAssign name arglist
 
-{-
+parseArglist :: Parser ArgList
+parseArglist = ArgList <$> parseExprList '(' ')'
+
 assignToArrayLit :: Parser AssignRHS
-assignToArrayLit = do
-  arrayLit <- parseArrayLit
-  return $ ArrayLitAssign arrayLit -}
+assignToArrayLit = ArrayLitAssign <$> parseToArrayLit
 
 assignToNewPair :: Parser AssignRHS
-assignToNewPair = do
-  assignToNewPair
+assignToNewPair = assignToNewPair
+
+parseToArrayLit :: Parser ArrayLit
+parseToArrayLit = ArrayLit <$> parseExprList '[' ']'
+
+parseExprList :: Char -> Char -> Parser [Expr]
+parseExprList open close = bracket (char open) (sepby parseExpr (char ',')) (char close)
