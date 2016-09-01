@@ -4,8 +4,8 @@ import           Control.Monad
 import           Data.Char
 import           Data.Maybe
 import           Debug.Trace
-import           DefinitionsFactor
-import           BasicCombinators
+import           Utility.DefinitionsFactor
+import           Utility.BasicCombinators
 
 
 intLiteral :: Parser Expr

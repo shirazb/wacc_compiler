@@ -5,8 +5,8 @@ import           Control.Monad
 import           Data.Char
 import           Data.Maybe
 import           Debug.Trace
-import           Definitions
-import           BasicCombinators
+import           Utility.Definitions
+import           Utility.BasicCombinators
 
 intLiteral :: Parser Expr
 intLiteral = do
@@ -74,8 +74,8 @@ parseBinaryOp = do
   return astOp
   where
     binOps        = [("*", Mul), ("/", Div), ("%", Mod), ("+", Add),
-                    ("-", Sub), (">", Definitions.GT), (">=", GTE), ("<", Definitions.LT),
-                    ("<=", LTE), ("==", Definitions.EQ), ("!=", NEQ), ("&&", AND),
+                    ("-", Sub), (">", Utility.Definitions.GT), (">=", GTE), ("<", Utility.Definitions.LT),
+                    ("<=", LTE), ("==", Utility.Definitions.EQ), ("!=", NEQ), ("&&", AND),
                     ("||", OR)]
 
 

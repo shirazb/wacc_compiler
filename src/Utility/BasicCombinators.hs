@@ -1,4 +1,4 @@
-module BasicCombinators where
+module Utility.BasicCombinators where
 
 import           Control.Applicative
 import           Control.Monad
