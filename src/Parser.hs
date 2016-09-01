@@ -1,16 +1,17 @@
 module Parser where
 
-import           Control.Applicative
-import           Control.Monad
-import           Data.Char
-import           Data.Maybe
-import           Debug.Trace
+import Control.Applicative
+import Control.Monad
+import Data.Char
+import Data.Maybe
+import Debug.Trace
 
 {- Local Imports -}
 
 import Utility.Definitions
 import Utility.BasicCombinators
 import Utility.Declarations
+
 intLiteral :: Parser Expr
 intLiteral = IntLit . read <$> some digit
 
