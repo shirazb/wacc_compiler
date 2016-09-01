@@ -20,12 +20,12 @@ testBoolLiteralGroup = TestLabel "BoolLiteralTests" $ TestList [test_boolLit1, t
 testCharLiteralGroup = TestLabel "CharLiteralTests" $ TestList [test_charLit1, test_charLit2, test_charLit3, test_charLit4, test_charLit5, test_charLit6, test_charLit7, test_charLit8, test_charLit9, test_charLit10,
                                                                 test_charLit11, test_charLit12]
 testPairLiteralGroup = TestLabel "PairLiteralTests" $ TestList [test_pairLit1, test_pairLit2, test_pairLit3, test_pairLit4, test_pairLit5]                                                               
+
 -- Tests for intLiteral
 test_intLit1 = TestCase $ assertEqual "Parse (single digit)" [(IntLit 5, "")] (parse intLiteral "5")
 test_intLit2 = TestCase $ assertEqual "Parse (multi digit)" [(IntLit 512312, "")] (parse intLiteral "512312")
 test_intLit3 = TestCase $ assertEqual "Parse only digits" [(IntLit 512312, "dontparsethis")] (parse intLiteral "512312dontparsethis")
 test_intLit4 = TestCase $ assertEqual "Parse check if fails" [] (parse intLiteral "_12") 
-
 
 -- Tests for booLiteral.
 test_boolLit1 = TestCase $ assertEqual "Parse True" [(BoolLit True, "")] (parse boolLiteral "true")
@@ -52,3 +52,4 @@ test_pairLit2 = TestCase $ assertEqual "Parse a pairLiteral" [] (parse pairLiter
 test_pairLit3 = TestCase $ assertEqual "Parse a pairLiteral" [(PairLiteral, " rest")] (parse pairLiteral "null rest")
 test_pairLit4 = TestCase $ assertEqual "Parse check if fails pairLit" [] (parse pairLiteral "gnullrest")
 test_pairLit5 = TestCase $ assertEqual "Parse check if fails pairLit" [] (parse pairLiteral "nu llrest")
+

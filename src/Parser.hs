@@ -119,7 +119,6 @@ arrayElem = do
 binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
 
-
 parseExpr' =
       arrayElem   
   <|> unaryExpr
