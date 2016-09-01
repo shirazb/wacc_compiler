@@ -6,7 +6,7 @@ import Utility.Definitions
 import Control.Monad.State
 import Control.Monad.Except
 import Control.Monad
-import qualified Data.Map as Map 
+import qualified Data.Map as Map
 
 -- Store the environment (variables)
 type CheckerState = Map.Map String Expr
@@ -17,9 +17,9 @@ data Error
   deriving Show
 
 -- This is our monad that will execute the type checking
-newtype Checker a 
-  = Checker { runChecker :: ExceptT Error (State CheckerState) a } 
-  deriving (Functor, 
+newtype Checker a
+  = Checker { runChecker :: ExceptT Error (State CheckerState) a }
+  deriving (Functor,
             Applicative,
             Monad,
             MonadState CheckerState,
@@ -45,7 +45,7 @@ checkBT (BoolLit _)          = return BaseBool
 checkBT (CharLit _)          = return BaseChar
 checkBT (StringLit _)        = return BaseString
 checkBT (UnaryApp _ e)       = checkBT e
-checkBT (BinaryApp _ e1 e2)  = do 
+checkBT (BinaryApp _ e1 e2)  = do
   t1 <- checkBT e1
   t2 <- checkBT e2
   if t1 == t2

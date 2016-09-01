@@ -88,18 +88,18 @@ alphanum  = letter <|> digit
 -- POST: Parser for all characters and escape chararacters
 character :: Parser Char
 character  = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
-           where
-	     -- PRE:  None
-	     -- POST: Parser for escape characters
-             escapeChar :: Parser Char
-	     escapeChar  = do
-               char '\\'
-               escaped_char <- item
-               return $ fromJust $ lookup escaped_char escapeCharAssoc
 
-             escapeCharAssoc = [('b','\b'), ('n','\n'), ('f','\f'),
-	                        ('r','\r'), ('t','\t'), ('\\','\\'),
-			        ('\"','\"'), ('\'','\''), ('0', '\0')]
+-- PRE:  None
+-- POST: Parser for escape characters
+escapeChar :: Parser Char
+escapeChar  = do
+              char '\\'
+              escaped_char <- item
+              return $ fromJust $ lookup escaped_char escapeCharAssoc
+              where
+              escapeCharAssoc =  [('b','\b'), ('n','\n'), ('f','\f'),
+                                  ('r','\r'), ('t','\t'), ('\\','\\'),
+                                  ('\"','\"'), ('\'','\''), ('0', '\0')]
 
 -- PRE:  None
 -- POST: Parser for words
