@@ -2,6 +2,7 @@ import Test.HUnit
 import System.Exit
 import Utility.Definitions
 import Utility.BasicCombinators
+import Utility.Declarations
 import Parser
 main :: IO ()
 main = do

@@ -12,10 +12,13 @@ import Utility.Definitions
 import Utility.BasicCombinators
 import Utility.Declarations
 
+
+
+if' :: Bool -> a -> a -> a
+if' check a b = if check then a else b
+
 intLiteral :: Parser Expr
-intLiteral = do
-  digits <- some digit
-  return $ IntLit $ read digits
+intLiteral = IntLit . read <$> some digit
 
 boolLiteral :: Parser Expr
 boolLiteral = do
@@ -25,14 +28,10 @@ boolLiteral = do
     else return $ BoolLit False
 
 charLiteral :: Parser Expr
-charLiteral = do
-  chr <- bracket (char '\'') character (char '\'')
-  return $ CharLit chr
+charLiteral = CharLit <$> bracket (char '\'') character (char '\'')
 
 pairLiteral :: Parser Expr
-pairLiteral = do
-  string "null"
-  return PairLiteral
+pairLiteral = string "null" >>= const (return PairLiteral)
 
 ident :: Parser String
 ident = do
@@ -47,19 +46,13 @@ identifier = do
   return x
 
 exprIdent :: Parser Expr
-exprIdent = do
-  var <- identifier
-  return $ ExprI var
+exprIdent = ExprI <$> identifier
 
 spaces :: Parser ()
-spaces = do
-  many $ satisfy isSpace
-  return ()
+spaces = many (satisfy isSpace) >>= const (return ())
 
 stringLiter :: Parser Expr
-stringLiter = do
-  string <- bracket (char '\"') (many character) (char '\"')
-  return $ StringLit string
+stringLiter = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
 parseUnaryOp :: Parser UnOp
 parseUnaryOp = do
@@ -106,15 +99,12 @@ higherBinaryExpr :: Parser Expr
 higherBinaryExpr = parseExpr' `chainl1` parseBinaryOpHigher
 
 unaryExpr :: Parser Expr
-unaryExpr = do
-  op <- parseUnaryOp
-  expr <- parseExpr
-  return $ UnaryApp op expr
+unaryExpr = UnaryApp <$> parseUnaryOp <*> parseExpr
 
 bracketedExpr :: Parser Expr
 bracketedExpr = bracket (char '(') parseExpr (char ')')
 
-arrayElem :: Parser Expr
+-- arrayElem :: Parser Expr
 arrayElem = do
   array_name <- identifier
   arraynotation <- some $ bracket (char '[') parseExpr (char ']')
@@ -162,21 +152,15 @@ parseBaseType = do
 
 -- Wraps the parsed BaseType into a Type
 baseToType :: Parser BaseType -> Parser Type
-baseToType parserBaseType = do
-  baseType <- parserBaseType
-  return $ BaseT baseType
+baseToType parserBaseType = BaseT <$> parserBaseType
 
 -- Wraps the parsed ArrayType into a Type
 arrayToType :: Parser ArrayType -> Parser Type
-arrayToType parserArrayType = do
-  arrayType <- parserArrayType
-  return $ ArrayT arrayType
+arrayToType parserArrayType = ArrayT <$> parserArrayType
 
 -- Wraps the parsed ArrayType into a Type
 pairToType :: Parser PairType -> Parser Type
-pairToType parserPairType = do
-  pairType <- parserPairType
-  return $ PairT pairType
+pairToType parserPairType = PairT <$> parserPairType
 
 parseArrayType :: Parser ArrayType
 parseArrayType
@@ -217,21 +201,20 @@ parseRHS
   <|> assignToNewPair
 --  <|> assignToPairElem
 --  <|> assignToFuncCall
---   <|> assignToArrayLit
+--  <|> assignToArrayLitg
 
 assignToExpr :: Parser AssignRHS
-assignToExpr = do
+assignToExpr = ExprAssign <$> parseExpr
+
+  {- do
   expr <- parseExpr
-  return $ ExprAssign expr
+  return $ ExprAssign expr -}
 
 -- THIS PATTERN OF USING ANOTHER PARSER THEN WRAPPING ITS RESULT IN A
 -- CONSTRUCTOR IS VERY COMMON. CAN WE ABSTRACT IT OUT?
 -- POSSIBLY:
 
-wrapIn :: (a -> f a) -> (Parser a -> Parser (f a))
-wrapIn wrapper = \p -> do
-  x <- p
-  return $ wrapper x
+
 {-
 assignToArrayLit :: Parser AssignRHS
 assignToArrayLit = do
