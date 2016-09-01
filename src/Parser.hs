@@ -135,3 +135,109 @@ parseExpr' =
   <|> intLiteral
 
 parseExpr = binaryExpr <|> parseExpr'
+
+-- PRE:  None
+-- POST: Source code is a valid statement <-> parse parseStatement parses statement into AST
+parseStatement = error "TODO"
+
+-- PRE:  None
+-- POST: Consumes a "skip" string, returning the Skip statment
+parseSkip :: Parser Stat
+parseSkip = do
+  string "skip"
+  return Skip
+
+parseType :: Parser Type
+parseType =
+  baseToType parseBaseType
+  <|> pairToType  parsePairType
+  <|> arrayToType parseArrayType
+
+parseBaseType :: Parser BaseType
+parseBaseType = do
+  baseType <- string "int" <|> string "bool" <|> string "char" <|> string "string"
+  let baseT = fromJust $ lookup baseType [("int", BaseInt),("bool", BaseBool),
+                                          ("char", BaseChar),("string", BaseString)]
+  return baseT
+
+-- Wraps the parsed BaseType into a Type
+baseToType :: Parser BaseType -> Parser Type
+baseToType parserBaseType = do
+  baseType <- parserBaseType
+  return $ BaseT baseType
+
+-- Wraps the parsed ArrayType into a Type
+arrayToType :: Parser ArrayType -> Parser Type
+arrayToType parserArrayType = do
+  arrayType <- parserArrayType
+  return $ ArrayT arrayType
+
+-- Wraps the parsed ArrayType into a Type
+pairToType :: Parser PairType -> Parser Type
+pairToType parserPairType = do
+  pairType <- parserPairType
+  return $ PairT pairType
+
+parseArrayType :: Parser ArrayType
+parseArrayType
+  = bracket (char '[') parseType (char ']')
+
+parsePairType :: Parser PairType
+parsePairType = do
+  string "pair"
+  char '('
+  t1 <- parsePairElemType
+  char ','   -- TODO: FIX WHITESPACE AROUND COMMA
+  t2 <- parsePairElemType
+  char ')'
+  return $ PairType t1 t2
+
+parseNestedPairType :: Parser PairElemType
+parseNestedPairType = do
+  string "pair"
+  return Pair
+
+parsePairElemType :: Parser PairElemType
+parsePairElemType
+  = parseNestedPairType <|>
+  do { baseType  <- parseBaseType;  return $ BaseP  baseType  } <|>
+  do { arrayType <- parseArrayType; return $ ArrayP arrayType }
+
+parseDeclaration :: Parser Stat
+parseDeclaration = do
+  varType <- parseType
+  ident   <- identifier
+  char '=' --TODO: FIX WHITESPACE
+  assignRHS     <- parseRHS
+  return $ Declaration varType ident assignRHS
+
+parseRHS :: Parser AssignRHS
+parseRHS
+  = assignToExpr
+  <|> assignToArrayLit
+  <|> assignToNewPair
+  <|> assignToPairElem
+  <|> assignToFuncCall
+
+assignToExpr :: Parser AssignRHS
+assignToExpr = do
+  expr <- parseExpr
+  return $ ExprAssign expr
+
+-- THIS PATTERN OF USING ANOTHER PARSER THEN WRAPPING ITS RESULT IN A
+-- CONSTRUCTOR IS VERY COMMON. CAN WE ABSTRACT IT OUT?
+-- POSSIBLY:
+
+wrapIn :: (a -> f a) -> Parser a -> Parser (f a)
+wrapIn wrapper p = do
+  x <- p
+  return $ wrapper x
+
+assignToArrayLit :: Parser AssignRHS
+assignToArrayLit = do
+  arrayLit <- parseArrayLit
+  return $ ArrayLitAssign arrayLit
+
+assignToNewPair :: Parser AssignRHS
+assignToNewPair = do
+  assignToNewPair

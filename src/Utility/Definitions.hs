@@ -9,7 +9,7 @@ data Func      = Func Type Ident ParamList Stat     deriving (Show, Eq)
 data ParamList = ParamList [Param]                  deriving (Show, Eq)
 data Param     = Param Type Ident                   deriving (Show, Eq)
 data ArgList   = Args [Expr]                        deriving (Show, Eq)
-data ArrayType = ArrayType Type                     deriving (Show, Eq)
+type ArrayType = Type
 data ArrayLit  = ArrayLit [Expr]                    deriving (Show, Eq)
 data ArrayElem = ArrayElem Ident [Expr]             deriving (Show, Eq)
 data PairType  = PairType PairElemType PairElemType deriving (Show, Eq)
@@ -37,11 +37,11 @@ data AssignLHS
   deriving (Show, Eq)
 
 data AssignRHS
-  = Expression Expr
-  | NewArray ArrayLit
-  | NewPair Expr Expr
-  | PairElement PairElem
-  | FuncCall Ident ArgList
+  = ExprAssign      Expr
+  | ArrayLitAssign  ArrayLit
+  | NewPairAssign   Expr Expr
+  | PairElemAssign  PairElem
+  | FuncCallAssign  Ident ArgList
   deriving (Show, Eq)
 
 data PairElem
@@ -63,8 +63,8 @@ data BaseType
   deriving (Show, Eq)
 
 data PairElemType
-  = BaseP BaseType
-  | BaseA ArrayType
+  = BaseP  BaseType
+  | ArrayP ArrayType
   | Pair
   deriving (Show, Eq)
 
