@@ -64,6 +64,6 @@ data BinOp   = Mul | Div | Mod | Add | Sub | AND | OR | LT | LTE | EQ | GTE | GT
 
 keywords = ["while","if","else"]
 binOps   =  [("*", Mul), ("/", Div), ("%", Mod), ("+", Add),
-             ("-", Sub), (">", DefinitionsFactor.GT), (">=", GTE), ("<", DefinitionsFactor.LT),
-             ("<=", LTE), ("==", DefinitionsFactor.EQ), ("!=", NEQ), ("&&", AND),
+             ("-", Sub), (">", Utility.DefinitionsFactor.GT), (">=", GTE), ("<", Utility.DefinitionsFactor.LT),
+             ("<=", LTE), ("==", Utility.DefinitionsFactor.EQ), ("!=", NEQ), ("&&", AND),
              ("||", OR)]

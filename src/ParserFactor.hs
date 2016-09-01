@@ -77,6 +77,12 @@ parseBinaryOpHigh = do
   binOp <- string "*" <|> string "/" <|> string "%"
   let astOp = fromJust $ lookup binOp binOps
   return astOp
+
+parseBinaryOpHigher :: Parser BinOp
+parseBinaryOpHigher = do
+  binOp <- string "/" <|> string "%"
+  let astOp = fromJust $ lookup binOp binOps
+  return astOp
  
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op = do {x <- p; rest x}
@@ -90,7 +96,10 @@ lowBinaryExpr :: Parser Expr
 lowBinaryExpr = highBinaryExpr `chainl1` parseBinaryOpLow
 
 highBinaryExpr :: Parser Expr
-highBinaryExpr = parseExpr' `chainl1` parseBinaryOpHigh
+highBinaryExpr = higherBinaryExpr `chainl1` parseBinaryOpHigh
+
+higherBinaryExpr :: Parser Expr
+higherBinaryExpr = parseExpr' `chainl1` parseBinaryOpHigher
 
 unaryExpr :: Parser Expr
 unaryExpr = do
