@@ -81,7 +81,6 @@ sepby1 p sep = do
 sepby :: Parser a -> Parser b -> Parser [a]
 sepby p sep = sepby1 p sep <|> return []
 
-
 bracket :: Parser a -> Parser b -> Parser c -> Parser b
 bracket open p close = do
   open

@@ -45,22 +45,22 @@ spaces = void $ many (satisfy isSpace)
 stringLiter :: Parser Expr
 stringLiter = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
-parseOp :: [(String, a)] -> Parser a
-parseOp ops = do
+parseFromMap :: [(String, a)] -> Parser a
+parseFromMap ops = do
   op <- foldr1 (<|>) $ map (string.fst) ops
   return $ fromJust $ lookup op ops
 
 parseUnaryOp :: Parser UnOp
-parseUnaryOp = parseOp unOpAssoc
+parseUnaryOp = parseFromMap unOpAssoc
 
 parseBinaryOpLow :: Parser BinOp
-parseBinaryOpLow = parseOp lowBinOps
+parseBinaryOpLow = parseFromMap lowBinOps
 
 parseBinaryOpHigh :: Parser BinOp
-parseBinaryOpHigh = parseOp highBinOps
+parseBinaryOpHigh = parseFromMap highBinOps
 
 parseBinaryOpHigher :: Parser BinOp
-parseBinaryOpHigher = parseOp higherBinOps
+parseBinaryOpHigher = parseFromMap higherBinOps
 
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op = do { x <- p; rest x}
@@ -120,10 +120,7 @@ parseType =
   <|> arrayToType parseArrayType
 
 parseBaseType :: Parser BaseType
-parseBaseType = do
-  baseType <- string "int" <|> string "bool" <|> string "char" <|> string "string"
-  let baseT = fromJust $ lookup baseType baseTypes
-  return baseT
+parseBaseType = parseFromMap baseTypes
 
 -- Wraps the parsed BaseType into a Type
 baseToType :: Parser BaseType -> Parser Type
@@ -152,9 +149,7 @@ parsePairType = do
   return $ PairType t1 t2
 
 parseNestedPairType :: Parser PairElemType
-parseNestedPairType = do
-  string "pair"
-  return Pair
+parseNestedPairType = string "pair" >> return Pair
 
 parsePairElemType :: Parser PairElemType
 parsePairElemType
