@@ -111,3 +111,8 @@ binOps   =  [("*", Mul), ("/", Div), ("%", Mod), ("+", Add), ("-", Sub),
              ("<", Utility.Definitions.LT), ("<=", LTE),
              ("==", Utility.Definitions.EQ), ("!=", NEQ), ("&&", AND),
              ("||", OR)]
+
+unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
+
+baseTypes = [("int", BaseInt),("bool", BaseBool),
+            ("char", BaseChar),("string", BaseString)]

@@ -11,12 +11,6 @@ import           Debug.Trace
 import Utility.Definitions
 import Utility.BasicCombinators
 import Utility.Declarations
-
-
-
-if' :: Bool -> a -> a -> a
-if' check a b = if check then a else b
-
 intLiteral :: Parser Expr
 intLiteral = IntLit . read <$> some digit
 
@@ -31,13 +25,10 @@ charLiteral :: Parser Expr
 charLiteral = CharLit <$> bracket (char '\'') character (char '\'')
 
 pairLiteral :: Parser Expr
-pairLiteral = string "null" >>= const (return PairLiteral)
+pairLiteral = string "null" >> return PairLiteral
 
 ident :: Parser String
-ident = do
-  first <- char '_' <|> letter
-  rest  <- many (alphanum <|> char '_')
-  return $ first:rest
+ident = liftA2 (:) (char '_' <|> letter) (many (alphanum <|> char '_'))
 
 identifier :: Parser String
 identifier = do
@@ -49,23 +40,24 @@ exprIdent :: Parser Expr
 exprIdent = ExprI <$> identifier
 
 spaces :: Parser ()
-spaces = many (satisfy isSpace) >>= const (return ())
+spaces = void $ many (satisfy isSpace)
 
 stringLiter :: Parser Expr
 stringLiter = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
+-- parseOps mindfuck
+parseOps :: [String] -> Parser String
+parseOps = foldr1 (<|>) . map string
+
 parseUnaryOp :: Parser UnOp
 parseUnaryOp = do
-  unOp <- string "!" <|> string "-" <|> string "len" <|> string "ord" <|> string "chr"
+  unOp <- parseOps ["!", "-", "len", "ord", "chr"]
   let astOp = fromJust $ lookup unOp unOpAssoc
   return astOp
-  where
-    unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
 
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow = do
-  binOp <- string "+" <|> string "-" <|> string ">=" <|> string ">" <|> string "<=" <|> string "<"
-           <|> string "==" <|> string "!=" <|> string "&&" <|> string "||"
+  binOp <- parseOps ["+", "-", ">=", ">", "<=", "<", "==", "!=", "&&", "||"]
   let astOp = fromJust $ lookup binOp binOps
   return astOp
 
@@ -133,9 +125,7 @@ parseStatement = error "TODO"
 -- PRE:  None
 -- POST: Consumes a "skip" string, returning the Skip statment
 parseSkip :: Parser Stat
-parseSkip = do
-  string "skip"
-  return Skip
+parseSkip = string "skip" >> return Skip
 
 parseType :: Parser Type
 parseType =
@@ -146,8 +136,7 @@ parseType =
 parseBaseType :: Parser BaseType
 parseBaseType = do
   baseType <- string "int" <|> string "bool" <|> string "char" <|> string "string"
-  let baseT = fromJust $ lookup baseType [("int", BaseInt),("bool", BaseBool),
-                                          ("char", BaseChar),("string", BaseString)]
+  let baseT = fromJust $ lookup baseType baseTypes
   return baseT
 
 -- Wraps the parsed BaseType into a Type
