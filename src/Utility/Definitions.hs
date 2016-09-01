@@ -30,10 +30,10 @@ data Stat
   | Seq Stat Stat
   deriving (Show, Eq)
 
-data AssignLHS 
-  = Var Ident 
-  | ArrayDeref ArrayElem 
-  | PairDeref PairElem 
+data AssignLHS
+  = Var Ident
+  | ArrayDeref ArrayElem
+  | PairDeref PairElem
   deriving (Show, Eq)
 
 data AssignRHS
@@ -44,31 +44,31 @@ data AssignRHS
   | FuncCall Ident ArgList
   deriving (Show, Eq)
 
-data PairElem 
-  = First Expr 
-  | Second Expr 
+data PairElem
+  = First Expr
+  | Second Expr
   deriving (Show, Eq)
 
-data Type 
-  = BaseT BaseType 
-  | ArrayT ArrayType 
-  | PairT PairType 
+data Type
+  = BaseT BaseType
+  | ArrayT ArrayType
+  | PairT PairType
   deriving (Show, Eq)
 
-data BaseType 
-  = BaseInt 
-  | BaseBool 
-  | BaseChar 
-  | BaseString 
+data BaseType
+  = BaseInt
+  | BaseBool
+  | BaseChar
+  | BaseString
   deriving (Show, Eq)
 
-data PairElemType 
-  = BaseP BaseType 
-  | BaseA ArrayType 
-  | Pair 
+data PairElemType
+  = BaseP BaseType
+  | BaseA ArrayType
+  | Pair
   deriving (Show, Eq)
 
-data Expr 
+data Expr
   = StringLit String
   | CharLit Char
   | IntLit Int
@@ -81,33 +81,33 @@ data Expr
   deriving (Show, Eq)
 
 data UnOp
-  = Not 
-  | Neg 
-  | Len 
-  | Ord 
-  | Chr  
+  = Not
+  | Neg
+  | Len
+  | Ord
+  | Chr
   deriving (Show, Eq)
 
-data BinOp   
-  = Mul 
-  | Div 
-  | Mod 
-  | Add 
-  | Sub 
-  | AND 
-  | OR 
-  | LT 
-  | LTE 
-  | EQ 
-  | GTE 
-  | GT 
-  | NEQ  
+data BinOp
+  = Mul
+  | Div
+  | Mod
+  | Add
+  | Sub
+  | AND
+  | OR
+  | LT
+  | LTE
+  | EQ
+  | GTE
+  | GT
+  | NEQ
   deriving (Show, Eq)
 
 keywords = ["while", "if", "else"]
 
-binOps   =  [("*", Mul), ("/", Div), ("%", Mod), ("+", Add), ("-", Sub),  
-             (">", Utility.Definitions.GT),  (">=", GTE), 
-             ("<", Utility.Definitions.LT), ("<=", LTE), 
+binOps   =  [("*", Mul), ("/", Div), ("%", Mod), ("+", Add), ("-", Sub),
+             (">", Utility.Definitions.GT),  (">=", GTE),
+             ("<", Utility.Definitions.LT), ("<=", LTE),
              ("==", Utility.Definitions.EQ), ("!=", NEQ), ("&&", AND),
              ("||", OR)]
