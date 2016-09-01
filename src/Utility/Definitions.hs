@@ -106,11 +106,11 @@ data BinOp
 
 keywords = ["while", "if", "else"]
 
-binOps   =  [("*", Mul), ("/", Div), ("%", Mod), ("+", Add), ("-", Sub),
-             (">", Utility.Definitions.GT),  (">=", GTE),
-             ("<", Utility.Definitions.LT), ("<=", LTE),
-             ("==", Utility.Definitions.EQ), ("!=", NEQ), ("&&", AND),
-             ("||", OR)]
+lowBinOps   =  [("+", Add), ("-", Sub) , (">=", GTE), (">", Utility.Definitions.GT),
+               ("<=", LTE), ("<", Utility.Definitions.LT), ("==", Utility.Definitions.EQ),
+               ("!=", NEQ), ("&&", AND), ("||", OR)]
+highBinOps   = [("*", Mul)]
+higherBinOps = [("/", Div), ("%", Div)]
 
 unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
 

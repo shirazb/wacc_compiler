@@ -45,33 +45,22 @@ spaces = void $ many (satisfy isSpace)
 stringLiter :: Parser Expr
 stringLiter = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
--- parseOps mindfuck
-parseOps :: [String] -> Parser String
-parseOps = foldr1 (<|>) . map string
+parseOp :: [(String, a)] -> Parser a
+parseOp ops = do
+  op <- foldr1 (<|>) $ map (string.fst) ops
+  return $ fromJust $ lookup op ops
 
 parseUnaryOp :: Parser UnOp
-parseUnaryOp = do
-  unOp <- parseOps ["!", "-", "len", "ord", "chr"]
-  let astOp = fromJust $ lookup unOp unOpAssoc
-  return astOp
+parseUnaryOp = parseOp unOpAssoc
 
 parseBinaryOpLow :: Parser BinOp
-parseBinaryOpLow = do
-  binOp <- parseOps ["+", "-", ">=", ">", "<=", "<", "==", "!=", "&&", "||"]
-  let astOp = fromJust $ lookup binOp binOps
-  return astOp
+parseBinaryOpLow = parseOp lowBinOps
 
 parseBinaryOpHigh :: Parser BinOp
-parseBinaryOpHigh = do
-  binOp <- string "*" <|> string "/" <|> string "%"
-  let astOp = fromJust $ lookup binOp binOps
-  return astOp
+parseBinaryOpHigh = parseOp highBinOps
 
 parseBinaryOpHigher :: Parser BinOp
-parseBinaryOpHigher = do
-  binOp <- string "/" <|> string "%"
-  let astOp = fromJust $ lookup binOp binOps
-  return astOp
+parseBinaryOpHigher = parseOp higherBinOps
 
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op = do { x <- p; rest x}
@@ -96,11 +85,8 @@ unaryExpr = UnaryApp <$> parseUnaryOp <*> parseExpr
 bracketedExpr :: Parser Expr
 bracketedExpr = bracket (char '(') parseExpr (char ')')
 
--- arrayElem :: Parser Expr
-arrayElem = do
-  array_name <- identifier
-  arraynotation <- some $ bracket (char '[') parseExpr (char ']')
-  return $ ExprArray $ ArrayElem array_name arraynotation
+arrayElem :: Parser Expr
+arrayElem = ((ExprArray.) . ArrayElem) <$> identifier <*> some (bracket (char '[') parseExpr (char ']'))
 
 binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
