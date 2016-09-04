@@ -132,12 +132,18 @@ parseBaseType :: Parser BaseType
 parseBaseType = parseFromMap baseTypes
 
 
+multiDimArray :: Parser (ArrayType -> Type)
+multiDimArray = do {string "[]"; rest ArrayT}
+  where
+    rest x = (do
+      string "[]"
+      rest (ArrayT . x)) <|> return x
 
 parseArrayType :: Parser ArrayType
 parseArrayType = do
-  t <- PairT <$> parsePairType <|> BaseT <$> parseBaseType <|> ArrayT <$> parseArrayType
-  string "[]"
-  return t
+  t <- BaseT <$> parseBaseType <|> PairT <$> parsePairType
+  dimension <- multiDimArray
+  return (dimension t)
 
 parsePairType :: Parser PairType
 parsePairType = do
