@@ -3,6 +3,8 @@
 ---
 module Parsers.Function (parseFunction) where
 
+import Control.Monad
+
 import Parsers.Lexer
 import Parsers.Statement
 import Parsers.Type

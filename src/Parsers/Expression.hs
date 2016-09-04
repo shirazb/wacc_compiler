@@ -1,7 +1,7 @@
 ---
 -- Expression Parsing.
 ---
-module Parsers.Expression (parseExpr, parseExprList) where
+module Parsers.Expression (parseExpr, parseExprList, arrayElem) where
 
 import Control.Applicative
 import Control.Monad
