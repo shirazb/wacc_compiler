@@ -13,19 +13,19 @@ import Utility.Declarations
 import Utility.Definitions
 
 parseFunction :: Parser Func
-parseFunction = do
+parseFunction = token $ leadWSC (do
   returnType <- parseType
   name       <- identifier
   paramList  <- bracket (char '(') parseParamList (char ')')
   string "is"
   funcBody   <- parseStatement
   string "end"
-  return $ Func returnType name paramList funcBody
+  return $ Func returnType name paramList funcBody)
 
 parseParamList :: Parser ParamList
 parseParamList
-  = ParamList <$> sepby' parseParam (char ',')
+  = token $ leadWSC (ParamList <$> sepby' parseParam (char ','))
 
 parseParam :: Parser Param
 parseParam
-  = liftM2 Param parseType identifier
+  = token $ leadWSC (liftM2 Param parseType identifier)

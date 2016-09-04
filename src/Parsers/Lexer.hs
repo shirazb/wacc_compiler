@@ -38,10 +38,10 @@ identifiers
 
 ident :: Parser String
 ident
-  = liftA2 (:) (char '_' <|> letter) (many (alphanum <|> char '_'))
+  = token $ leadWSC (liftA2 (:) (char '_' <|> letter) (many (alphanum <|> char '_')))
 
 identifier :: Parser String
-identifier = do
+identifier = token $ leadWSC (do
   x <- ident
   guard (x `notElem` keywords)
-  return x
+  return x)

@@ -13,46 +13,46 @@ import Utility.Definitions
 
 intLiteral :: Parser Expr
 intLiteral
-  = (IntLit . read) <$> some digit
+  = token $ leadWSC $ (IntLit . read) <$> some digit
 
 boolLiteral :: Parser Expr
-boolLiteral = do
+boolLiteral = token $ leadWSC (do
   boolean <- string "true" <|> string "false"
   if boolean == "true"
     then return (BoolLit True)
-    else return (BoolLit False)
+    else return (BoolLit False))
 
 charLiteral :: Parser Expr
 charLiteral
-   = CharLit <$> bracket (char '\'') character (char '\'')
+   = token $ leadWSC $ CharLit <$> bracket (char '\'') character (char '\'')
 
 pairLiteral :: Parser Expr
 pairLiteral
-  = string "null" >> return PairLiteral
+  = token $ leadWSC $ string "null" >> return PairLiteral
 
 exprIdent :: Parser Expr
 exprIdent
-  = IdentE <$> identifier
+  = token $ leadWSC $ IdentE <$> identifier
 
 stringLiter :: Parser Expr
 stringLiter
-  = StringLit <$> bracket (char '\"') (many character) (char '\"')
+  = token $ leadWSC $ StringLit <$> bracket (char '\"') (many character) (char '\"')
 
 parseUnaryOp :: Parser UnOp
 parseUnaryOp
-  = parseFromMap unOpAssoc
+  = token $ leadWSC $ parseFromMap unOpAssoc
 
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow
-  = parseFromMap lowBinOps
+  = token $ leadWSC $ parseFromMap lowBinOps
 
 parseBinaryOpHigh :: Parser BinOp
 parseBinaryOpHigh
-  = parseFromMap highBinOps
+  = token $ leadWSC $ parseFromMap highBinOps
 
 parseBinaryOpHigher :: Parser BinOp
 parseBinaryOpHigher
-  = parseFromMap higherBinOps
+  = token $ leadWSC $ parseFromMap higherBinOps
 
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op
@@ -65,39 +65,39 @@ chainl1 p op
 
 lowBinaryExpr :: Parser Expr
 lowBinaryExpr
-  = highBinaryExpr `chainl1` parseBinaryOpLow
+  = token $ leadWSC $ highBinaryExpr `chainl1` parseBinaryOpLow
 
 highBinaryExpr :: Parser Expr
 highBinaryExpr
-  = higherBinaryExpr `chainl1` parseBinaryOpHigh
+  = token $ leadWSC $ higherBinaryExpr `chainl1` parseBinaryOpHigh
 
 higherBinaryExpr :: Parser Expr
 higherBinaryExpr
-  = parseExpr' `chainl1` parseBinaryOpHigher
+  = token $ leadWSC $ parseExpr' `chainl1` parseBinaryOpHigher
 
 binaryExpr :: Parser Expr
 binaryExpr
-  = lowBinaryExpr
+  = token $ leadWSC lowBinaryExpr
 
 unaryExpr :: Parser Expr
 unaryExpr
-  = UnaryApp <$> parseUnaryOp <*> parseExpr
+  = token $ leadWSC $ UnaryApp <$> parseUnaryOp <*> parseExpr
 
 bracketedExpr :: Parser Expr
 bracketedExpr
-  = bracket (char '(') parseExpr (char ')')
+  = token $ leadWSC $ bracket (char '(') parseExpr (char ')')
 
 arrayElem :: Parser ArrayElem
 arrayElem
-  = ArrayElem <$> identifier <*> some (bracket (char '[') parseExpr (char ']'))
+  = token $ leadWSC $ ArrayElem <$> identifier <*> some (bracket (char '[') parseExpr (char ']'))
 
 arrayElemExpr :: Parser Expr
 arrayElemExpr
-  = ExprArray <$> arrayElem
+  = token $ leadWSC $ ExprArray <$> arrayElem
 
 parseExpr' :: Parser Expr
 parseExpr'
-  =   arrayElemExpr
+  =  token $ leadWSC (arrayElemExpr
   <|> unaryExpr
   <|> bracketedExpr
   <|> charLiteral
@@ -105,12 +105,12 @@ parseExpr'
   <|> stringLiter
   <|> pairLiteral
   <|> exprIdent
-  <|> intLiteral
+  <|> intLiteral)
 
 parseExpr :: Parser Expr
 parseExpr
-  = binaryExpr <|> parseExpr'
+  = token $ leadWSC $ binaryExpr <|> parseExpr'
 
 parseExprList :: Char -> Char -> Parser [Expr]
 parseExprList open close
-  = bracket (char open) (sepby parseExpr (char ',')) (char close)
+  = token $ leadWSC $ bracket (char open) (sepby parseExpr (char ',')) (char close)
