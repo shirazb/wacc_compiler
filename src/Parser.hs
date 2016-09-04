@@ -43,10 +43,11 @@ exprIdent = ExprI <$> identifier
 stringLiter :: Parser Expr
 stringLiter = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
+-- we could use an actual MAP from Data.Map
 parseFromMap :: [(String, a)] -> Parser a
-parseFromMap ops = do
-  op <- foldr1 (<|>) $ map (string.fst) ops
-  return $ fromJust $ lookup op ops
+parseFromMap assoclist = do
+  value <- foldr1 (<|>) $ map (string.fst) assoclist
+  return $ fromJust $ lookup value assoclist
 
 parseUnaryOp :: Parser UnOp
 parseUnaryOp = parseFromMap unOpAssoc
@@ -112,13 +113,61 @@ parseExpr = binaryExpr <|> parseExpr'
 -- PRE:  None
 -- POST: Source code is a valid statement <-> parse parseStatement parses statement into AST
 parseStatement :: Parser Stat
-parseStatement = error "TODO"
+parseStatement =
+  parseDeclaration
+  <|> parseAssignment
+  <|> parseRead
+  <|> parseBuiltInFunc "free" Free
+  <|> parseBuiltInFunc "return" Return
+  <|> parseBuiltInFunc "exit" Exit
+  <|> parseBuiltInFunc "print" Print
+  <|> parseBuiltInFunc "println" Println
+  <|> parseIfStat
+  <|> parseWhileStat
+  <|> parseBlock
+
+
+
+parseRead :: Parser Stat
+parseRead = string "read" >> Read <$> parseLHS
+
+parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Stat
+parseBuiltInFunc name constr = string name >> (constr <$> parseExpr)
+
+parseIfStat :: Parser Stat
+parseIfStat = do
+  string "if"
+  cond <- parseExpr
+  string "then"
+  then_block <- parseStatement
+  string "else"
+  else_block <- parseStatement
+  string "fi"
+  return $ If cond then_block else_block
+
+parseWhileStat :: Parser Stat
+parseWhileStat = do
+  string "while"
+  cond <- parseExpr
+  string "do"
+  loop_body <- parseStatement
+  string "done"
+  return $ While cond loop_body
+
+parseBlock :: Parser Stat
+parseBlock = Begin <$> bracket (string "begin") parseStatement (string "end")
+
+parseSeq :: Parser Stat
+parseSeq = do
+  statement1 <- parseStatement
+  char ';'
+  statement2 <- parseStatement
+  return $ Seq statement1 statement2
 
 -- PRE:  None
 -- POST: Consumes a "skip" string, returning the Skip statment
 parseSkip :: Parser Stat
 parseSkip = string "skip" >> return Skip
-
 
 parseType :: Parser Type
 parseType =
@@ -126,11 +175,8 @@ parseType =
   <|> PairT  <$>  parsePairType
   <|> BaseT  <$> parseBaseType
 
--- we have left recursion in parseArrayType
-
 parseBaseType :: Parser BaseType
 parseBaseType = parseFromMap baseTypes
-
 
 multiDimArray :: Parser (ArrayType -> Type)
 multiDimArray = do {string "[]"; rest ArrayT}
@@ -159,15 +205,14 @@ parseNestedPairType :: Parser PairElemType
 parseNestedPairType = string "pair" >> return Pair
 
 parsePairElemType :: Parser PairElemType
-parsePairElemType
-  = parseNestedPairType <|> (BaseP <$> parseBaseType) <|> (ArrayP <$> parseArrayType)
+parsePairElemType = parseNestedPairType <|> (ArrayP <$> parseArrayType) <|> (BaseP <$> parseBaseType)
 
 parseDeclaration :: Parser Stat
 parseDeclaration = do
   varType <- parseType
   ident   <- identifier
   char '=' --TODO: FIX WHITESPACE
-  assignRHS     <- parseRHS
+  assignRHS <- parseRHS
   return $ Declaration varType ident assignRHS
 
 parseRHS :: Parser AssignRHS
