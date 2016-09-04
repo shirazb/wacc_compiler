@@ -36,7 +36,7 @@ sepby p sep = sepby' p sep <|> return []
 sepby'      :: Parser a -> Parser b -> Parser [a]
 sepby' p sep = do
   x <- p
-  xs <- many $ do { sep ; p }
+  xs <- many (sep >> p)
   return (x:xs)
 
 -- PRE:  ?

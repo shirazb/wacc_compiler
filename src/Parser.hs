@@ -319,6 +319,28 @@ parseLHS
   <|> Var        <$> identifier
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- Parsing Functions
+
+parseFunc :: Parser Func
+parseFunc = do
+  returnType <- parseType
+  name       <- identifier
+  paramList  <- bracket (char '(') parseParamList (char ')')
+  string "is"
+  funcBody   <- parseStatement
+  string "end"
+  return $ Func returnType name paramList funcBody
+
+-- ISSUE: Can have comma in pair types!
+parseParamList :: Parser ParamList
+parseParamList
+  = ParamList <$> sepby' parseParam (char ',')
+
+parseParam :: Parser Param
+parseParam
+  = liftM2 Param parseType identifier
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- Lexical Issues
 
 comments :: Parser ()
