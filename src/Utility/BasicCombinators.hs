@@ -121,3 +121,9 @@ string (x:xs) = do
 -- Post: Removes spaces incl \t,\n etc
 spaces :: Parser ()
 spaces = void $ some (satisfy isSpace)
+
+-- we could use an actual MAP from Data.Map
+parseFromMap :: [(String, a)] -> Parser a
+parseFromMap assoclist = do
+  value <- foldr1 (<|>) (map (string . fst) assoclist)
+  return $ fromJust (lookup value assoclist)
