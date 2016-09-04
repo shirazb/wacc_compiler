@@ -72,7 +72,7 @@ data Expr
   | IntLit Int
   | BoolLit Bool
   | PairLiteral
-  | ExprI Ident
+  | IdentE Ident
   | ExprArray ArrayElem
   | UnaryApp UnOp Expr
   | BinaryApp BinOp Expr Expr

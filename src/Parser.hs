@@ -17,14 +17,14 @@ import Utility.Declarations
 
 intLiteral :: Parser Expr
 intLiteral
-  = IntLit . read <$> some digit
+  = (IntLit . read) <$> some digit
 
 boolLiteral :: Parser Expr
 boolLiteral = do
   boolean <- string "true" <|> string "false"
   if boolean == "true"
-    then return $ BoolLit True
-    else return $ BoolLit False
+    then return (BoolLit True)
+    else return (BoolLit False)
 
 charLiteral :: Parser Expr
 charLiteral
@@ -46,7 +46,7 @@ identifier = do
 
 exprIdent :: Parser Expr
 exprIdent
-  = ExprI <$> identifier
+  = IdentE <$> identifier
 
 stringLiter :: Parser Expr
 stringLiter
@@ -95,6 +95,10 @@ higherBinaryExpr :: Parser Expr
 higherBinaryExpr
   = parseExpr' `chainl1` parseBinaryOpHigher
 
+binaryExpr :: Parser Expr
+binaryExpr
+  = lowBinaryExpr
+
 unaryExpr :: Parser Expr
 unaryExpr
   = UnaryApp <$> parseUnaryOp <*> parseExpr
@@ -110,10 +114,6 @@ arrayElem
 arrayElemExpr :: Parser Expr
 arrayElemExpr
   = ExprArray <$> arrayElem
-
-binaryExpr :: Parser Expr
-binaryExpr
-  = lowBinaryExpr
 
 parseExpr' :: Parser Expr
 parseExpr'
@@ -186,10 +186,14 @@ parsePairElemType
 -- Statement Parsing
 
 -- PRE:  None
--- POST: Source code is a valid statement <-> parse parseStatement parses statement into AST
+-- POST: Source code is a valid statement <-> parses source code into Stat type
 parseStatement :: Parser Stat
 parseStatement
- =    parseDeclaration
+  = parseSeq <|> parseStatement'
+
+parseStatement' :: Parser Stat
+parseStatement'
+  =   parseDeclaration
   <|> parseAssignment
   <|> parseRead
   <|> parseBuiltInFunc "free"    Free
@@ -200,6 +204,7 @@ parseStatement
   <|> parseIfStat
   <|> parseWhileStat
   <|> parseBlock
+  <|> parseSkip
 
 parseRead :: Parser Stat
 parseRead
@@ -212,33 +217,34 @@ parseBuiltInFunc funcName func
 parseIfStat :: Parser Stat
 parseIfStat = do
   string "if"
-  cond         <- parseExpr
+  cond       <- parseExpr
   string "then"
-  then_block   <- parseStatement
+  thenStat   <- parseStatement
   string "else"
-  else_block   <- parseStatement
+  elseStat   <- parseStatement
   string "fi"
-  return $ If cond then_block else_block
+  return $ If cond thenStat elseStat
 
 parseWhileStat :: Parser Stat
 parseWhileStat = do
   string "while"
-  cond        <- parseExpr
+  cond       <- parseExpr
   string "do"
-  loop_body   <- parseStatement
+  loopBody   <- parseStatement
   string "done"
-  return $ While cond loop_body
+  return $ While cond loopBody
 
 parseBlock :: Parser Stat
 parseBlock
   = Begin <$> bracket (string "begin") parseStatement (string "end")
 
 parseSeq :: Parser Stat
-parseSeq = do
-  stat <- parseStatement
-  char ';'
-  stat' <- parseStatement
-  return $ Seq stat stat'
+parseSeq = parseStatement' >>= rest
+  where
+    rest s = (do
+      char ';'
+      s' <- parseStatement
+      rest $ Seq s s') <|> return s
 
 -- PRE:  None
 -- POST: Consumes a "skip" string, returning the Skip statment
@@ -319,18 +325,18 @@ comments :: Parser ()
 comments
   = void $ char '#' >> many (satisfy (/= '\n')) >> char '\n'
 
-spaceAndComments :: Parser ()
-spaceAndComments
+spacesAndComments :: Parser ()
+spacesAndComments
   = void $ many (spaces <|> comments)
 
 leadWSC :: Parser a -> Parser a
 leadWSC p
-  = spaceAndComments >> p
+  = spacesAndComments >> p
 
 token :: Parser a -> Parser a
 token p = do
   parsedValue <- p
-  spaceAndComments
+  spacesAndComments
   return parsedValue
 
 keyword :: String -> Parser String
