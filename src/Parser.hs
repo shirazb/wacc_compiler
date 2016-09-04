@@ -13,12 +13,10 @@ import Utility.BasicCombinators
 import Utility.Declarations
 
 parseProgram :: Parser Program
-parseProgram = do
-  string "begin"
-  funcs <- many parseFunc
-  main  <- parseStatement
-  string "end"
-  return $ Program funcs main
+parseProgram
+  = bracket (string "begin") parseProgram' (string "end")
+  where
+    parseProgram' = liftM2 Program (many parseFunc) parseStatement
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- Expression Parsing
