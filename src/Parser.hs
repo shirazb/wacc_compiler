@@ -1,4 +1,4 @@
-module Parser where
+module Parser (parseProgram) where
 
 import Control.Applicative
 import Control.Monad
@@ -11,6 +11,14 @@ import Debug.Trace
 import Utility.Definitions
 import Utility.BasicCombinators
 import Utility.Declarations
+
+parseProgram :: Parser Program
+parseProgram = do
+  string "begin"
+  funcs <- many parseFunc
+  main  <- parseStatement
+  string "end"
+  return $ Program funcs main
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- Expression Parsing
