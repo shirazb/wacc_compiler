@@ -6,6 +6,8 @@ import           Data.Maybe
 
 {- LOCAL IMPORTS -}
 
+
+import Data.Char
 import           Utility.Declarations
 
 {- GENERIC PREDICATE COMBINATORS -}
@@ -114,3 +116,8 @@ string (x:xs) = do
   char x
   string xs
   return (x:xs)
+
+-- PRE: None
+-- Post: Removes spaces incl \t,\n etc
+spaces :: Parser ()
+spaces = void $ some (satisfy isSpace)

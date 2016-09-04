@@ -40,9 +40,6 @@ identifier = do
 exprIdent :: Parser Expr
 exprIdent = ExprI <$> identifier
 
-spaces :: Parser ()
-spaces = void $ many (satisfy isSpace)
-
 stringLiter :: Parser Expr
 stringLiter = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
@@ -110,6 +107,7 @@ parseExpr' =
 
 parseExpr :: Parser Expr
 parseExpr = binaryExpr <|> parseExpr'
+-- UP UNTIL HERE -- for now we assume everything prior to this works
 
 -- PRE:  None
 -- POST: Source code is a valid statement <-> parse parseStatement parses statement into AST
@@ -124,16 +122,20 @@ parseSkip = string "skip" >> return Skip
 
 parseType :: Parser Type
 parseType =
-      PairT <$>  parsePairType
-  <|> BaseT <$> parseBaseType
---   <|> ArrayT <$> parseArrayType
+      ArrayT <$> parseArrayType
+  <|> PairT  <$>  parsePairType
+  <|> BaseT  <$> parseBaseType
+
+-- we have left recursion in parseArrayType
 
 parseBaseType :: Parser BaseType
 parseBaseType = parseFromMap baseTypes
 
+
+
 parseArrayType :: Parser ArrayType
 parseArrayType = do
-  t <- parseType  -- TODO: FIX LEFT RECURSION HERE
+  t <- PairT <$> parsePairType <|> BaseT <$> parseBaseType <|> ArrayT <$> parseArrayType
   string "[]"
   return t
 
@@ -153,7 +155,6 @@ parseNestedPairType = string "pair" >> return Pair
 parsePairElemType :: Parser PairElemType
 parsePairElemType
   = parseNestedPairType <|> (BaseP <$> parseBaseType) <|> (ArrayP <$> parseArrayType)
-
 
 parseDeclaration :: Parser Stat
 parseDeclaration = do
@@ -222,3 +223,24 @@ parseLHS
   =   ArrayDeref <$> arrayElem
   <|> PairDeref  <$> pairElem
   <|> Var        <$> identifier
+
+comments :: Parser ()
+comments = void $ char '#' >> many (satisfy (/= '\n')) >> char '\n'
+
+spaceAndComments :: Parser ()
+spaceAndComments = void $ many (spaces <|> comments)
+
+leadWSC :: Parser a -> Parser a
+leadWSC p = spaceAndComments >> p
+
+token :: Parser a -> Parser a
+token p = do
+  parsedValue <- p
+  spaceAndComments
+  return parsedValue
+
+keyword :: String -> Parser String
+keyword xs = token (string xs)
+
+identifiers :: Parser String
+identifiers = token identifier
