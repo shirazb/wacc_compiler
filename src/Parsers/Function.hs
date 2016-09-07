@@ -16,7 +16,7 @@ parseFunction :: Parser Func
 parseFunction = do
   returnType <- parseType
   name       <- identifier
-  paramList  <- bracket (char '(') parseParamList (char ')')
+  paramList  <- bracket (punctuation '(') parseParamList (punctuation ')')
   keyword "is"
   funcBody   <- parseStatement
   keyword "end"

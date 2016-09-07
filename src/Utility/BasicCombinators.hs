@@ -30,8 +30,8 @@ check :: (Char -> Bool) -> Parser ()
 check predicate
   = Parser check'
   where
-    check' []  = []
-    check' inp = [((), inp)]
+    check' []          = []
+    check' inp@(c : _) = [ ((), inp) | predicate c ]
 
 -- PRE:  ?
 -- POST: ?
@@ -48,8 +48,8 @@ sepby' p sep = do
 
 -- PRE:  ?
 -- POST: ?
-_bracket :: Parser a -> Parser b -> Parser c -> Parser b
-_bracket open p close = do
+bracketNoWS :: Parser a -> Parser b -> Parser c -> Parser b
+bracketNoWS open p close = do
   open
   x <- p
   close

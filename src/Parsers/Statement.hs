@@ -11,7 +11,6 @@ import Parsers.Type
 import Utility.BasicCombinators
 import Utility.Declarations
 import Utility.Definitions
-import Debug.Trace
 
 -- PRE:  None
 -- POST: Source code is a valid statement <-> parses source code into Stat type

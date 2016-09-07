@@ -17,7 +17,7 @@ intLiteral
 
 boolLiteral :: Parser Expr
 boolLiteral = do
-  boolean <- token "true" <|> token "false"
+  boolean <- keyword "true" <|> keyword "false"
   if boolean == "true"
     then return (BoolLit True)
     else return (BoolLit False)
@@ -28,7 +28,7 @@ charLiteral
 
 pairLiteral :: Parser Expr
 pairLiteral
-  = token "null" >> return PairLiteral
+  = keyword "null" >> return PairLiteral
 
 exprIdent :: Parser Expr
 exprIdent

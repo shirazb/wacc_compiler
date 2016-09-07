@@ -12,9 +12,12 @@ import Utility.BasicCombinators
 import Utility.Declarations
 import Utility.Definitions
 
+commentDelim
+  = "#"
+
 comments :: Parser ()
 comments
-  = void $ char '#' >> many (satisfy (/= '\n')) >> char '\n'
+  = void $ string commentDelim >> many (satisfy (/= '\n')) >> char '\n'
 
 -- PRE: None
 -- Post: Removes spaces incl \t,\n etc
@@ -35,6 +38,7 @@ trailingWS p = do
   junk
   return parsedValue
 
+-- Could try solve duplicate trimWS calls hackily by somehow having trimWS (trimWS ..) short circuit to trimWS
 trimWS :: Parser a -> Parser a
 trimWS
   = trailingWS . leadingWS
@@ -43,7 +47,6 @@ token :: String -> Parser String
 token
   = trimWS . string
 
--- ONLY USED IN STATEMENT AND FUNCTION SO FAR
 -- don't understand why there is no semicolon problem.
 -- might still be problematic, or can be shortened
 keyword :: String -> Parser String
@@ -83,4 +86,4 @@ parseFromMap assoclist = do
 
 bracket :: Parser a -> Parser b -> Parser c  -> Parser b
 bracket open p close
-  = trimWS $ _bracket open p close
+  = trimWS $ bracketNoWS open p close
