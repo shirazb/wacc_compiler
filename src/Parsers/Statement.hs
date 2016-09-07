@@ -11,16 +11,17 @@ import Parsers.Type
 import Utility.BasicCombinators
 import Utility.Declarations
 import Utility.Definitions
+import Debug.Trace
 
 -- PRE:  None
 -- POST: Source code is a valid statement <-> parses source code into Stat type
 parseStatement :: Parser Stat
 parseStatement
-  = token $ leadWSC $ parseSeq <|> parseStatement'
+  = parseSeq <|> parseStatement'
 
 parseStatement' :: Parser Stat
 parseStatement'
-  =  token $ leadWSC (parseDeclaration
+  =   parseDeclaration
   <|> parseAssignment
   <|> parseRead
   <|> parseBuiltInFunc "free"    Free
@@ -31,45 +32,45 @@ parseStatement'
   <|> parseIfStat
   <|> parseWhileStat
   <|> parseBlock
-  <|> parseSkip)
+  <|> parseSkip
 
 parseRead :: Parser Stat
 parseRead
-  = token $ leadWSC $ string "read" >> (Read <$> parseLHS)
+  = keyword "read" >> (Read <$> parseLHS)
 
 parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Stat
 parseBuiltInFunc funcName func
-  = token $ leadWSC $ string funcName >> (func <$> parseExpr)
+  = token funcName >> (func <$> parseExpr)
 
 parseIfStat :: Parser Stat
-parseIfStat = token $ leadWSC (do
-  string "if"
+parseIfStat = do
+  keyword "if"
   cond       <- parseExpr
-  string "then"
+  keyword "then"
   thenStat   <- parseStatement
-  string "else"
+  keyword "else"
   elseStat   <- parseStatement
-  string "fi"
-  return $ If cond thenStat elseStat)
+  keyword "fi"
+  return $ If cond thenStat elseStat
 
 parseWhileStat :: Parser Stat
-parseWhileStat = token $ leadWSC (do
-  string "while"
+parseWhileStat = do
+  keyword "while"
   cond       <- parseExpr
-  string "do"
+  keyword "do"
   loopBody   <- parseStatement
-  string "done"
-  return $ While cond loopBody)
+  keyword "done"
+  return $ While cond loopBody
 
 parseBlock :: Parser Stat
 parseBlock
-  = token $ leadWSC $ Begin <$> bracket (string "begin") parseStatement (string "end")
+  = Begin <$> bracket (keyword "begin") parseStatement (keyword "end")
 
 parseSeq :: Parser Stat
-parseSeq = token $ leadWSC $ parseStatement' >>= rest
+parseSeq = parseStatement' >>= rest
   where
     rest s = (do
-      char ';'
+      punctuation ';'
       s' <- parseStatement
       rest $ Seq s s') <|> return s
 
@@ -77,31 +78,31 @@ parseSeq = token $ leadWSC $ parseStatement' >>= rest
 -- POST: Consumes a "skip" string, returning the Skip statment
 parseSkip :: Parser Stat
 parseSkip
-  = token $ leadWSC $ string "skip" >> return Skip
+  = keyword "skip" >> return Skip
 
 parseDeclaration :: Parser Stat
-parseDeclaration = token $ leadWSC (do
+parseDeclaration = do
   varType    <- parseType
   ident      <- identifier
-  char '=' --TODO: FIX WHITESPACE
+  punctuation '='
   assignRHS  <- parseRHS
-  return $ Declaration varType ident assignRHS)
+  return $ Declaration varType ident assignRHS
 
 parseRHS :: Parser AssignRHS
 parseRHS
-  =  token $ leadWSC (assignToNewPair
+  =   assignToNewPair
   <|> assignToPairElem
   <|> assignToFuncCall
   <|> assignToArrayLit
-  <|> assignToExpr)
+  <|> assignToExpr
 
 assignToExpr :: Parser AssignRHS
 assignToExpr
-  =  token $ leadWSC $ ExprAssign <$> parseExpr
+  = ExprAssign <$> parseExpr
 
 pairElem :: Parser PairElem
-pairElem = token $ leadWSC $ do
-  fstOrSnd  <- string "fst" <|> string "snd"
+pairElem = do
+  fstOrSnd  <- keyword "fst" <|> keyword "snd"
   expr      <- parseExpr
   if fstOrSnd == "fst"
     then return (First  expr)
@@ -109,38 +110,38 @@ pairElem = token $ leadWSC $ do
 
 assignToPairElem :: Parser AssignRHS
 assignToPairElem
-  = token $ leadWSC $ PairElemAssign <$> pairElem
+  = PairElemAssign <$> pairElem
 
 assignToFuncCall :: Parser AssignRHS
-assignToFuncCall = token $ leadWSC $ do
-  string "call"
+assignToFuncCall = do
+  keyword "call"
   name     <- identifier
   arglist  <- parseExprList '(' ')'
   return $ FuncCallAssign name arglist
 
 assignToArrayLit :: Parser AssignRHS
 assignToArrayLit
-  = token $ leadWSC $ ArrayLitAssign <$> parseExprList '[' ']'
+  = ArrayLitAssign <$> parseExprList '[' ']'
 
 assignToNewPair :: Parser AssignRHS
-assignToNewPair = token $ leadWSC (do
-  string "newpair"
-  char '('
+assignToNewPair = do
+  token "newpair"
+  punctuation '('
   expr1 <- parseExpr
-  char ','
+  punctuation ','
   expr2 <- parseExpr
-  char ')'
-  return $ NewPairAssign expr1 expr2)
+  punctuation ')'
+  return $ NewPairAssign expr1 expr2
 
 parseAssignment :: Parser Stat
-parseAssignment = token $ leadWSC (do
+parseAssignment = do
   lhs <- parseLHS
-  char '='
+  punctuation '='
   rhs <- parseRHS
-  return $ Assignment lhs rhs)
+  return $ Assignment lhs rhs
 
 parseLHS :: Parser AssignLHS
 parseLHS
-  = token $ leadWSC (ArrayDeref <$> arrayElem
+  =   ArrayDeref <$> arrayElem
   <|> PairDeref  <$> pairElem
-  <|> Var        <$> identifier)
+  <|> Var        <$> identifier

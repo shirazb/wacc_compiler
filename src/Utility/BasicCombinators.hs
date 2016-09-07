@@ -6,8 +6,6 @@ import           Data.Maybe
 
 {- LOCAL IMPORTS -}
 
-
-import Data.Char
 import           Utility.Declarations
 
 {- GENERIC PREDICATE COMBINATORS -}
@@ -26,6 +24,15 @@ item  = Parser $ \s -> case s of
 satisfy  :: (Char -> Bool) -> Parser Char
 satisfy p = item >>= \x -> if p x then return x else mzero
 
+-- PRE: None
+-- POST: Does nothing if a single character satisfies the predicate, fails otherwise
+check :: (Char -> Bool) -> Parser ()
+check predicate
+  = Parser check'
+  where
+    check' []  = []
+    check' inp = [((), inp)]
+
 -- PRE:  ?
 -- POST: ?
 sepby      :: Parser a -> Parser b -> Parser [a]
@@ -41,8 +48,8 @@ sepby' p sep = do
 
 -- PRE:  ?
 -- POST: ?
-bracket :: Parser a -> Parser b -> Parser c -> Parser b
-bracket open p close = do
+_bracket :: Parser a -> Parser b -> Parser c -> Parser b
+_bracket open p close = do
   open
   x <- p
   close
@@ -116,14 +123,3 @@ string (x:xs) = do
   char x
   string xs
   return (x:xs)
-
--- PRE: None
--- Post: Removes spaces incl \t,\n etc
-spaces :: Parser ()
-spaces = void $ some (satisfy isSpace)
-
--- we could use an actual MAP from Data.Map
-parseFromMap :: [(String, a)] -> Parser a
-parseFromMap assoclist = do
-  value <- foldr1 (<|>) (map (string . fst) assoclist)
-  return $ fromJust (lookup value assoclist)

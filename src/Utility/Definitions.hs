@@ -102,8 +102,6 @@ data BinOp
   | NEQ
   deriving (Show, Eq)
 
-keywords = ["while", "if", "else"]
-
 lowBinOps   =  [("+", Add), ("-", Sub) , (">=", GTE), (">", Utility.Definitions.GT),
                ("<=", LTE), ("<", Utility.Definitions.LT), ("==", Utility.Definitions.EQ),
                ("!=", NEQ), ("&&", AND), ("||", OR)]

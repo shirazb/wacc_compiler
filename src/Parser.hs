@@ -31,6 +31,6 @@ main = do
 
 parseProgram :: Parser Program
 parseProgram
-  = token $ leadWSC $ bracket (string "begin") parseProgram' (string "end")
+  = bracket (keyword "begin") parseProgram' (keyword "end")
   where
     parseProgram' = liftM2 Program (many parseFunction) parseStatement

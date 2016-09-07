@@ -12,44 +12,44 @@ import Utility.Definitions
 
 parseType :: Parser Type
 parseType
-  = token $ leadWSC (ArrayT <$> parseArrayType
+  =   ArrayT <$> parseArrayType
   <|> PairT  <$>  parsePairType
-  <|> BaseT  <$> parseBaseType)
+  <|> BaseT  <$> parseBaseType
 
 parseBaseType :: Parser BaseType
 parseBaseType
-  = token $ leadWSC $ parseFromMap baseTypes
+  = parseFromMap baseTypes
 
 multiDimArray :: Parser (ArrayType -> Type)
 multiDimArray
-  = token $ leadWSC $ string "[]" >> rest ArrayT
+  = token "[]" >> rest ArrayT
   where
     rest x = (do
-      string "[]"
+      token "[]"
       rest (ArrayT . x)) <|> return x
 
 parseArrayType :: Parser ArrayType
-parseArrayType = token $ leadWSC $ do
+parseArrayType = do
   t          <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
   dimension  <- multiDimArray
   return (dimension t)
 
 parsePairType :: Parser PairType
-parsePairType = token $ leadWSC $ do
-  string "pair"
-  char '('
+parsePairType = trimWS $ do
+  token "pair"
+  punctuation '('
   t1 <- parsePairElemType
-  char ','   -- TODO: FIX WHITESPACE AROUND COMMA
+  punctuation ','
   t2 <- parsePairElemType
-  char ')'
+  punctuation ')'
   return $ PairType t1 t2
 
 parseNestedPairType :: Parser PairElemType
 parseNestedPairType
-  = token $ leadWSC $ string "pair" >> return Pair
+  = token "pair" >> return Pair
 
 parsePairElemType :: Parser PairElemType
 parsePairElemType
-  = token $ leadWSC (parseNestedPairType
+  =   parseNestedPairType
   <|> ArrayP <$> parseArrayType
-  <|> BaseP  <$> parseBaseType)
+  <|> BaseP  <$> parseBaseType
