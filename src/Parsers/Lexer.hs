@@ -49,10 +49,14 @@ token
 
 -- don't understand why there is no semicolon problem.
 -- might still be problematic, or can be shortened
+-- THIS IS A POTENTIAL ISSUE IS THIS A QUICK FIX OR NAH????
+-- WHAT WE HAVE ESSENTAILLY DONE IS JUST CHECK FOR THE semi-colon
+-- so what we could do is check for a list of seperators?
+-- after anykeywords
 keyword :: String -> Parser String
 keyword k = do
   kword <- leadingWS (string k)
-  check isSpace
+  check (== ';') <|> check isSpace <|> check (== ',')
   junk
   return kword
 
@@ -61,7 +65,9 @@ punctuation
   = trimWS . char
 
 -- TODO: Finish list of keywords
-keywords = ["while", "if", "fi", "else", "null", "pair", "is", "begin", "skip", "end"]
+-- do we add new pair? there isnt a space after it
+-- think about keywords like fst n snd , do we actually have them as keywords
+keywords = ["while", "if", "fi", "else", "null", "pair", "is", "begin", "skip", "end", "call", "newpair", "fst", "snd"]
 
 identifiers :: Parser String
 identifiers
