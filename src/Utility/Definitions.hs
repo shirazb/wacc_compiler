@@ -2,21 +2,27 @@ module Utility.Definitions where
 
 {- WACC SYNTAX/DATA DEFINITIONS -}
 
-import Data.List
 
-indent :: String -> String
-indent s
-  = unlines indentedLines
-  where
-    indentedLines = map ("    " ++) (lines s)
+import Data.Char
+import Data.List
 
 showAndIndent :: Show a => a -> String
 showAndIndent
   = indent . show
+  where
+    indent :: String -> String
+    indent s
+      = unlines indentedLines
+      where
+        indentedLines = map ("    " ++) (lines s)
 
 listToString :: Show a => String -> [a] -> String -> String
 listToString open xs close
   = open ++ intercalate ", " (map show xs) ++ close
+
+flippedLookup :: Eq b => b -> [(a, b)] -> a
+flippedLookup y xs
+  = head [ x | (x, y') <- xs, y == y' ]
 
 instance Show Program where
   show (Program funcs body)
@@ -123,6 +129,34 @@ instance Show PairElemType where
     = show arrayType
   show Pair
     = "pair"
+
+instance Show Expr where
+  show (StringLit s)
+    = s
+  show (CharLit c)
+    = [c]
+  show (IntLit x)
+    = show x
+  show (BoolLit b)
+    = map toLower (show b)
+  show PairLiteral
+    = "null"
+  show (IdentE ident)
+    = ident
+  show (ExprArray arrayElem)
+    = show arrayElem
+  show (UnaryApp unOp expr)
+    = show "(" ++ show unOp ++ " " ++ show expr ++ show ")"
+  show (BinaryApp binOp expr expr')
+    = show "(" ++ show expr ++ " " ++ show binOp ++ show " " ++ show expr' ++ show ")"
+
+instance Show UnOp where
+  show unOp
+    = flippedLookup unOp unOpAssoc
+
+instance Show BinOp where
+  show binOp
+    = flippedLookup binOp (lowBinOps ++ highBinOps ++ higherBinOps)
 
 type Ident     = String
 data Program   = Program [Func] Stat                deriving (Eq)
