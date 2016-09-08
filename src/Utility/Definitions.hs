@@ -9,12 +9,12 @@ import Data.List
 showAndIndent :: Show a => a -> String
 showAndIndent
   = indent . show
+
+indent :: String -> String
+indent s
+  = unlines indentedLines
   where
-    indent :: String -> String
-    indent s
-      = unlines indentedLines
-      where
-        indentedLines = map ("    " ++) (lines s)
+    indentedLines = map ("    " ++) (lines s)
 
 listToString :: Show a => String -> [a] -> String -> String
 listToString open xs close
@@ -24,13 +24,16 @@ flippedLookup :: Eq b => b -> [(a, b)] -> a
 flippedLookup y xs
   = head [ x | (x, y') <- xs, y == y' ]
 
+showFuncs :: [Func] -> String
+showFuncs = concatMap (flip (++) "\n" . show)
+
 instance Show Program where
   show (Program funcs body)
-    = show funcs ++ "\n" ++ showAndIndent body
+    =  "begin\n" ++ indent(showFuncs funcs ++ showAndIndent body) ++ "end"
 
 instance Show Func where
   show (Func t name params body)
-    = show t ++ "  " ++ show name ++ show params ++ "is\n" ++ showAndIndent body ++ "\nend\n"
+    = show t ++ "  " ++ show name ++ show params ++ " is\n" ++ showAndIndent body ++ "end\n"
 
 instance Show ParamList where
   show (ParamList list)
@@ -39,6 +42,7 @@ instance Show ParamList where
 instance Show Param where
   show (Param t name)
     = show t ++ " " ++ show name
+
 
 instance Show ArrayElem where
   show (ArrayElem name elems)
@@ -69,11 +73,11 @@ instance Show Stat where
     = "println " ++ show expr
   show (If cond stat stat')
     = "if" ++ " (" ++ show cond ++ ") " ++ "then\n" ++ showAndIndent stat ++ "else\n"
-       ++ showAndIndent stat' ++ "\nfi"
+       ++ showAndIndent stat' ++ "fi"
   show (While cond body)
-    = "while (" ++ show cond ++ ") " ++ "do\n" ++ showAndIndent body ++ "\ndone"
+    = "while (" ++ show cond ++ ") " ++ "do\n" ++ showAndIndent body ++ "done"
   show (Block stat)
-    = "begin\n" ++ showAndIndent stat ++ "\nend"
+    = "begin\n" ++ showAndIndent stat ++ "end"
   show (Seq stat stat')
     = show stat ++ ";\n" ++ show stat'
 
@@ -97,6 +101,8 @@ instance Show AssignRHS where
     = "newpair" ++ listToString "(" [e, e'] ")"
   show (FuncCallAssign funcName params)
     = "call " ++ funcName ++ listToString "(" params ")"
+  show (PairElemAssign pair)
+    = show pair
 
 instance Show PairElem where
   show (Fst e)
@@ -132,7 +138,7 @@ instance Show PairElemType where
 
 instance Show Expr where
   show (StringLit s)
-    = s
+    = show s
   show (CharLit c)
     = [c]
   show (IntLit x)
