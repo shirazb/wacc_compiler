@@ -56,9 +56,18 @@ token
 keyword :: String -> Parser String
 keyword k = do
   kword <- leadingWS (string k)
-  check (== ';') <|> check isSpace <|> check (== ',')
+  check isSpace <|> check isPunctuation <|> check isComment
   junk
   return kword
+
+operators :: [Char]
+operators = map (head.fst) (lowBinOps ++ highBinOps ++ higherBinOps)
+
+isPunctuation :: Char -> Bool
+isPunctuation c =  c `elem` ([';', ',', ']', '[', ')', '('] ++ operators)
+
+isComment :: Char -> Bool
+isComment c = c == '#'
 
 punctuation :: Char -> Parser Char
 punctuation

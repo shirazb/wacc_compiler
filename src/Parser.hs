@@ -25,6 +25,7 @@ main = do
   args <- getArgs
   let filename = head args
   contents <- readFile filename
+  traceM ("The contents of the file is: " ++ show contents)
   let c = parse parseProgram contents
   traceM ("The generated AST is: " ++ show c)
   return ()
