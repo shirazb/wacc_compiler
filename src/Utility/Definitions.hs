@@ -5,23 +5,30 @@ module Utility.Definitions where
 import Data.List
 
 indent :: String -> String
-indent string
+indent s
   = unlines indentedLines
   where
-    indentedLines = map (++ "    ") (lines string)
+    indentedLines = map ("    " ++) (lines s)
 
-type Ident     = String
+showAndIndent :: Show a => a -> String
+showAndIndent
+  = indent . show
+
+listToString :: Show a => String -> [a] -> String -> String
+listToString open xs close
+  = open ++ intercalate ", " (map show xs) ++ close
+
 instance Show Program where
   show (Program funcs body)
-    = show funcs ++ indent (show body)
+    = show funcs ++ "\n" ++ showAndIndent body
 
 instance Show Func where
   show (Func t name params body)
-    = show t ++ "  " ++ show name ++ "(" ++ show params ++ ")" ++ "is\n" ++ indent (show body) ++ "end\n"
+    = show t ++ "  " ++ show name ++ show params ++ "is\n" ++ showAndIndent body ++ "\nend\n"
 
 instance Show ParamList where
   show (ParamList list)
-    = intercalate "," (map show list)
+    = listToString "(" list ")"
 
 instance Show Param where
   show (Param t name)
@@ -33,33 +40,91 @@ instance Show ArrayElem where
 
 instance Show PairType where
   show (PairType pt1 pt2)
-    = "pair(" ++ show pt1 ++ ", " ++ show pt2 ++ ")"
+    = "pair" ++ listToString "(" [pt1, pt2] ")"
 
 instance Show Stat where
   show Skip
     = "skip"
-
   show (Declaration typ ident rhs)
    = show typ ++ " " ++ show ident ++ " = " ++ show rhs
-
   show (Assignment lhs rhs)
     = show lhs ++ " = " ++ show rhs
-
   show (Read lhs)
     = "read " ++ show lhs
-
-  show (If cond stat1 stat2)
-    = "if" ++ "(" ++ show cond ++ ")" ++ " then " ++ show stat1 ++ " else "
-       ++ show stat2 ++ " fi "
+  show (Free expr)
+    = "free " ++ show expr
+  show (Return expr)
+    = "return " ++ show expr
+  show (Exit expr)
+    = "exit " ++ show expr
+  show (Print expr)
+    = "print " ++ show expr
+  show (Println expr)
+    = "println " ++ show expr
+  show (If cond stat stat')
+    = "if" ++ " (" ++ show cond ++ ") " ++ "then\n" ++ showAndIndent stat ++ "else\n"
+       ++ showAndIndent stat' ++ "\nfi"
   show (While cond body)
-    = "while (" ++ show cond ++ ")" ++ "do\n" ++ indent (show body) ++ "end"
+    = "while (" ++ show cond ++ ") " ++ "do\n" ++ showAndIndent body ++ "\ndone"
+  show (Block stat)
+    = "begin\n" ++ showAndIndent stat ++ "\nend"
+  show (Seq stat stat')
+    = show stat ++ ";\n" ++ show stat'
 
-  
+functionStrings
+  = [(Return, "return"), (Exit, "exit"), (Print, "print"), (Println, "println")]
 
+instance Show AssignLHS where
+  show (Var ident)
+    = ident
+  show (ArrayDeref arrayElem)
+    = show arrayElem
+  show (PairDeref pairElem)
+    = show pairElem
 
+instance Show AssignRHS where
+  show (ExprAssign e)
+    = show e
+  show (ArrayLitAssign elems)
+    = listToString "[" elems "]"
+  show (NewPairAssign e e')
+    = "newpair" ++ listToString "(" [e, e'] ")"
+  show (FuncCallAssign funcName params)
+    = "call " ++ funcName ++ listToString "(" params ")"
 
-assoclist = [(Return, "return"), (Exit, "exit"), (Print, "print"), (Println, "println")]
+instance Show PairElem where
+  show (Fst e)
+    = "fst " ++ show e
+  show (Snd e)
+    = "snd " ++ show e
 
+instance Show Type where
+  show (BaseT baseType)
+    = show baseType
+  show (ArrayT arrayType)
+    = show arrayType
+  show (PairT pairType)
+    = show pairType
+
+instance Show BaseType where
+  show BaseInt
+    = "int"
+  show BaseBool
+    = "bool"
+  show BaseChar
+    = "char"
+  show BaseString
+    = "string"
+
+instance Show PairElemType where
+  show (BaseP baseType)
+    = show baseType
+  show (ArrayP arrayType)
+    = show arrayType
+  show Pair
+    = "pair"
+
+type Ident     = String
 data Program   = Program [Func] Stat                deriving (Eq)
 data Func      = Func Type Ident ParamList Stat     deriving (Eq)
 data ParamList = ParamList [Param]                  deriving (Eq)
@@ -80,7 +145,7 @@ data Stat
   | Println Expr
   | If Expr Stat Stat
   | While Expr Stat
-  | Begin Stat
+  | Block Stat
   | Seq Stat Stat
   deriving (Eq)
 
@@ -88,7 +153,7 @@ data AssignLHS
   = Var Ident
   | ArrayDeref ArrayElem
   | PairDeref PairElem
-  deriving (Show, Eq)
+  deriving (Eq)
 
 data AssignRHS
   = ExprAssign      Expr
@@ -96,31 +161,31 @@ data AssignRHS
   | NewPairAssign   Expr Expr
   | PairElemAssign  PairElem
   | FuncCallAssign  Ident [Expr]
-  deriving (Show, Eq)
+  deriving (Eq)
 
 data PairElem
-  = First Expr
-  | Second Expr
-  deriving (Show, Eq)
+  = Fst Expr
+  | Snd Expr
+  deriving (Eq)
 
 data Type
   = BaseT BaseType
   | ArrayT ArrayType
   | PairT PairType
-  deriving (Show, Eq)
+  deriving (Eq)
 
 data BaseType
   = BaseInt
   | BaseBool
   | BaseChar
   | BaseString
-  deriving (Show, Eq)
+  deriving (Eq)
 
 data PairElemType
   = BaseP  BaseType
   | ArrayP ArrayType
   | Pair
-  deriving (Show, Eq)
+  deriving (Eq)
 
 data Expr
   = StringLit String
@@ -132,7 +197,7 @@ data Expr
   | ExprArray ArrayElem
   | UnaryApp UnOp Expr
   | BinaryApp BinOp Expr Expr
-  deriving (Show, Eq)
+  deriving (Eq)
 
 data UnOp
   = Not
@@ -140,7 +205,7 @@ data UnOp
   | Len
   | Ord
   | Chr
-  deriving (Show, Eq)
+  deriving (Eq)
 
 data BinOp
   = Mul
@@ -156,7 +221,7 @@ data BinOp
   | GTE
   | GT
   | NEQ
-  deriving (Show, Eq)
+  deriving (Eq)
 
 lowBinOps   =  [("+", Add), ("-", Sub) , (">=", GTE), (">", Utility.Definitions.GT),
                ("<=", LTE), ("<", Utility.Definitions.LT), ("==", Utility.Definitions.EQ),

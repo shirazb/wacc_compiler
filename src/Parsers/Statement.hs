@@ -70,7 +70,7 @@ parseWhileStat = do
 
 parseBlock :: Parser Stat
 parseBlock
-  = Begin <$> bracket (keyword "begin") parseStatement (keyword "end")
+  = Block <$> bracket (keyword "begin") parseStatement (keyword "end")
 
 parseSeq :: Parser Stat
 parseSeq = parseStatement' >>= rest
@@ -105,7 +105,7 @@ parseRHS
   <|> assignToFuncCall
   <|> assignToArrayLit
   <|> assignToNewPair
-  
+
 
 
 assignToExpr :: Parser AssignRHS
@@ -117,8 +117,8 @@ pairElem = do
   fstOrSnd  <- keyword "fst" <|> keyword "snd"
   expr      <- parseExpr
   if fstOrSnd == "fst"
-    then return (First  expr)
-    else return (Second expr)
+    then return (Fst  expr)
+    else return (Snd expr)
 
 assignToPairElem :: Parser AssignRHS
 assignToPairElem
