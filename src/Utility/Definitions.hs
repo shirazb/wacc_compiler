@@ -2,15 +2,71 @@ module Utility.Definitions where
 
 {- WACC SYNTAX/DATA DEFINITIONS -}
 
-type Ident     = String
+import Data.List
 
-data Program   = Program [Func] Stat                deriving (Show, Eq)
-data Func      = Func Type Ident ParamList Stat     deriving (Show, Eq)
-data ParamList = ParamList [Param]                  deriving (Show, Eq)
-data Param     = Param Type Ident                   deriving (Show, Eq)
+indent :: String -> String
+indent string
+  = unlines indentedLines
+  where
+    indentedLines = map (++ "    ") (lines string)
+
+type Ident     = String
+instance Show Program where
+  show (Program funcs body)
+    = show funcs ++ indent (show body)
+
+instance Show Func where
+  show (Func t name params body)
+    = show t ++ "  " ++ show name ++ "(" ++ show params ++ ")" ++ "is\n" ++ indent (show body) ++ "end\n"
+
+instance Show ParamList where
+  show (ParamList list)
+    = intercalate "," (map show list)
+
+instance Show Param where
+  show (Param t name)
+    = show t ++ " " ++ show name
+
+instance Show ArrayElem where
+  show (ArrayElem name elems)
+    = show name ++ show (concatMap (\x ->  "[" ++ show x ++ "]") elems)
+
+instance Show PairType where
+  show (PairType pt1 pt2)
+    = "pair(" ++ show pt1 ++ ", " ++ show pt2 ++ ")"
+
+instance Show Stat where
+  show Skip
+    = "skip"
+
+  show (Declaration typ ident rhs)
+   = show typ ++ " " ++ show ident ++ " = " ++ show rhs
+
+  show (Assignment lhs rhs)
+    = show lhs ++ " = " ++ show rhs
+
+  show (Read lhs)
+    = "read " ++ show lhs
+
+  show (If cond stat1 stat2)
+    = "if" ++ "(" ++ show cond ++ ")" ++ " then " ++ show stat1 ++ " else "
+       ++ show stat2 ++ " fi "
+  show (While cond body)
+    = "while (" ++ show cond ++ ")" ++ "do\n" ++ indent (show body) ++ "end"
+
+  
+
+
+
+assoclist = [(Return, "return"), (Exit, "exit"), (Print, "print"), (Println, "println")]
+
+data Program   = Program [Func] Stat                deriving (Eq)
+data Func      = Func Type Ident ParamList Stat     deriving (Eq)
+data ParamList = ParamList [Param]                  deriving (Eq)
+data Param     = Param Type Ident                   deriving (Eq)
 type ArrayType = Type
-data ArrayElem = ArrayElem Ident [Expr]             deriving (Show, Eq)
-data PairType  = PairType PairElemType PairElemType deriving (Show, Eq)
+data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq)
+data PairType  = PairType PairElemType PairElemType deriving (Eq)
 
 data Stat
   = Skip
@@ -26,7 +82,7 @@ data Stat
   | While Expr Stat
   | Begin Stat
   | Seq Stat Stat
-  deriving (Show, Eq)
+  deriving (Eq)
 
 data AssignLHS
   = Var Ident
