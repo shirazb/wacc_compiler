@@ -227,7 +227,7 @@ lowBinOps   =  [("+", Add), ("-", Sub) , (">=", GTE), (">", Utility.Definitions.
                ("<=", LTE), ("<", Utility.Definitions.LT), ("==", Utility.Definitions.EQ),
                ("!=", NEQ), ("&&", AND), ("||", OR)]
 highBinOps   = [("*", Mul)]
-higherBinOps = [("/", Div), ("%", Div)]
+higherBinOps = [("/", Div), ("%", Mod)]
 
 unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
 
