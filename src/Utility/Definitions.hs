@@ -33,7 +33,7 @@ instance Show Program where
 
 instance Show Func where
   show (Func t name params body)
-    = show t ++ "  " ++ show name ++ show params ++ " is\n" ++ showAndIndent body ++ "end\n"
+    = show t ++ "  " ++ name ++ show params ++ " is\n" ++ showAndIndent body ++ "end\n"
 
 instance Show ParamList where
   show (ParamList list)
@@ -41,7 +41,7 @@ instance Show ParamList where
 
 instance Show Param where
   show (Param t name)
-    = show t ++ " " ++ show name
+    = show t ++ " " ++ name
 
 
 instance Show ArrayElem where
@@ -56,7 +56,7 @@ instance Show Stat where
   show Skip
     = "skip"
   show (Declaration typ ident rhs)
-   = show typ ++ " " ++ show ident ++ " = " ++ show rhs
+   = show typ ++ " " ++ ident ++ " = " ++ show rhs
   show (Assignment lhs rhs)
     = show lhs ++ " = " ++ show rhs
   show (Read lhs)
@@ -140,7 +140,7 @@ instance Show Expr where
   show (StringLit s)
     = show s
   show (CharLit c)
-    = [c]
+    = "\'" ++ [c] ++ "\'"
   show (IntLit x)
     = show x
   show (BoolLit b)
@@ -152,9 +152,9 @@ instance Show Expr where
   show (ExprArray arrayElem)
     = show arrayElem
   show (UnaryApp unOp expr)
-    = show "(" ++ show unOp ++ " " ++ show expr ++ show ")"
+    = "(" ++ show unOp ++ " " ++ show expr ++ ")"
   show (BinaryApp binOp expr expr')
-    = show "(" ++ show expr ++ " " ++ show binOp ++ show " " ++ show expr' ++ show ")"
+    = "(" ++ show expr ++ " " ++ show binOp ++ " " ++ show expr' ++ ")"
 
 instance Show UnOp where
   show unOp

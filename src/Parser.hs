@@ -27,7 +27,7 @@ main = do
   contents <- readFile filename
   traceM ("The contents of the file is: " ++ show contents)
   let c = parse parseProgram contents
-  traceM ("The generated Program is:\n" ++ show ((fst.head) c))
+  putStrLn ("The generated Program is:\n" ++ show ((fst.head) c))
   return ()
 
 parseProgram :: Parser Program
