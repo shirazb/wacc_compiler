@@ -5,6 +5,7 @@ module Utility.Definitions where
 
 import Data.Char
 import Data.List
+import Debug.Trace
 
 instance Show UnOp where
   show unOp
@@ -259,6 +260,7 @@ minPrecedence
   = 0
 
 -- precedence t > precedence t' --> t' has higher precedence???
+-- Currently using same relative precedences as Haskell
 class Show a => ExpressionTerm a where
   precedence :: a -> Int
 
@@ -321,10 +323,11 @@ inBrackets s
 -- TODO: Better name needed... much better name!
 showSecondWithoutRedundantBrackets :: (ExpressionTerm a, ExpressionTerm b) => a -> b -> String
 showSecondWithoutRedundantBrackets t t'
-  = let  showT' = show t' in
+  = do {traceM ("precedence t = " ++ show (precedence t) ++ ", precedence t' = " ++ show (precedence t'));
+    let  showT' = show t' in
     if   precedence t < precedence t'
     then inBrackets showT'
-    else showT'
+    else showT' }
 
 -- DONT THINK THIS TAKES INTO ACCOUNT OPERATOR ASSOCIATIVITY
 instance Show Expr where
@@ -344,7 +347,9 @@ instance Show Expr where
     = show arrayElem
 
   show (UnaryApp unOp expr)
-    = unOpString ++ showSecondWithoutRedundantBrackets unOp expr
+    = do
+      traceM $ "showing unOp: " ++ show unOp ++ ", expr: " ++ show expr
+      unOpString ++ showSecondWithoutRedundantBrackets unOp expr
     where
       unOpString = show unOp ++ " "
 
