@@ -323,11 +323,10 @@ inBrackets s
 -- TODO: Better name needed... much better name!
 showSecondWithoutRedundantBrackets :: (ExpressionTerm a, ExpressionTerm b) => a -> b -> String
 showSecondWithoutRedundantBrackets t t'
-  = do {traceM ("precedence t = " ++ show (precedence t) ++ ", precedence t' = " ++ show (precedence t'));
-    let  showT' = show t' in
+  = let  showT' = show t' in
     if   precedence t < precedence t'
     then inBrackets showT'
-    else showT' }
+    else showT'
 
 -- DONT THINK THIS TAKES INTO ACCOUNT OPERATOR ASSOCIATIVITY
 instance Show Expr where
@@ -347,9 +346,7 @@ instance Show Expr where
     = show arrayElem
 
   show (UnaryApp unOp expr)
-    = do
-      traceM $ "showing unOp: " ++ show unOp ++ ", expr: " ++ show expr
-      unOpString ++ showSecondWithoutRedundantBrackets unOp expr
+    = unOpString ++ showSecondWithoutRedundantBrackets unOp expr
     where
       unOpString = show unOp ++ " "
 
