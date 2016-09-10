@@ -6,6 +6,124 @@ module Utility.Definitions where
 import Data.Char
 import Data.List
 
+instance Show UnOp where
+  show unOp
+    = flippedLookup unOp unOpAssoc
+
+instance Show BinOp where
+  show binOp
+    = flippedLookup binOp (lowBinOps ++ highBinOps ++ higherBinOps)
+
+type Ident     = String
+data Program   = Program [Func] Stat                deriving (Eq)
+data Func      = Func Type Ident ParamList Stat     deriving (Eq)
+data ParamList = ParamList [Param]                  deriving (Eq)
+data Param     = Param Type Ident                   deriving (Eq)
+type ArrayType = Type
+data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq)
+data PairType  = PairType PairElemType PairElemType deriving (Eq)
+
+data Stat
+  = Skip
+  | Declaration Type Ident AssignRHS
+  | Assignment AssignLHS AssignRHS
+  | Read AssignLHS
+  | Free Expr
+  | Return Expr
+  | Exit Expr
+  | Print Expr
+  | Println Expr
+  | If Expr Stat Stat
+  | While Expr Stat
+  | Block Stat
+  | Seq Stat Stat
+  deriving (Eq)
+
+data AssignLHS
+  = Var Ident
+  | ArrayDeref ArrayElem
+  | PairDeref PairElem
+  deriving (Eq)
+
+data AssignRHS
+  = ExprAssign      Expr
+  | ArrayLitAssign  [Expr]
+  | NewPairAssign   Expr Expr
+  | PairElemAssign  PairElem
+  | FuncCallAssign  Ident [Expr]
+  deriving (Eq)
+
+data PairElem
+  = Fst Expr
+  | Snd Expr
+  deriving (Eq)
+
+data Type
+  = BaseT BaseType
+  | ArrayT ArrayType
+  | PairT PairType
+  deriving (Eq)
+
+data BaseType
+  = BaseInt
+  | BaseBool
+  | BaseChar
+  | BaseString
+  deriving (Eq)
+
+data PairElemType
+  = BaseP  BaseType
+  | ArrayP ArrayType
+  | Pair
+  deriving (Eq)
+
+data Expr
+  = StringLit String
+  | CharLit Char
+  | IntLit Int
+  | BoolLit Bool
+  | PairLiteral
+  | IdentE Ident
+  | ExprArray ArrayElem
+  | UnaryApp UnOp Expr
+  | BinaryApp BinOp Expr Expr
+  deriving (Eq)
+
+data UnOp
+  = Not
+  | Neg
+  | Len
+  | Ord
+  | Chr
+  deriving (Eq)
+
+data BinOp
+  = Mul
+  | Div
+  | Mod
+  | Add
+  | Sub
+  | AND
+  | OR
+  | LT
+  | LTE
+  | EQ
+  | GTE
+  | GT
+  | NEQ
+  deriving (Eq)
+
+lowBinOps   =  [("+", Add), ("-", Sub) , (">=", GTE), (">", Utility.Definitions.GT),
+               ("<=", LTE), ("<", Utility.Definitions.LT), ("==", Utility.Definitions.EQ),
+               ("!=", NEQ), ("&&", AND), ("||", OR)]
+highBinOps   = [("*", Mul)]
+higherBinOps = [("/", Div), ("%", Mod)]
+
+unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
+
+baseTypes = [("int", BaseInt),("bool", BaseBool),
+            ("char", BaseChar),("string", BaseString)]
+
 showAndIndent :: Show a => a -> String
 showAndIndent
   = indent . show
@@ -136,6 +254,60 @@ instance Show PairElemType where
   show Pair
     = "pair"
 
+minPrecedence :: Int
+minPrecedence
+  = 0
+
+precedence :: Expr -> Int
+-- DONT KNOW WHAT PRECEDENCES TO USE YET
+precedence (UnaryApp unOp _)
+  = precedenceUnOp unOp
+precedence (BinaryApp binOp _ _)
+  = precedenceBinOp binOp
+precedence _
+  = minPrecedence - 1
+
+precedenceUnOp :: UnOp -> Int
+precedenceUnOp Not
+  = 2
+precedenceUnOp Neg
+  = 2
+precedenceUnOp _
+  = 12
+
+precedenceBinOp :: BinOp -> Int
+precedenceBinOp Mul
+  = 4
+precedenceBinOp Div
+  = 4
+precedenceBinOp Mod
+  = 4
+precedenceBinOp Add
+  = 6
+precedenceBinOp Sub
+  = 6
+precedenceBinOp Utility.Definitions.LT
+  = 8
+precedenceBinOp LTE
+  = 8
+precedenceBinOp GTE
+  = 8
+precedenceBinOp Utility.Definitions.GT
+  = 8
+precedenceBinOp Utility.Definitions.EQ
+  = 10
+precedenceBinOp NEQ
+  = 10
+precedenceBinOp AND
+  = 12
+precedenceBinOp OR
+  = 12
+
+inBrackets :: String -> String
+inBrackets s
+  = "(" ++ s ++ ")"
+
+-- DONT THINK THIS TAKES INTO ACCOUNT OPERATOR ASSOCIATIVITY
 instance Show Expr where
   show (StringLit s)
     = show s
@@ -151,125 +323,19 @@ instance Show Expr where
     = ident
   show (ExprArray arrayElem)
     = show arrayElem
+
   show (UnaryApp unOp expr)
-    = "(" ++ show unOp ++ " " ++ show expr ++ ")"
+    | precedence expr > precedenceUnOp unOp  = unOpString ++ inBrackets exprString
+    | otherwise                              = unOpString ++ exprString
+    where
+      unOpString = show unOp ++ " "
+      exprString = show expr
+
   show (BinaryApp binOp expr expr')
-    = "(" ++ show expr ++ " " ++ show binOp ++ " " ++ show expr' ++ ")"
-
-instance Show UnOp where
-  show unOp
-    = flippedLookup unOp unOpAssoc
-
-instance Show BinOp where
-  show binOp
-    = flippedLookup binOp (lowBinOps ++ highBinOps ++ higherBinOps)
-
-type Ident     = String
-data Program   = Program [Func] Stat                deriving (Eq)
-data Func      = Func Type Ident ParamList Stat     deriving (Eq)
-data ParamList = ParamList [Param]                  deriving (Eq)
-data Param     = Param Type Ident                   deriving (Eq)
-type ArrayType = Type
-data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq)
-data PairType  = PairType PairElemType PairElemType deriving (Eq)
-
-data Stat
-  = Skip
-  | Declaration Type Ident AssignRHS
-  | Assignment AssignLHS AssignRHS
-  | Read AssignLHS
-  | Free Expr
-  | Return Expr
-  | Exit Expr
-  | Print Expr
-  | Println Expr
-  | If Expr Stat Stat
-  | While Expr Stat
-  | Block Stat
-  | Seq Stat Stat
-  deriving (Eq)
-
-data AssignLHS
-  = Var Ident
-  | ArrayDeref ArrayElem
-  | PairDeref PairElem
-  deriving (Eq)
-
-data AssignRHS
-  = ExprAssign      Expr
-  | ArrayLitAssign  [Expr]
-  | NewPairAssign   Expr Expr
-  | PairElemAssign  PairElem
-  | FuncCallAssign  Ident [Expr]
-  deriving (Eq)
-
-data PairElem
-  = Fst Expr
-  | Snd Expr
-  deriving (Eq)
-
-data Type
-  = BaseT BaseType
-  | ArrayT ArrayType
-  | PairT PairType
-  deriving (Eq)
-
-data BaseType
-  = BaseInt
-  | BaseBool
-  | BaseChar
-  | BaseString
-  deriving (Eq)
-
-data PairElemType
-  = BaseP  BaseType
-  | ArrayP ArrayType
-  | Pair
-  deriving (Eq)
-
-data Expr
-  = StringLit String
-  | CharLit Char
-  | IntLit Int
-  | BoolLit Bool
-  | PairLiteral
-  | IdentE Ident
-  | ExprArray ArrayElem
-  | UnaryApp UnOp Expr
-  | BinaryApp BinOp Expr Expr
-  deriving (Eq)
-
-data UnOp
-  = Not
-  | Neg
-  | Len
-  | Ord
-  | Chr
-  deriving (Eq)
-
-data BinOp
-  = Mul
-  | Div
-  | Mod
-  | Add
-  | Sub
-  | AND
-  | OR
-  | LT
-  | LTE
-  | EQ
-  | GTE
-  | GT
-  | NEQ
-  deriving (Eq)
-
-lowBinOps   =  [("+", Add), ("-", Sub) , (">=", GTE), (">", Utility.Definitions.GT),
-               ("<=", LTE), ("<", Utility.Definitions.LT), ("==", Utility.Definitions.EQ),
-               ("!=", NEQ), ("&&", AND), ("||", OR)]
-highBinOps   = [("*", Mul)]
-higherBinOps = [("/", Div), ("%", Mod)]
-
-unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
-
-baseTypes = [("int", BaseInt),("bool", BaseBool),
-            ("char", BaseChar),("string", BaseString)]
+    = showExpr ++ " " ++ show binOp ++ " " ++ showExpr'
+    where
+      precBinOp        = precedenceBinOp binOp
+      showExpr         = if precedence expr  > precBinOp then inBrackets firstExprString   else firstExprString
+      firstExprString  = show expr
+      showExpr'        = if precedence expr' > precBinOp then inBrackets secondExprString  else secondExprString
+      secondExprString = show expr'
