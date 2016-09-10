@@ -258,54 +258,73 @@ minPrecedence :: Int
 minPrecedence
   = 0
 
-precedence :: Expr -> Int
--- DONT KNOW WHAT PRECEDENCES TO USE YET
-precedence (UnaryApp unOp _)
-  = precedenceUnOp unOp
-precedence (BinaryApp binOp _ _)
-  = precedenceBinOp binOp
-precedence _
-  = minPrecedence - 1
+-- precedence t > precedence t' --> t' has higher precedence???
+class Show a => ExpressionTerm a where
+  precedence :: a -> Int
 
-precedenceUnOp :: UnOp -> Int
-precedenceUnOp Not
-  = 2
-precedenceUnOp Neg
-  = 2
-precedenceUnOp _
-  = 12
+instance ExpressionTerm Expr where
+  precedence (UnaryApp unOp _)
+    = precedence unOp
+  precedence (BinaryApp binOp _ _)
+    = precedence binOp
+  precedence _
+    = minPrecedence - 1
 
-precedenceBinOp :: BinOp -> Int
-precedenceBinOp Mul
-  = 4
-precedenceBinOp Div
-  = 4
-precedenceBinOp Mod
-  = 4
-precedenceBinOp Add
-  = 6
-precedenceBinOp Sub
-  = 6
-precedenceBinOp Utility.Definitions.LT
-  = 8
-precedenceBinOp LTE
-  = 8
-precedenceBinOp GTE
-  = 8
-precedenceBinOp Utility.Definitions.GT
-  = 8
-precedenceBinOp Utility.Definitions.EQ
-  = 10
-precedenceBinOp NEQ
-  = 10
-precedenceBinOp AND
-  = 12
-precedenceBinOp OR
-  = 12
+instance ExpressionTerm UnOp where
+  precedence Not
+    = 2
+  precedence Neg
+    = 2
+  precedence _
+    = 12
+
+instance ExpressionTerm BinOp where
+  precedence Mul
+    = 4
+  precedence Div
+    = 4
+  precedence Mod
+    = 4
+  precedence Add
+    = 6
+  precedence Sub
+    = 6
+  precedence Utility.Definitions.LT
+    = 8
+  precedence LTE
+    = 8
+  precedence GTE
+    = 8
+  precedence Utility.Definitions.GT
+    = 8
+  precedence Utility.Definitions.EQ
+    = 10
+  precedence NEQ
+    = 10
+  precedence AND
+    = 12
+  precedence OR
+    = 12
 
 inBrackets :: String -> String
 inBrackets s
   = "(" ++ s ++ ")"
+
+-- In our current use case, this takes an operator and an expression, then
+-- adds brackets around the expression if its precedence is weaker than the
+-- operator's.
+-- I have used the ExpressionTerm class and kept the type more general than Operator -> Expr -> String because
+-- we may encounter more complex cases in the extensions.
+-- This is as opposed to having precedenceExpr, precedenceUnOp, precedenceBinOp
+-- functions, and making the type of this funciton more specific as discussed
+-- above.
+-- TODO: Better name needed... much better name!
+showSecondWithoutRedundantBrackets :: (ExpressionTerm a, ExpressionTerm b) => a -> b -> String
+showSecondWithoutRedundantBrackets t t'
+  = let  showT' = show t' in
+    if   precedence t < precedence t'
+    then inBrackets showT'
+    else showT'
 
 -- DONT THINK THIS TAKES INTO ACCOUNT OPERATOR ASSOCIATIVITY
 instance Show Expr where
@@ -325,17 +344,12 @@ instance Show Expr where
     = show arrayElem
 
   show (UnaryApp unOp expr)
-    | precedence expr > precedenceUnOp unOp  = unOpString ++ inBrackets exprString
-    | otherwise                              = unOpString ++ exprString
+    = unOpString ++ showSecondWithoutRedundantBrackets unOp expr
     where
       unOpString = show unOp ++ " "
-      exprString = show expr
 
   show (BinaryApp binOp expr expr')
     = showExpr ++ " " ++ show binOp ++ " " ++ showExpr'
     where
-      precBinOp        = precedenceBinOp binOp
-      showExpr         = if precedence expr  > precBinOp then inBrackets firstExprString   else firstExprString
-      firstExprString  = show expr
-      showExpr'        = if precedence expr' > precBinOp then inBrackets secondExprString  else secondExprString
-      secondExprString = show expr'
+      showExpr         = showSecondWithoutRedundantBrackets binOp expr
+      showExpr'        = showSecondWithoutRedundantBrackets binOp expr'
