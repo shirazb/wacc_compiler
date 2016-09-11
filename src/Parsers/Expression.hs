@@ -10,6 +10,7 @@ import Parsers.Lexer
 import Utility.BasicCombinators
 import Utility.Declarations
 import Utility.Definitions
+import Debug.Trace
 
 intLiteral :: Parser Expr
 intLiteral
@@ -76,12 +77,11 @@ higherBinaryExpr
   = parseExpr' `chainl1` parseBinaryOpHigher
 
 binaryExpr :: Parser Expr
-binaryExpr
-  = lowBinaryExpr
+binaryExpr = lowBinaryExpr
 
 unaryExpr :: Parser Expr
 unaryExpr
-  = UnaryApp <$> parseUnaryOp <*> parseExpr
+  = UnaryApp <$> parseUnaryOp <*> parseExpr'
 
 bracketedExpr :: Parser Expr
 bracketedExpr
