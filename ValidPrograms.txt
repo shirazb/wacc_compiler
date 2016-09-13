@@ -1,7 +1,0 @@
-Valid WACC Programs:
-/Basic -- all programs parse correctly
-
-/if -- all programs parse correctly
-
-/functions/simple_functions -- currently in progress
---
