@@ -44,18 +44,12 @@ parseBuiltInFunc funcName func
 
 parseIfStat :: Parser Stat
 parseIfStat = do
-  traceM "We are parsing and if statement"
   keyword "if"
   cond <- parseExpr
-  traceM ("The boolean condition is: " ++ show cond)
   keyword "then"
-  traceM "We have parsed the then of the if statement"
   thenStat <- parseStatement
-  traceM ("The then branch is: " ++ show thenStat)
   keyword "else"
-  traceM "we have parsed the else of the if statement"
   elseStat <- parseStatement
-  traceM ("the else branch is: " ++ show elseStat)
   keyword "fi"
   return $ If cond thenStat elseStat
 
@@ -76,12 +70,8 @@ parseSeq :: Parser Stat
 parseSeq = parseStatement' >>= rest
   where
     rest s = (do
-      traceM "We are parsing a sequence"
-      traceM ("The first thing in the sequence is: " ++ show s)
       punctuation ';'
-      traceM "We are about to get the second element in the seq"
       s' <- parseStatement
-      traceM ("In the sequence the second statement is:" ++ show s')
       rest $ Seq s s') <|> return s
 
 -- PRE:  None
@@ -147,13 +137,9 @@ assignToNewPair = do
 
 parseAssignment :: Parser Stat
 parseAssignment = do
-  traceM "We are parsing the assignment"
   lhs <- parseLHS
-  traceM "we are succesfully continuuing to parse the assignment"
-  traceM ("The lhs in the assignment is: " ++ show lhs)
   punctuation '='
   rhs <- parseRHS
-  traceM ("The rhs in the assignment is: " ++ show rhs)
   return $ Assignment lhs rhs
 
 parseLHS :: Parser AssignLHS
