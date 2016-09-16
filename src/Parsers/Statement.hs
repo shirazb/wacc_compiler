@@ -64,10 +64,18 @@ parseWhileStat = do
 
 parseBlock :: Parser Stat
 parseBlock
-  = Block <$> bracket (keyword "begin") parseStatement (keyword "end")
+  -- = Block <$> bracket (keyword "begin") parseStatement (keyword "end")
+  = Block <$> do
+    keyword "begin"
+    traceM "------ parsed begin of block ------"
+    s <- parseStatement
+    traceM $ "parseStatement returned (" ++ show s ++ ")"
+    keyword "end"
+    traceM "------ parsed end of block ------"
+    return s
 
 parseSeq :: Parser Stat
-parseSeq = parseStatement' >>= rest
+parseSeq = traceM "parsing initial statement of sequence..." >> parseStatement' >>= \s -> rest s
   where
     rest s = (do
       punctuation ';'
@@ -82,10 +90,15 @@ parseSkip
 
 parseDeclaration :: Parser Stat
 parseDeclaration = do
+  traceM $ "------ Entered parseDeclaration  ------"
   varType    <- parseType
+  traceM $ "parseType returned " ++ show varType
   ident      <- identifier
+  traceM $ "identifier returned " ++ show ident
   punctuation '='
   assignRHS  <- parseRHS
+  traceM $ "parseRHS returned " ++ show assignRHS
+  traceM $ "------ Leaving parsedDeclratation ------"
   return $ Declaration varType ident assignRHS
 
 parseRHS :: Parser AssignRHS
