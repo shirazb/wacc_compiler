@@ -1,12 +1,15 @@
+{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveFunctor #-}
 
-import Utility.Definitions
+{- Exploratory work in building a typechecker, this is a prototype. -}
 
-import Control.Monad.State
-import Control.Monad.Except
-import Control.Monad
-import qualified Data.Map as Map
+
+import           Utility.Definitions
+
+import           Control.Monad
+import           Control.Monad.Except
+import           Control.Monad.State
+import qualified Data.Map             as Map
 
 -- Store the environment (variables)
 type CheckerState = Map.Map String Expr

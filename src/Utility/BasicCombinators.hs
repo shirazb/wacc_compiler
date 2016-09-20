@@ -24,7 +24,7 @@ item  = Parser $ \s -> case s of
 satisfy  :: (Char -> Bool) -> Parser Char
 satisfy p = item >>= \x -> if p x then return x else mzero
 
--- PRE: None
+-- PRE:  None
 -- POST: Does nothing if a single character satisfies the predicate, fails otherwise
 check :: (Char -> Bool) -> Parser ()
 check predicate
@@ -33,29 +33,7 @@ check predicate
     check' []          = []
     check' inp@(c : _) = [ ((), inp) | predicate c ]
 
--- PRE:  ?
--- POST: ?
-sepby      :: Parser a -> Parser b -> Parser [a]
-sepby p sep = sepby' p sep <|> return []
-
--- PRE:  ?
--- POST: ?
-sepby'      :: Parser a -> Parser b -> Parser [a]
-sepby' p sep = do
-  x <- p
-  xs <- many (sep >> p)
-  return (x:xs)
-
--- PRE:  ?
--- POST: ?
-bracketNoWS :: Parser a -> Parser b -> Parser c -> Parser b
-bracketNoWS open p close = do
-  open
-  x <- p
-  close
-  return x
-
-{- SPECIFIC PREDICATE COMBINATORS -}
+{- BASIC ATOMIC COMBINATORS -}
 
 -- PRE:  None
 -- POST: Calls 'satisfy' with a predicate for a specific character
@@ -94,7 +72,7 @@ alphanum :: Parser Char
 alphanum  = letter <|> digit
 
 -- PRE:  None
--- POST: Parser for all characters and escape chararacters
+-- POST: Parser for all characters including escape chararacters
 character :: Parser Char
 character  = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
 
@@ -110,16 +88,45 @@ escapeChar  = do
                                   ('r','\r'), ('t','\t'), ('\\','\\'),
                                   ('\"','\"'), ('\'','\''), ('0', '\0')]
 
--- PRE:  None
--- POST: Parser for words
-word :: Parser String
-word  = many letter
+
+{- PARSERS FOR SEQUENCES -}
 
 -- PRE:  None
--- POST: ?
+-- POST: Returns the input string if the given string is parsed successfully. Fails otherwise.
 string :: String -> Parser String
 string []     = return []
 string (x:xs) = do
   char x
   string xs
   return (x:xs)
+
+-- PRE:  None
+-- POST: Parses zero or more occurences of p seperated by sep. Returns parsed items as a list.
+-- Example usage: it can be used to parse an inputstring of the form "1,2,3" where the seperators have no special meaning.
+sepby :: Parser a -> Parser b -> Parser [a]
+sepby p sep = sepby' p sep <|> return []
+
+-- PRE:  None
+-- POST: Similar to sepby but it parses one or more occurences. It will fail if there is not at least one occurence of p.
+sepby' :: Parser a -> Parser b -> Parser [a]
+sepby' p sep = do
+  x <- p
+  xs <- many (sep >> p)
+  return (x:xs)
+
+-- PRE:  None
+-- POST: It will parse one occurence of p, but first remove an opening delimiter and then after parsing p it will remove a closing delimiter. Returns the result of parsing p
+-- Example Usage: It can be used to remove brackets and parse the contents inside. parse (char '(') intLiteral (char ')') "(1)" will return IntLiteral 1. It does not take in to
+-- account any white space.
+bracketNoWS :: Parser a -> Parser b -> Parser c -> Parser b
+bracketNoWS open p close = do
+  open
+  x <- p
+  close
+  return x
+
+-- PRE:  None
+-- POST: Parses zero or more occurences of letters and returns the result as a string.
+word :: Parser String
+word  = many letter
+

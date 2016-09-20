@@ -1,20 +1,22 @@
----
--- Statement parsing
----
+{-
+This module defines a number of parser combinators used to parse statements in the WACC language. Refer to the BNF specification of the
+WACC language to see exactly what a statement is in the WACC language.
+-}
 module Parsers.Statement (parseStatement) where
 
-import Control.Applicative
+import           Control.Applicative
 
-import Parsers.Expression
-import Parsers.Lexer
-import Parsers.Type
-import Utility.BasicCombinators
-import Utility.Declarations
-import Utility.Definitions
-import Debug.Trace
+import           Debug.Trace
+import           Parsers.Expression
+import           Parsers.Lexer
+import           Parsers.Type
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
 
 -- PRE:  None
--- POST: Source code is a valid statement <-> parses source code into Stat type
+-- POST: Parses all valid statements in the WACC language, it is factored out like
+-- this to prevent the parser going in to an infinite loop due to left recursion.
 parseStatement :: Parser Stat
 parseStatement
   = parseSeq <|> parseStatement'
@@ -34,14 +36,32 @@ parseStatement'
   <|> parseBlock
   <|> parseSkip
 
+
+{-
+Parser combinators for statements in the WACC language, refer to BNF specification to see
+what a statement is.
+-}
+
+
+{-
+The following two parsers, parse the built in functions of the WACC language. We have a generic parser for all built in funcs except Read.
+This is because the argument of read differs from the other built in funcs.
+-}
 parseRead :: Parser Stat
 parseRead
   = keyword "read" >> (Read <$> parseLHS)
 
 parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Stat
 parseBuiltInFunc funcName func
-  = token funcName >> (func <$> parseExpr)
+  = keyword funcName >> (func <$> parseExpr)
 
+{-
+Parsers for all the synctactic structures in the WACC language that make up a statement.
+-}
+
+
+-- PRE: None
+-- POST: Parses a conditional
 parseIfStat :: Parser Stat
 parseIfStat = do
   keyword "if"
@@ -53,6 +73,9 @@ parseIfStat = do
   keyword "fi"
   return $ If cond thenStat elseStat
 
+
+-- PRE: None
+-- POST: Parses a while loop
 parseWhileStat :: Parser Stat
 parseWhileStat = do
   keyword "while"
@@ -62,18 +85,19 @@ parseWhileStat = do
   keyword "done"
   return $ While cond loopBody
 
+
+-- PRE: None
+-- POST: Parses a new block of statements.
 parseBlock :: Parser Stat
 parseBlock
-  -- = Block <$> bracket (keyword "begin") parseStatement (keyword "end")
   = Block <$> do
     keyword "begin"
-    traceM "------ parsed begin of block ------"
     s <- parseStatement
-    traceM $ "parseStatement returned (" ++ show s ++ ")"
     keyword "end"
-    traceM "------ parsed end of block ------"
     return s
 
+-- PRE: None
+-- POST: Parses a sequence of statements seperated by semi-colons.
 parseSeq :: Parser Stat
 parseSeq = traceM "parsing initial statement of sequence..." >> parseStatement' >>= \s -> rest s
   where
@@ -82,25 +106,40 @@ parseSeq = traceM "parsing initial statement of sequence..." >> parseStatement' 
       s' <- parseStatement
       rest $ Seq s s') <|> return s
 
--- PRE:  None
--- POST: Consumes a "skip" string, returning the Skip statment
+
+-- PRE: None
+-- POST: Parses the skip keyword.
 parseSkip :: Parser Stat
 parseSkip
   = keyword "skip" >> return Skip
 
+-- PRE: None
+-- POST: Parses a declaration of the form type name = rhs.
 parseDeclaration :: Parser Stat
 parseDeclaration = do
-  traceM  "------ Entered parseDeclaration  ------"
   varType    <- parseType
-  traceM $ "parseType returned " ++ show varType
   ident      <- identifier
-  traceM $ "identifier returned " ++ show ident
   punctuation '='
   assignRHS  <- parseRHS
-  traceM $ "parseRHS returned " ++ show assignRHS
-  traceM  "------ Leaving parsedDeclratation ------"
   return $ Declaration varType ident assignRHS
 
+-- PRE: None
+-- POST: Parses an assignment of the form lhs = rhs.
+parseAssignment :: Parser Stat
+parseAssignment = do
+  lhs <- parseLHS
+  punctuation '='
+  rhs <- parseRHS
+  return $ Assignment lhs rhs
+
+{-
+Defines a number of parser combinators which can parse all valid lhs and rhs of
+a declaration or assignment. These combinators are used to build parseAssignment
+& parseDeclaration
+-}
+
+-- PRE: None
+-- POST: Parses all valid RHS of an assignment or declaration.
 parseRHS :: Parser AssignRHS
 parseRHS
   =   assignToExpr
@@ -109,12 +148,23 @@ parseRHS
   <|> assignToArrayLit
   <|> assignToNewPair
 
+-- PRE: None
+-- POST: Parses all valid LHS of an assignment or the argument of the function read.
+parseLHS :: Parser AssignLHS
+parseLHS
+  =   ArrayDeref <$> arrayElem
+  <|> PairDeref  <$> pairElem
+  <|> Var        <$> identifier
 
 
+-- PRE: None
+-- POST: Parses an expr (rhs)
 assignToExpr :: Parser AssignRHS
 assignToExpr
   = ExprAssign <$> parseExpr
 
+-- PRE: None
+-- POST: Parses a pair elem which can be either a lhs or rhs.
 pairElem :: Parser PairElem
 pairElem = do
   fstOrSnd  <- keyword "fst" <|> keyword "snd"
@@ -123,10 +173,14 @@ pairElem = do
     then return (Fst  expr)
     else return (Snd expr)
 
+-- PRE: None
+-- POST: Wraps the result of parsing a pairElem in the appropriate data constructor.
 assignToPairElem :: Parser AssignRHS
 assignToPairElem
   = PairElemAssign <$> pairElem
 
+-- PRE: None
+-- POST: Parses functions calls (rhs)
 assignToFuncCall :: Parser AssignRHS
 assignToFuncCall = do
   keyword "call"
@@ -134,10 +188,14 @@ assignToFuncCall = do
   arglist  <- parseExprList '(' ')'
   return $ FuncCallAssign name arglist
 
+-- PRE: None
+-- POST: Parses array literals (rhs)
 assignToArrayLit :: Parser AssignRHS
 assignToArrayLit
   = ArrayLitAssign <$> parseExprList '[' ']'
 
+-- PRE: None
+-- POST: Parses a newpair declaration (rhs)
 assignToNewPair :: Parser AssignRHS
 assignToNewPair = do
   token "newpair"
@@ -147,16 +205,3 @@ assignToNewPair = do
   expr2 <- parseExpr
   punctuation ')'
   return $ NewPairAssign expr1 expr2
-
-parseAssignment :: Parser Stat
-parseAssignment = do
-  lhs <- parseLHS
-  punctuation '='
-  rhs <- parseRHS
-  return $ Assignment lhs rhs
-
-parseLHS :: Parser AssignLHS
-parseLHS
-  =   ArrayDeref <$> arrayElem
-  <|> PairDeref  <$> pairElem
-  <|> Var        <$> identifier
