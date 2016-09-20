@@ -70,7 +70,8 @@ stringLiter
    combinators defined in the BasicCombinators module.
  -}
 
-
+--TODO: THIS IS NOT THE WAY THIS WILL ALWAYS BREAK
+-- because of the potential lookup failue
 -- PRE: None
 -- POST: Parses all valid application of unary operators expressions.
 unaryExpr :: Parser Expr

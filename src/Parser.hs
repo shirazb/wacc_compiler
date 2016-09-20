@@ -1,8 +1,8 @@
 {-
-A parser built using parser combinators for the WACC language. Parser 
+A parser built using parser combinators for the WACC language. Parser
 combinators are used because of the flexibility and modularity that they
-offer. Building a parser combinator in Haskell also serves as a learning 
-experience to learn the more advanced features of Haskell. The parser 
+offer. Building a parser combinator in Haskell also serves as a learning
+experience to learn the more advanced features of Haskell. The parser
 currently has no error handling.
 -}
 
@@ -36,6 +36,6 @@ main = do
 
 parseProgram :: Parser Program
 parseProgram
-  = bracket (keyword "begin") parseProgram' (keyword "end")
+  = bracket (keyword "begin") parseProgram' (string "end")
   where
     parseProgram' = liftM2 Program (many parseFunction) parseStatement

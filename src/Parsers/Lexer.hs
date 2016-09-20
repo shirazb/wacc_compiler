@@ -12,6 +12,7 @@ import           Data.Maybe               (fromJust)
 import           Utility.BasicCombinators
 import           Utility.Declarations
 import           Utility.Definitions
+import Debug.Trace
 
 commentDelim
   = "#"
@@ -56,7 +57,8 @@ trimWS
 token :: String -> Parser String
 token
   = trimWS . string
-
+-- TODO: THe issue is with the keyword AND
+-- the end of file terminator.
 -- PRE: None
 -- POST: It is used to parse keywords defined in the WACC language.
 keyword :: String -> Parser String
@@ -113,7 +115,7 @@ identifier = trimWS $ do
 -- PRE: The given input string contains a value which is present in the map.
 -- POST: It takes as input a map from strings to values of type a. It attempts to parse one of the strings in the map and
 -- if it succeeds it will return the corresponding a value. Essentially a parser lookup function. It removes trailing WS.
-parseFromMap :: [(String, a)] -> Parser a
+parseFromMap :: (Show a) => [(String, a)] -> Parser a
 parseFromMap assoclist = do
   value <- foldr1 (<|>) (map (token . fst) assoclist)
   return $ fromJust (lookup value assoclist)

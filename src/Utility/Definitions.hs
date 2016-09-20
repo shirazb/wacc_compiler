@@ -180,7 +180,7 @@ instance Show Param where
 
 instance Show UnOp where
   show unOp
-    = flippedLookup unOp unOpAssoc
+    = flippedLookup unOp (unOpAssoc ++ unOpAssocHigher)
 
 instance Show BinOp where
   show binOp

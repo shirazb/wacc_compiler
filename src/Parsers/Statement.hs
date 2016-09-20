@@ -55,6 +55,7 @@ parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Stat
 parseBuiltInFunc funcName func
   = keyword funcName >> (func <$> parseExpr)
 
+
 {-
 Parsers for all the synctactic structures in the WACC language that make up a statement.
 -}
