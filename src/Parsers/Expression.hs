@@ -94,9 +94,6 @@ The design of the parser combinators take in to acccount the precdence of binary
 binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
 
-{-
-These combinators are
--}
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow
   = parseFromMap lowBinOps
@@ -123,7 +120,9 @@ higherBinaryExpr
 
 -- PRE: None
 -- POST: Returns a parser which parses a sequence of expressions seperated by a meaningful seperator
--- e.g the operator (+).
+-- e.g the operator (+). The parser returns the expression wrapped up in the appropriate data constructors.
+-- Assume existence of parser which returns the Add data constructor as its result, call it parseAdd
+-- Example Usage: parse (chainl1 intLiteral parseAdd) "1 + 2 + 3" will return Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op
   = trimWS $ p >>= rest
