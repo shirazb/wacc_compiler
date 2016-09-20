@@ -100,7 +100,7 @@ parseBlock
 -- PRE: None
 -- POST: Parses a sequence of statements seperated by semi-colons.
 parseSeq :: Parser Stat
-parseSeq = traceM "parsing initial statement of sequence..." >> parseStatement' >>= \s -> rest s
+parseSeq = parseStatement' >>= \s -> rest s
   where
     rest s = (do
       punctuation ';'
