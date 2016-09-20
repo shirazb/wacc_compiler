@@ -94,6 +94,9 @@ The design of the parser combinators take in to acccount the precdence of binary
 binaryExpr :: Parser Expr
 binaryExpr = lowBinaryExpr
 
+{-
+These combinators are
+-}
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow
   = parseFromMap lowBinOps
