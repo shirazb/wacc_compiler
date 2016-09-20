@@ -10,15 +10,20 @@ import           Utility.BasicCombinators
 import           Utility.Declarations
 import           Utility.Definitions
 
+--PRE: None
+--POST: Parser of types for the WACC language, built up using the more basic parsers of types.
+-- Returns type wrapped in appropriate data constructor.
 parseType :: Parser Type
 parseType
   =   ArrayT <$> parseArrayType
   <|> PairT  <$>  parsePairType
   <|> BaseT  <$> parseBaseType
 
+
 parseBaseType :: Parser BaseType
 parseBaseType
   = parseFromMap baseTypes
+
 
 multiDimArray :: Parser (ArrayType -> Type)
 multiDimArray
@@ -27,6 +32,7 @@ multiDimArray
     rest x = (do
       token "[]"
       rest (ArrayT . x)) <|> return x
+
 
 parseArrayType :: Parser ArrayType
 parseArrayType = do
