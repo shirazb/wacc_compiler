@@ -1,36 +1,34 @@
+{-
+A parser built using parser combinators for the WACC language. Parser combinators are used because of the flexibility and modularity that they offer.
+Building a parser combinator in haskell also serves as a learnig exercise to learn the more advanced features of Haskell. This parser currently has no error handling.
+-}
+
 module Parser (parseProgram) where
 
-import Control.Applicative
-import Control.Monad
-import Debug.Trace
-import System.Environment
+import           Control.Applicative
+import           Control.Monad
+import           Debug.Trace
+import           System.Environment
 
 {- Local Imports -}
 
-import Parsers.Function
-import Parsers.Statement
-import Utility.Definitions
-import Utility.BasicCombinators
-import Utility.Declarations
-import Parsers.Expression
-import Parsers.Lexer
-
-
---- I HAVE SOLVED THE LEXICAL ISSUES
---  BUT IN THE MOST IN-EFFICEINT WAY POSSIBLE
---  BUT MORE TO TEST THE PARSER
---  WE NEED TO TAKE IN AN ACTUAL FILE AND GENERATE THE assignToExpr
+import           Parsers.Expression
+import           Parsers.Function
+import           Parsers.Lexer
+import           Parsers.Statement
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
 
 main = do
   args <- getArgs
   let filename = head args
   contents <- readFile filename
-  traceM ("The contents of the file is: " ++ show contents)
   let c = parse parseProgram contents
   putStrLn "------------------------------------------------"
   putStrLn "THE PROGRAM WE HAVE PARSED"
   putStrLn "------------------------------------------------"
-  putStrLn (show ((fst.head) c))
+  print ((fst . head) c)
   return ()
 
 parseProgram :: Parser Program

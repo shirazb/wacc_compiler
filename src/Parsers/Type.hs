@@ -1,14 +1,14 @@
----
--- Type Parsing
----
+{-
+This module defines a number of combinators which are used to parse the types in the wacc language. Refer to the BNF spec of the wacc language for all the types.
+-}
 module Parsers.Type (parseType) where
 
-import Control.Applicative
+import           Control.Applicative
 
-import Parsers.Lexer
-import Utility.BasicCombinators
-import Utility.Declarations
-import Utility.Definitions
+import           Parsers.Lexer
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
 
 parseType :: Parser Type
 parseType

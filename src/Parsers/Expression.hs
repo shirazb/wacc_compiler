@@ -1,16 +1,20 @@
----
--- Expression Parsing.
----
+{-
+This module consists of parser combinators which are used to parse expressions in the WACC language.
+A number of basic expression combinators have been defined which are then used as building blocks to build
+more complex parsers of expressions.
+-}
 module Parsers.Expression (parseExpr, parseExprList, arrayElem) where
 
-import Control.Applicative
-import Control.Monad
+import           Control.Applicative
+import           Control.Monad
 
-import Parsers.Lexer
-import Utility.BasicCombinators
-import Utility.Declarations
-import Utility.Definitions
-import Debug.Trace
+import           Debug.Trace
+import           Parsers.Lexer
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
+
+{- Basic combinators which are used to parse atomic expressions -}
 
 intLiteral :: Parser Expr
 intLiteral
@@ -38,6 +42,11 @@ exprIdent
 stringLiter :: Parser Expr
 stringLiter
   = StringLit <$> bracket (char '\"') (many character) (char '\"')
+
+
+{- Complex combinators used to parse larger & complex expressions. They are built using the basic combinators defined above and a few generic
+   combinators defined in the BasicCombinators module.
+ -}
 
 parseUnaryOp :: Parser UnOp
 parseUnaryOp
