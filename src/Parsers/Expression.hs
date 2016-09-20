@@ -1,7 +1,8 @@
 {-
 This module consists of parser combinators which are used to parse expressions in the WACC language.
 A number of basic expression combinators have been defined which are then used as building blocks to build
-more complex parsers of expressions.
+more complex parsers of expressions. Refer to BNF spec of WACC language to see exactly what an expression is
+in the WACC language
 -}
 module Parsers.Expression (parseExpr, parseExprList, arrayElem) where
 

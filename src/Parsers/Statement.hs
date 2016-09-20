@@ -1,17 +1,18 @@
----
--- Statement parsing
----
+{-
+This module defines a number of parser combinators used to parse statements in the WACC language. Refer to the BNF specification of the
+WACC language to see exactly what a statement is in the WACC language.
+-}
 module Parsers.Statement (parseStatement) where
 
-import Control.Applicative
+import           Control.Applicative
 
-import Parsers.Expression
-import Parsers.Lexer
-import Parsers.Type
-import Utility.BasicCombinators
-import Utility.Declarations
-import Utility.Definitions
-import Debug.Trace
+import           Debug.Trace
+import           Parsers.Expression
+import           Parsers.Lexer
+import           Parsers.Type
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
 
 -- PRE:  None
 -- POST: Source code is a valid statement <-> parses source code into Stat type
@@ -90,7 +91,7 @@ parseSkip
 
 parseDeclaration :: Parser Stat
 parseDeclaration = do
-  traceM $ "------ Entered parseDeclaration  ------"
+  traceM  "------ Entered parseDeclaration  ------"
   varType    <- parseType
   traceM $ "parseType returned " ++ show varType
   ident      <- identifier
@@ -98,7 +99,7 @@ parseDeclaration = do
   punctuation '='
   assignRHS  <- parseRHS
   traceM $ "parseRHS returned " ++ show assignRHS
-  traceM $ "------ Leaving parsedDeclratation ------"
+  traceM  "------ Leaving parsedDeclratation ------"
   return $ Declaration varType ident assignRHS
 
 parseRHS :: Parser AssignRHS
