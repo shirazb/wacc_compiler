@@ -1,31 +1,39 @@
 ---
 -- Function Parsing.
 ---
-module Parsers.Function (parseFunction) where
+module Parsers.Function  where
 
-import Control.Monad
+import           Control.Monad
 
-import Parsers.Lexer
-import Parsers.Statement
-import Parsers.Type
-import Utility.BasicCombinators
-import Utility.Declarations
-import Utility.Definitions
+import           Debug.Trace
+import           Parsers.Lexer
+import           Parsers.Statement
+import           Parsers.Type
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
 
+-- PRE: None
+-- POST: Parses a function defintion.
 parseFunction :: Parser Func
-parseFunction = token $ leadWSC (do
+parseFunction = do
   returnType <- parseType
-  name       <- identifier
-  paramList  <- bracket (char '(') parseParamList (char ')')
-  string "is"
-  funcBody   <- parseStatement
-  string "end"
-  return $ Func returnType name paramList funcBody)
+  name <- identifier
+  paramList <- bracket (punctuation '(') parseParamList (punctuation ')')
+  keyword "is"
+  funcBody <- parseStatement
+  keyword "end"
+  return $ Func returnType name paramList funcBody
 
+-- PRE: None
+-- POST: Attempts to parse a list of parameters if there is one.
 parseParamList :: Parser ParamList
 parseParamList
-  = token $ leadWSC (ParamList <$> sepby' parseParam (char ','))
+  = ParamList <$> sepby parseParam (punctuation ',')
 
+-- PRE: None
+-- POST: Parses a parameter
+-- Example Usage: parse parseParam "intname" will return Param Int "name". Note whitespace is not accounted for here.
 parseParam :: Parser Param
 parseParam
-  = token $ leadWSC (liftM2 Param parseType identifier)
+  = liftM2 Param parseType identifier

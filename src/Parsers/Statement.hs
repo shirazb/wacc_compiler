@@ -1,146 +1,208 @@
----
--- Statement parsing
----
+{-
+This module defines a number of parser combinators used to parse statements in the WACC language. Refer to the BNF specification of the
+WACC language to see exactly what a statement is in the WACC language.
+-}
 module Parsers.Statement (parseStatement) where
 
-import Control.Applicative
+import           Control.Applicative
 
-import Parsers.Expression
-import Parsers.Lexer
-import Parsers.Type
-import Utility.BasicCombinators
-import Utility.Declarations
-import Utility.Definitions
+import           Debug.Trace
+import           Parsers.Expression
+import           Parsers.Lexer
+import           Parsers.Type
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
 
 -- PRE:  None
--- POST: Source code is a valid statement <-> parses source code into Stat type
+-- POST: Parses all valid statements in the WACC language, it is factored out like
+-- this to prevent the parser going in to an infinite loop due to left recursion.
 parseStatement :: Parser Stat
 parseStatement
-  = token $ leadWSC $ parseSeq <|> parseStatement'
+  = parseSeq <|> parseStatement'
 
 parseStatement' :: Parser Stat
 parseStatement'
-  =  token $ leadWSC (parseDeclaration
+  =   parseDeclaration
   <|> parseAssignment
   <|> parseRead
   <|> parseBuiltInFunc "free"    Free
   <|> parseBuiltInFunc "return"  Return
   <|> parseBuiltInFunc "exit"    Exit
-  <|> parseBuiltInFunc "print"   Print
   <|> parseBuiltInFunc "println" Println
+  <|> parseBuiltInFunc "print"   Print
   <|> parseIfStat
   <|> parseWhileStat
   <|> parseBlock
-  <|> parseSkip)
+  <|> parseSkip
 
+
+{-
+Parser combinators for statements in the WACC language, refer to BNF specification to see
+what a statement is.
+-}
+
+
+{-
+The following two parsers, parse the built in functions of the WACC language. We have a generic parser for all built in funcs except Read.
+This is because the argument of read differs from the other built in funcs.
+-}
 parseRead :: Parser Stat
 parseRead
-  = token $ leadWSC $ string "read" >> (Read <$> parseLHS)
+  = keyword "read" >> (Read <$> parseLHS)
 
 parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Stat
 parseBuiltInFunc funcName func
-  = token $ leadWSC $ string funcName >> (func <$> parseExpr)
+  = keyword funcName >> (func <$> parseExpr)
 
+
+{-
+Parsers for all the synctactic structures in the WACC language that make up a statement.
+-}
+
+
+-- PRE: None
+-- POST: Parses a conditional
 parseIfStat :: Parser Stat
-parseIfStat = token $ leadWSC (do
-  string "if"
-  cond       <- parseExpr
-  string "then"
-  thenStat   <- parseStatement
-  string "else"
-  elseStat   <- parseStatement
-  string "fi"
-  return $ If cond thenStat elseStat)
+parseIfStat = do
+  keyword "if"
+  cond <- parseExpr
+  keyword "then"
+  thenStat <- parseStatement
+  keyword "else"
+  elseStat <- parseStatement
+  keyword "fi"
+  return $ If cond thenStat elseStat
 
+
+-- PRE: None
+-- POST: Parses a while loop
 parseWhileStat :: Parser Stat
-parseWhileStat = token $ leadWSC (do
-  string "while"
+parseWhileStat = do
+  keyword "while"
   cond       <- parseExpr
-  string "do"
+  keyword "do"
   loopBody   <- parseStatement
-  string "done"
-  return $ While cond loopBody)
+  keyword "done"
+  return $ While cond loopBody
 
+
+-- PRE: None
+-- POST: Parses a new block of statements.
 parseBlock :: Parser Stat
 parseBlock
-  = token $ leadWSC $ Begin <$> bracket (string "begin") parseStatement (string "end")
+  = Block <$> do
+    keyword "begin"
+    s <- parseStatement
+    keyword "end"
+    return s
 
+-- PRE: None
+-- POST: Parses a sequence of statements seperated by semi-colons.
 parseSeq :: Parser Stat
-parseSeq = token $ leadWSC $ parseStatement' >>= rest
+parseSeq = parseStatement' >>= \s -> rest s
   where
     rest s = (do
-      char ';'
+      punctuation ';'
       s' <- parseStatement
       rest $ Seq s s') <|> return s
 
--- PRE:  None
--- POST: Consumes a "skip" string, returning the Skip statment
+
+-- PRE: None
+-- POST: Parses the skip keyword.
 parseSkip :: Parser Stat
 parseSkip
-  = token $ leadWSC $ string "skip" >> return Skip
+  = keyword "skip" >> return Skip
 
+-- PRE: None
+-- POST: Parses a declaration of the form type name = rhs.
 parseDeclaration :: Parser Stat
-parseDeclaration = token $ leadWSC (do
+parseDeclaration = do
   varType    <- parseType
   ident      <- identifier
-  char '=' --TODO: FIX WHITESPACE
+  punctuation '='
   assignRHS  <- parseRHS
-  return $ Declaration varType ident assignRHS)
+  return $ Declaration varType ident assignRHS
 
+-- PRE: None
+-- POST: Parses an assignment of the form lhs = rhs.
+parseAssignment :: Parser Stat
+parseAssignment = do
+  lhs <- parseLHS
+  punctuation '='
+  rhs <- parseRHS
+  return $ Assignment lhs rhs
+
+{-
+Defines a number of parser combinators which can parse all valid lhs and rhs of
+a declaration or assignment. These combinators are used to build parseAssignment
+& parseDeclaration
+-}
+
+-- PRE: None
+-- POST: Parses all valid RHS of an assignment or declaration.
 parseRHS :: Parser AssignRHS
 parseRHS
-  =  token $ leadWSC (assignToNewPair
+  =   assignToExpr
   <|> assignToPairElem
   <|> assignToFuncCall
   <|> assignToArrayLit
-  <|> assignToExpr)
+  <|> assignToNewPair
 
+-- PRE: None
+-- POST: Parses all valid LHS of an assignment or the argument of the function read.
+parseLHS :: Parser AssignLHS
+parseLHS
+  =   ArrayDeref <$> arrayElem
+  <|> PairDeref  <$> pairElem
+  <|> Var        <$> identifier
+
+
+-- PRE: None
+-- POST: Parses an expr (rhs)
 assignToExpr :: Parser AssignRHS
 assignToExpr
-  =  token $ leadWSC $ ExprAssign <$> parseExpr
+  = ExprAssign <$> parseExpr
 
+-- PRE: None
+-- POST: Parses a pair elem which can be either a lhs or rhs.
 pairElem :: Parser PairElem
-pairElem = token $ leadWSC $ do
-  fstOrSnd  <- string "fst" <|> string "snd"
+pairElem = do
+  fstOrSnd  <- keyword "fst" <|> keyword "snd"
   expr      <- parseExpr
   if fstOrSnd == "fst"
-    then return (First  expr)
-    else return (Second expr)
+    then return (Fst  expr)
+    else return (Snd expr)
 
+-- PRE: None
+-- POST: Wraps the result of parsing a pairElem in the appropriate data constructor.
 assignToPairElem :: Parser AssignRHS
 assignToPairElem
-  = token $ leadWSC $ PairElemAssign <$> pairElem
+  = PairElemAssign <$> pairElem
 
+-- PRE: None
+-- POST: Parses functions calls (rhs)
 assignToFuncCall :: Parser AssignRHS
-assignToFuncCall = token $ leadWSC $ do
-  string "call"
+assignToFuncCall = do
+  keyword "call"
   name     <- identifier
   arglist  <- parseExprList '(' ')'
   return $ FuncCallAssign name arglist
 
+-- PRE: None
+-- POST: Parses array literals (rhs)
 assignToArrayLit :: Parser AssignRHS
 assignToArrayLit
-  = token $ leadWSC $ ArrayLitAssign <$> parseExprList '[' ']'
+  = ArrayLitAssign <$> parseExprList '[' ']'
 
+-- PRE: None
+-- POST: Parses a newpair declaration (rhs)
 assignToNewPair :: Parser AssignRHS
-assignToNewPair = token $ leadWSC (do
-  string "newpair"
-  char '('
+assignToNewPair = do
+  token "newpair"
+  punctuation '('
   expr1 <- parseExpr
-  char ','
+  punctuation ','
   expr2 <- parseExpr
-  char ')'
-  return $ NewPairAssign expr1 expr2)
-
-parseAssignment :: Parser Stat
-parseAssignment = token $ leadWSC (do
-  lhs <- parseLHS
-  char '='
-  rhs <- parseRHS
-  return $ Assignment lhs rhs)
-
-parseLHS :: Parser AssignLHS
-parseLHS
-  = token $ leadWSC (ArrayDeref <$> arrayElem
-  <|> PairDeref  <$> pairElem
-  <|> Var        <$> identifier)
+  punctuation ')'
+  return $ NewPairAssign expr1 expr2

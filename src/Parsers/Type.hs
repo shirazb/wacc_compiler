@@ -1,55 +1,61 @@
----
--- Type Parsing
----
+{-
+This module defines a number of combinators which are used to parse the types in the wacc language. Refer to the BNF spec of the wacc language for all the types.
+-}
 module Parsers.Type (parseType) where
 
-import Control.Applicative
+import           Control.Applicative
 
-import Parsers.Lexer
-import Utility.BasicCombinators
-import Utility.Declarations
-import Utility.Definitions
+import           Parsers.Lexer
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
 
+--PRE: None
+--POST: Parser of types for the WACC language, built up using the more basic parsers of types.
+-- Returns type wrapped in appropriate data constructor.
 parseType :: Parser Type
 parseType
-  = token $ leadWSC (ArrayT <$> parseArrayType
+  =   parseArrayType
   <|> PairT  <$>  parsePairType
-  <|> BaseT  <$> parseBaseType)
+  <|> BaseT  <$> parseBaseType
+
 
 parseBaseType :: Parser BaseType
 parseBaseType
-  = token $ leadWSC $ parseFromMap baseTypes
+  = parseFromMap baseTypes
+
 
 multiDimArray :: Parser (ArrayType -> Type)
 multiDimArray
-  = token $ leadWSC $ string "[]" >> rest ArrayT
+  = token "[]" >> rest ArrayT
   where
     rest x = (do
-      string "[]"
+      token "[]"
       rest (ArrayT . x)) <|> return x
 
+
 parseArrayType :: Parser ArrayType
-parseArrayType = token $ leadWSC $ do
+parseArrayType = do
   t          <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
   dimension  <- multiDimArray
   return (dimension t)
 
 parsePairType :: Parser PairType
-parsePairType = token $ leadWSC $ do
-  string "pair"
-  char '('
+parsePairType = trimWS $ do
+  token "pair"
+  punctuation '('
   t1 <- parsePairElemType
-  char ','   -- TODO: FIX WHITESPACE AROUND COMMA
+  punctuation ','
   t2 <- parsePairElemType
-  char ')'
+  punctuation ')'
   return $ PairType t1 t2
 
 parseNestedPairType :: Parser PairElemType
 parseNestedPairType
-  = token $ leadWSC $ string "pair" >> return Pair
+  = token "pair" >> return Pair
 
 parsePairElemType :: Parser PairElemType
 parsePairElemType
-  = token $ leadWSC (parseNestedPairType
+  =   parseNestedPairType
   <|> ArrayP <$> parseArrayType
-  <|> BaseP  <$> parseBaseType)
+  <|> BaseP  <$> parseBaseType

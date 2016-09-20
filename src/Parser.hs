@@ -1,36 +1,41 @@
+{-
+A parser built using parser combinators for the WACC language. Parser
+combinators are used because of the flexibility and modularity that they
+offer. Building a parser combinator in Haskell also serves as a learning
+experience to learn the more advanced features of Haskell. The parser
+currently has no error handling.
+-}
+
 module Parser (parseProgram) where
 
-import Control.Applicative
-import Control.Monad
-import Debug.Trace
-import System.Environment
+import           Control.Applicative
+import           Control.Monad
+import           Debug.Trace
+import           System.Environment
 
 {- Local Imports -}
 
-import Parsers.Function
-import Parsers.Statement
-import Utility.Definitions
-import Utility.BasicCombinators
-import Utility.Declarations
-import Parsers.Expression
-import Parsers.Lexer
-
-
---- I HAVE SOLVED THE LEXICAL ISSUES
---  BUT IN THE MOST IN-EFFICEINT WAY POSSIBLE
---  BUT MORE TO TEST THE PARSER
---  WE NEED TO TAKE IN AN ACTUAL FILE AND GENERATE THE assignToExpr
+import           Parsers.Expression
+import           Parsers.Function
+import           Parsers.Lexer
+import           Parsers.Statement
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
 
 main = do
   args <- getArgs
   let filename = head args
   contents <- readFile filename
   let c = parse parseProgram contents
-  traceM ("The generated AST is: " ++ show c)
+  putStrLn "------------------------------------------------"
+  putStrLn "THE PROGRAM WE HAVE PARSED"
+  putStrLn "------------------------------------------------"
+  print ((fst . head) c)
   return ()
 
 parseProgram :: Parser Program
 parseProgram
-  = token $ leadWSC $ bracket (string "begin") parseProgram' (string "end")
+  = bracket (keyword "begin") parseProgram' (string "end")
   where
     parseProgram' = liftM2 Program (many parseFunction) parseStatement

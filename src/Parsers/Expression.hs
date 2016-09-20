@@ -1,116 +1,167 @@
----
--- Expression Parsing.
----
-module Parsers.Expression (parseExpr, parseExprList, arrayElem) where
+{-
+This module consists of parser combinators which are used to parse expressions in the WACC language.
+A number of basic expression combinators have been defined which are then used as building blocks to build
+more complex parsers of expressions. Refer to BNF spec of WACC language to see exactly what an expression is
+in the WACC language
+-}
+module Parsers.Expression (parseExpr, parseExprList, arrayElem, binaryExpr) where
 
-import Control.Applicative
-import Control.Monad
+import           Control.Applicative
+import           Control.Monad
 
-import Parsers.Lexer
-import Utility.BasicCombinators
-import Utility.Declarations
-import Utility.Definitions
+import           Debug.Trace
+import           Parsers.Lexer
+import           Utility.BasicCombinators
+import           Utility.Declarations
+import           Utility.Definitions
+import           Data.Maybe
+
+
+-- PRE:  None
+-- POST: Parses all valid expressions in the WACC language, it is factored out like
+-- this to prevent the parser going in to an infinite loop due to left recursion.
+parseExpr :: Parser Expr
+parseExpr
+  = binaryExpr <|> parseExpr'
+
+
+parseExpr' :: Parser Expr
+parseExpr'
+  =   arrayElemExpr
+  <|> unaryExpr
+  <|> bracketedExpr
+  <|> charLiteral
+  <|> boolLiteral
+  <|> stringLiter
+  <|> exprIdent
+  <|> pairLiteral
+  <|> intLiteral
+
+{- Basic combinators which are used to parse atomic expressions -}
 
 intLiteral :: Parser Expr
 intLiteral
-  = token $ leadWSC $ (IntLit . read) <$> some digit
+  = trimWS $ (IntLit . read) <$> some digit
 
 boolLiteral :: Parser Expr
-boolLiteral = token $ leadWSC (do
-  boolean <- string "true" <|> string "false"
+boolLiteral = do
+  boolean <- keyword "true" <|> keyword "false"
   if boolean == "true"
     then return (BoolLit True)
-    else return (BoolLit False))
+    else return (BoolLit False)
 
 charLiteral :: Parser Expr
 charLiteral
-   = token $ leadWSC $ CharLit <$> bracket (char '\'') character (char '\'')
+   = CharLit <$> bracket (char '\'') character (char '\'')
 
 pairLiteral :: Parser Expr
 pairLiteral
-  = token $ leadWSC $ string "null" >> return PairLiteral
+  = keyword "null" >> return PairLiteral
 
 exprIdent :: Parser Expr
 exprIdent
-  = token $ leadWSC $ IdentE <$> identifier
+  = IdentE <$> identifier
 
 stringLiter :: Parser Expr
 stringLiter
-  = token $ leadWSC $ StringLit <$> bracket (char '\"') (many character) (char '\"')
+  = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
-parseUnaryOp :: Parser UnOp
-parseUnaryOp
-  = token $ leadWSC $ parseFromMap unOpAssoc
+{- Complex combinators used to parse larger & complex expressions. They are built using the basic combinators defined above and a few generic
+   combinators defined in the BasicCombinators module.
+ -}
+
+--TODO: THIS IS NOT THE WAY THIS WILL ALWAYS BREAK
+-- because of the potential lookup failue
+-- PRE: None
+-- POST: Parses all valid application of unary operators expressions.
+unaryExpr :: Parser Expr
+unaryExpr
+  = parseUnaryAppHigh <|> parseUnaryAppLow
+
+parseUnaryAppLow :: Parser Expr
+parseUnaryAppLow = do
+  op <- foldr1 (<|>) (map (keyword.fst) unOpAssoc)
+  let op1 = fromJust $ lookup op unOpAssoc
+  expr <- parseExpr
+  return $ UnaryApp op1 expr
+
+parseUnaryAppHigh :: Parser Expr
+parseUnaryAppHigh = do
+  op <- parseFromMap unOpAssocHigher
+  expr <- parseExpr'
+  return $ UnaryApp op expr
+
+{-
+A number of parsers used to parse valid binary expressions in the WACC language.
+The design of the parser combinators take in to acccount the precdence of binary operators.
+-}
+
+-- PRE: None
+-- POST: Parses all valid binary expressions
+-- Example Usage: parse  binaryExpr "1 + 2" will return BinaryApp Mul (IntLit 1) (IntLit 2)
+binaryExpr :: Parser Expr
+binaryExpr = lowBinaryExpr
 
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow
-  = token $ leadWSC $ parseFromMap lowBinOps
+  = parseFromMap lowBinOps
 
 parseBinaryOpHigh :: Parser BinOp
 parseBinaryOpHigh
-  = token $ leadWSC $ parseFromMap highBinOps
+  = parseFromMap highBinOps
 
 parseBinaryOpHigher :: Parser BinOp
 parseBinaryOpHigher
-  = token $ leadWSC $ parseFromMap higherBinOps
+  = parseFromMap higherBinOps
 
+lowBinaryExpr :: Parser Expr
+lowBinaryExpr
+  = highBinaryExpr `chainl1` parseBinaryOpLow
+
+highBinaryExpr :: Parser Expr
+highBinaryExpr
+  = higherBinaryExpr `chainl1` parseBinaryOpHigh
+
+higherBinaryExpr :: Parser Expr
+higherBinaryExpr
+  = parseExpr' `chainl1` parseBinaryOpHigher
+
+-- PRE: None
+-- POST: Returns a parser which parses a sequence of expressions seperated by a meaningful seperator
+-- e.g the operator (+). The parser returns the expression wrapped up in the appropriate data constructors.
+-- Assume existence of parser which returns the Add data constructor as its result, call it parseAdd
+-- Example Usage: parse (chainl1 intLiteral parseAdd) "1 + 2 + 3" will return Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
 chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
 chainl1 p op
-  = p >>= rest
+  = trimWS $ p >>= rest
   where
     rest x = (do
       f <- op
       y <- p
       rest $ BinaryApp f x y) <|> return x
 
-lowBinaryExpr :: Parser Expr
-lowBinaryExpr
-  = token $ leadWSC $ highBinaryExpr `chainl1` parseBinaryOpLow
 
-highBinaryExpr :: Parser Expr
-highBinaryExpr
-  = token $ leadWSC $ higherBinaryExpr `chainl1` parseBinaryOpHigh
-
-higherBinaryExpr :: Parser Expr
-higherBinaryExpr
-  = token $ leadWSC $ parseExpr' `chainl1` parseBinaryOpHigher
-
-binaryExpr :: Parser Expr
-binaryExpr
-  = token $ leadWSC lowBinaryExpr
-
-unaryExpr :: Parser Expr
-unaryExpr
-  = token $ leadWSC $ UnaryApp <$> parseUnaryOp <*> parseExpr
-
+-- PRE: None
+-- POST: Parser of bracketed expressions. Parser removes whitespace and throws away brackets.
 bracketedExpr :: Parser Expr
 bracketedExpr
-  = token $ leadWSC $ bracket (char '(') parseExpr (char ')')
+  = bracket (punctuation '(') parseExpr (punctuation ')')
 
+-- PRE: None
+-- POST: Parses references to array elements.
+-- Example usage: parse arrayElem "abc[1][2]" will return ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser ArrayElem
 arrayElem
-  = token $ leadWSC $ ArrayElem <$> identifier <*> some (bracket (char '[') parseExpr (char ']'))
+  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr (punctuation ']'))
 
+-- PRE: None
+-- POST: Wraps parsed array elements in appropriate data constructor.
 arrayElemExpr :: Parser Expr
 arrayElemExpr
-  = token $ leadWSC $ ExprArray <$> arrayElem
+  = ExprArray <$> arrayElem
 
-parseExpr' :: Parser Expr
-parseExpr'
-  =  token $ leadWSC (arrayElemExpr
-  <|> unaryExpr
-  <|> bracketedExpr
-  <|> charLiteral
-  <|> boolLiteral
-  <|> stringLiter
-  <|> pairLiteral
-  <|> exprIdent
-  <|> intLiteral)
-
-parseExpr :: Parser Expr
-parseExpr
-  = token $ leadWSC $ binaryExpr <|> parseExpr'
-
+-- PRE: None
+-- POST: Parses a list of expressions.
 parseExprList :: Char -> Char -> Parser [Expr]
 parseExprList open close
-  = token $ leadWSC $ bracket (char open) (sepby parseExpr (char ',')) (char close)
+  = bracket (punctuation open) (sepby parseExpr (punctuation ',')) (punctuation close)
