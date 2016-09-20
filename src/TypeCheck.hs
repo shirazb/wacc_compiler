@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-{- Exploratory work in building a typechecker -}
+{- Exploratory work in building a typechecker, this is a prototype. -}
 
 
 import           Utility.Definitions

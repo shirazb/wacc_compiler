@@ -186,7 +186,7 @@ instance Show BinOp where
 
 instance Show ArrayElem where
   show (ArrayElem name elems)
-    = show name ++ show (concatMap (\x ->  "[" ++ show x ++ "]") elems)
+    = name ++ concatMap (\x ->  "[" ++ show x ++ "]") elems
 
 instance Show PairType where
   show (PairType pt1 pt2)
