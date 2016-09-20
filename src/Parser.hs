@@ -1,6 +1,9 @@
 {-
-A parser built using parser combinators for the WACC language. Parser combinators are used because of the flexibility and modularity that they offer.
-Building a parser combinator in haskell also serves as a learnig exercise to learn the more advanced features of Haskell. This parser currently has no error handling.
+A parser built using parser combinators for the WACC language. Parser 
+combinators are used because of the flexibility and modularity that they
+offer. Building a parser combinator in Haskell also serves as a learning 
+experience to learn the more advanced features of Haskell. The parser 
+currently has no error handling.
 -}
 
 module Parser (parseProgram) where

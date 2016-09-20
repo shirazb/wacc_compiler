@@ -24,7 +24,7 @@ item  = Parser $ \s -> case s of
 satisfy  :: (Char -> Bool) -> Parser Char
 satisfy p = item >>= \x -> if p x then return x else mzero
 
--- PRE: None
+-- PRE:  None
 -- POST: Does nothing if a single character satisfies the predicate, fails otherwise
 check :: (Char -> Bool) -> Parser ()
 check predicate
