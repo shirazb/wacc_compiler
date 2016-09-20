@@ -253,7 +253,7 @@ instance Show Type where
   show (BaseT baseType)
     = show baseType
   show (ArrayT arrayType)
-    = show arrayType
+    = show arrayType ++ "[]"
   show (PairT pairType)
     = show pairType
 
@@ -271,7 +271,7 @@ instance Show PairElemType where
   show (BaseP baseType)
     = show baseType
   show (ArrayP arrayType)
-    = show arrayType
+    = show arrayType ++ "[]"
   show Pair
     = "pair"
 

@@ -14,6 +14,7 @@ import           Parsers.Lexer
 import           Utility.BasicCombinators
 import           Utility.Declarations
 import           Utility.Definitions
+import           Data.Maybe
 
 
 -- PRE:  None
@@ -74,20 +75,20 @@ stringLiter
 -- POST: Parses all valid application of unary operators expressions.
 unaryExpr :: Parser Expr
 unaryExpr
-  = UnaryApp <$> parseUnaryOp <*> parseExpr'
+  = parseUnaryAppHigh <|> parseUnaryAppLow
 
--- PRE: None
--- POST: Parser of unary operators.
-parseUnaryOp :: Parser UnOp
-parseUnaryOp = parseUnaryOpHigh 
+parseUnaryAppLow :: Parser Expr
+parseUnaryAppLow = do
+  op <- foldr1 (<|>) (map (keyword.fst) unOpAssoc)
+  let op1 = fromJust $ lookup op unOpAssoc
+  expr <- parseExpr
+  return $ UnaryApp op1 expr
 
--- parseUnaryOpLow :: Parser UnOp
--- parseUnaryOpLow = keyword (parseFromMap unOpAssoc)
-
-parseUnaryOpHigh :: Parser UnOp
-parseUnaryOpHigh = parseFromMap unOpAssocHigher
-
-
+parseUnaryAppHigh :: Parser Expr
+parseUnaryAppHigh = do
+  op <- parseFromMap unOpAssocHigher
+  expr <- parseExpr'
+  return $ UnaryApp op expr
 
 {-
 A number of parsers used to parse valid binary expressions in the WACC language.

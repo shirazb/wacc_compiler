@@ -15,7 +15,7 @@ import           Utility.Definitions
 -- Returns type wrapped in appropriate data constructor.
 parseType :: Parser Type
 parseType
-  =   ArrayT <$> parseArrayType
+  =   parseArrayType
   <|> PairT  <$>  parsePairType
   <|> BaseT  <$> parseBaseType
 
