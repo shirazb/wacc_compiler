@@ -1,7 +1,7 @@
 ---
 -- Expression Parsing.
 ---
-module Parsers.Expression (parseExpr, parseExprList, arrayElem) where
+module Parsers.Expression {-(parseExpr, parseExprList, arrayElem)-} where
 
 import Control.Applicative
 import Control.Monad
@@ -39,9 +39,16 @@ stringLiter :: Parser Expr
 stringLiter
   = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
+
 parseUnaryOp :: Parser UnOp
-parseUnaryOp
-  = parseFromMap unOpAssoc
+parseUnaryOp = parseUnaryOpHigh <|> parseUnaryOpLow
+
+parseUnaryOpLow :: Parser UnOp
+parseUnaryOpLow = keyword (parseFromMap unOpAssoc)
+
+parseUnaryOpHigh :: Parser UnOp
+parseUnaryOpHigh = parseFromMap unOpAssocHigher
+
 
 parseBinaryOpLow :: Parser BinOp
 parseBinaryOpLow

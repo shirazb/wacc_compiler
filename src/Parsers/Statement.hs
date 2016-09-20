@@ -90,7 +90,7 @@ parseSkip
 
 parseDeclaration :: Parser Stat
 parseDeclaration = do
-  traceM $ "------ Entered parseDeclaration  ------"
+  traceM  "------ Entered parseDeclaration  ------"
   varType    <- parseType
   traceM $ "parseType returned " ++ show varType
   ident      <- identifier
@@ -98,7 +98,7 @@ parseDeclaration = do
   punctuation '='
   assignRHS  <- parseRHS
   traceM $ "parseRHS returned " ++ show assignRHS
-  traceM $ "------ Leaving parsedDeclratation ------"
+  traceM  "------ Leaving parsedDeclratation ------"
   return $ Declaration varType ident assignRHS
 
 parseRHS :: Parser AssignRHS

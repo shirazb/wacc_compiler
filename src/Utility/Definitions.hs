@@ -120,7 +120,9 @@ lowBinOps   =  [("+", Add), ("-", Sub) , (">=", GTE), (">", Utility.Definitions.
 highBinOps   = [("*", Mul)]
 higherBinOps = [("/", Div), ("%", Mod)]
 
-unOpAssoc = [("!", Not), ("-", Neg), ("len", Len), ("ord", Ord), ("chr", Chr)]
+unOpAssoc = [("len", Len), ("ord", Ord), ("chr", Chr)]
+unOpAssocHigher = [("!", Not), ("-", Neg)]
+
 
 baseTypes = [("int", BaseInt),("bool", BaseBool),
             ("char", BaseChar),("string", BaseString)]

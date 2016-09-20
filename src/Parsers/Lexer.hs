@@ -60,7 +60,7 @@ keyword k = do
   junk
   return kword
 
-operators :: [Char]
+operators :: String
 operators = map (head.fst) (lowBinOps ++ highBinOps ++ higherBinOps)
 
 isPunctuation :: Char -> Bool
@@ -98,6 +98,7 @@ parseFromMap :: [(String, a)] -> Parser a
 parseFromMap assoclist = do
   value <- foldr1 (<|>) (map (token . fst) assoclist)
   return $ fromJust (lookup value assoclist)
+
 
 bracket :: Parser a -> Parser b -> Parser c  -> Parser b
 bracket open p close
