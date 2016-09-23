@@ -1,3 +1,9 @@
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE TypeFamilies              #-}
+
 {-
 This module defines the parser type which will be used in the rest of the program. It also defines a number of typeclass instances,
 enabling us to benefit from the functions that these typeclasses provide. The functions provided by the typeclasses are used in defining
@@ -7,6 +13,21 @@ module Utility.Declarations where
 
 import           Control.Applicative
 import           Control.Monad
+import           Control.Monad.State       (MonadState (..), StateT (..))
+import           Control.Monad.Trans.Class (lift)
+import           Control.Monad.Trans.Maybe (MaybeT (..))
+import           Data.List                 (nub)
+
+
+type Position = (Int, Int)
+type Error = (String, Position)
+newtype Parser1 a = Parser {parse1 :: StateT String (StateT Pos (MaybeT (Either Error))) a}
+
+runParser :: Parser1 a -> String -> Either Error (Maybe ((a, String), Position))
+runParser p ts = undefined
+
+
+
 
 {- TYPE DECLARATIONS -}
 
