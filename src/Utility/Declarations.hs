@@ -1,9 +1,10 @@
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE TypeFamilies              #-}
-
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE NoMonomorphismRestriction  #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-
 This module defines the parser type which will be used in the rest of the program. It also defines a number of typeclass instances,
 enabling us to benefit from the functions that these typeclasses provide. The functions provided by the typeclasses are used in defining
@@ -20,12 +21,71 @@ import           Data.List                 (nub)
 
 
 type Position = (Int, Int)
-type Error = (String, Position)
-newtype Parser1 a = Parser {parse1 :: StateT String (StateT Pos (MaybeT (Either Error))) a}
+type Err = (String, Position)
+newtype Parser1 a = Parser1 {parse1 :: StateT String (StateT Position (MaybeT (Either Err))) a} deriving (Monad, MonadState String, Applicative, Functor, Alternative)
 
-runParser :: Parser1 a -> String -> Either Error (Maybe ((a, String), Position))
-runParser p ts = undefined
+runParser :: Parser1 a -> String -> Either Err (Maybe ((a, String), Position))
+runParser p ts = runMaybeT $ runStateT (runStateT (parse1 p) ts) (0, 0)
 
+
+getState :: Parser1 Position
+getState = Parser1 $ lift get
+
+-- putState :: (MonadState String m) => Position -> Parser1 (m ())
+-- putState =  Parser1 $ lift . put
+
+updateState :: (Position -> Position) -> Parser ()
+updateState f = getState >>= \ x -> lift . put (f x)
+
+basicItem :: (MonadState String m, Alternative m) => m Char
+basicItem = do
+  state <- get
+  case state of
+    (x:xs) -> do {put xs; return x}
+    [] -> empty
+
+-- item = Parser1 $ do
+--   c <- basicItem
+--   updateState (f c)
+--   return c
+
+
+f :: Char -> Position -> Position
+f d (ln, c) = (ln + 1, 0)
+f _ (ln, c) = (ln , c + 1)
+
+
+-- basicItem =
+--     get >>= \xs -> case xs of
+--                         (t:ts) -> put ts *> return t
+--                         []     -> return []
+
+commit :: (MonadError m, Alternative m) => Error m -> m a -> m a
+commit err p = p <|> throwError err
+
+class Monad m => MonadError m where
+  type Error m :: *
+  throwError :: Error m -> m a
+  catchError :: m a -> (Error m -> m a) -> m a
+
+instance MonadError (Either e) where
+  type Error (Either e) = e
+  throwError               =  Left
+  catchError  (Right x) _  =  Right x
+  catchError  (Left e)  f  =  f e
+
+instance MonadError m => MonadError (StateT s m) where
+  type Error (StateT s m) = Error m
+  throwError      =  lift . throwError
+  catchError m f  =  StateT g
+    where
+      g s = catchError (runStateT m s)
+                       (\e -> runStateT (f e) s)
+
+instance MonadError m => MonadError (MaybeT m) where
+  type Error (MaybeT m) = Error m
+  throwError      =  lift . throwError
+  catchError m f  =  MaybeT $ catchError (runMaybeT m) (runMaybeT . f)
 
 
 
