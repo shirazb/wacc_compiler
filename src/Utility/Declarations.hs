@@ -20,22 +20,30 @@ import           Control.Monad.Trans.Maybe (MaybeT (..))
 import           Data.List                 (nub)
 
 
-type Position = (Int, Int)
-type Err = (String, Position)
-newtype Parser1 a = Parser1 {parse1 :: StateT String (StateT Position (MaybeT (Either Err))) a} deriving (Monad, MonadState String, Applicative, Functor, Alternative)
+type Position
+  = (Int, Int)
+
+type Err
+  = (String, Position)
+
+newtype Parser1 a
+  = Parser1 { parse1 :: StateT String (StateT Position (MaybeT (Either Err))) a } deriving (Monad, MonadState String, Applicative, Functor, Alternative)
 
 runParser :: Parser1 a -> String -> Either Err (Maybe ((a, String), Position))
-runParser p ts = runMaybeT $ runStateT (runStateT (parse1 p) ts) (0, 0)
+runParser p ts
+  = runMaybeT $ runStateT (runStateT (parse1 p) ts) (0, 0)
 
 
 getState :: Parser1 Position
-getState = Parser1 $ lift get
+getState
+  = Parser1 $ lift get
 
 -- putState :: (MonadState String m) => Position -> Parser1 (m ())
 -- putState =  Parser1 $ lift . put
 
 updateState :: (Position -> Position) -> Parser ()
-updateState f = getState >>= \ x -> lift . put (f x)
+updateState f
+  = getState >>= \ x -> lift . put (f x)
 
 basicItem :: (MonadState String m, Alternative m) => m Char
 basicItem = do
@@ -51,8 +59,10 @@ basicItem = do
 
 
 f :: Char -> Position -> Position
-f d (ln, c) = (ln + 1, 0)
-f _ (ln, c) = (ln , c + 1)
+f d (ln, c)
+  = (ln + 1, 0)
+f _ (ln, c)
+  = (ln , c + 1)
 
 
 -- basicItem =
@@ -61,7 +71,8 @@ f _ (ln, c) = (ln , c + 1)
 --                         []     -> return []
 
 commit :: (MonadError m, Alternative m) => Error m -> m a -> m a
-commit err p = p <|> throwError err
+commit err p
+  = p <|> throwError err
 
 class Monad m => MonadError m where
   type Error m :: *
