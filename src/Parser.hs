@@ -6,7 +6,7 @@ experience to learn the more advanced features of Haskell. The parser
 currently has no error handling.
 -}
 
-module Parser (parseProgram) where
+module Parser (runParser) where
 
 import           Control.Applicative
 import           Control.Monad
@@ -33,6 +33,9 @@ main = do
   putStrLn "------------------------------------------------"
   print ((fst . head) c)
   return ()
+
+runParser :: String -> Program
+runParser = parse parseProgram
 
 parseProgram :: Parser Program
 parseProgram
