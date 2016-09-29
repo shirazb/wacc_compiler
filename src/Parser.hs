@@ -35,7 +35,7 @@ main = do
   return ()
 
 runParser :: String -> Program
-runParser = parse parseProgram
+runParser = fst . head . parse parseProgram
 
 parseProgram :: Parser Program
 parseProgram
