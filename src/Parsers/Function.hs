@@ -15,7 +15,7 @@ import           Utility.Definitions
 
 -- PRE: None
 -- POST: Parses a function defintion.
-parseFunction :: Parser Func
+parseFunction :: Parser Char Func
 parseFunction = do
   returnType <- parseType
   name <- identifier
@@ -27,13 +27,13 @@ parseFunction = do
 
 -- PRE: None
 -- POST: Attempts to parse a list of parameters if there is one.
-parseParamList :: Parser ParamList
+parseParamList :: Parser Char ParamList
 parseParamList
   = ParamList <$> sepby parseParam (punctuation ',')
 
 -- PRE: None
 -- POST: Parses a parameter
 -- Example Usage: parse parseParam "intname" will return Param Int "name". Note whitespace is not accounted for here.
-parseParam :: Parser Param
+parseParam :: Parser Char Param
 parseParam
   = liftM2 Param parseType identifier

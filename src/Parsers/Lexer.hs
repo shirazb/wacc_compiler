@@ -16,20 +16,21 @@ import Debug.Trace
 
 commentDelim
   = "#"
+
 -- PRE: None
 -- POST: Removes single line comments.
-comments :: Parser ()
+comments :: Parser Char ()
 comments
   = void $ string commentDelim >> many (satisfy (/= '\n')) >> char '\n'
 
 -- PRE: None
 -- Post: Removes spaces incl \t,\n etc
-spaces :: Parser ()
+spaces :: Parser Char ()
 spaces = void $ some (satisfy isSpace)
 
 -- PRE: None
 -- POST: Removes whitespace or comments.
-junk :: Parser ()
+junk :: Parser Char ()
 junk
   = void $ many (spaces <|> comments)
 
@@ -37,31 +38,31 @@ junk
 The following three functions remove leading and trailing whitespace.
 -}
 
-leadingWS :: Parser a -> Parser a
+leadingWS :: Parser Char b -> Parser Char b
 leadingWS p
   = junk >> p
 
-trailingWS :: Parser a -> Parser a
+trailingWS :: Parser Char b -> Parser Char b
 trailingWS p = do
   parsedValue <- p
   junk
   return parsedValue
 
-trimWS :: Parser a -> Parser a
+trimWS :: Parser Char b -> Parser Char b
 trimWS
   = trailingWS . leadingWS
 
 
 -- PRE: None
 -- POST: Removes whitespace before and after the result of the string parser.
-token :: String -> Parser String
+token :: String -> Parser Char String
 token
   = trimWS . string
 -- TODO: THe issue is with the keyword AND
 -- the end of file terminator.
 -- PRE: None
 -- POST: It is used to parse keywords defined in the WACC language.
-keyword :: String -> Parser String
+keyword :: String -> Parser Char String
 keyword k = do
   kword <- leadingWS (string k)
   check isSpace <|> check isPunctuation <|> check isComment
@@ -84,7 +85,7 @@ isComment c = c == '#'
 
 -- PRE: None
 -- POST: Parser for the given input char, it also removes whitespace around the char.
-punctuation :: Char -> Parser Char
+punctuation :: Char -> Parser Char Char
 punctuation
   = trimWS . char
 
@@ -93,7 +94,7 @@ keywords = ["while", "if", "fi", "else", "null", "pair", "is", "begin", "skip", 
 
 -- PRE: None
 -- POST: A parser for identifiers used to parse identifers in the wacc language, removes trailing whitespace.
-identifiers :: Parser String
+identifiers :: Parser Char String
 identifiers
   = identifier >>= token
 
@@ -102,11 +103,11 @@ Two Utility functions which are used to parse identifiers. An identifier in the 
 an underscore char, followed by any number of underscore or alphanum chars. The ident function includes a check to ensure that
 the parsed identifier is not a keyword.
 -}
-ident :: Parser String
+ident :: Parser Char String
 ident
   = liftM2 (:) (char '_' <|> letter) (many (alphanum <|> char '_'))
 
-identifier :: Parser String
+identifier :: Parser Char String
 identifier = trimWS $ do
   x <- ident
   guard (x `notElem` keywords)
@@ -115,13 +116,13 @@ identifier = trimWS $ do
 -- PRE: The given input string contains a value which is present in the map.
 -- POST: It takes as input a map from strings to values of type a. It attempts to parse one of the strings in the map and
 -- if it succeeds it will return the corresponding a value. Essentially a parser lookup function. It removes trailing WS.
-parseFromMap :: (Show a) => [(String, a)] -> Parser a
+parseFromMap :: (Show a) => [(String, a)] -> Parser Char a
 parseFromMap assoclist = do
   value <- foldr1 (<|>) (map (token . fst) assoclist)
   return $ fromJust (lookup value assoclist)
 
 
 -- Similar to bracketNoWS defined in basic combinators, however it takes in to account whitespace.
-bracket :: Parser a -> Parser b -> Parser c  -> Parser b
+bracket :: Parser Char a -> Parser Char b -> Parser Char c  -> Parser Char b
 bracket open p close
   = trimWS $ bracketNoWS open p close

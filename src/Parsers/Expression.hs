@@ -20,12 +20,12 @@ import           Data.Maybe
 -- PRE:  None
 -- POST: Parses all valid expressions in the WACC language, it is factored out like
 -- this to prevent the parser going in to an infinite loop due to left recursion.
-parseExpr :: Parser Expr
+parseExpr :: Parser Char Expr
 parseExpr
   = binaryExpr <|> parseExpr'
 
 
-parseExpr' :: Parser Expr
+parseExpr' :: Parser Char Expr
 parseExpr'
   =   arrayElemExpr
   <|> unaryExpr
@@ -39,30 +39,32 @@ parseExpr'
 
 {- Basic combinators which are used to parse atomic expressions -}
 
-intLiteral :: Parser Expr
+-- what type of errors do we have???
+
+intLiteral :: Parser Char Expr
 intLiteral
   = trimWS $ (IntLit . read) <$> some digit
 
-boolLiteral :: Parser Expr
+boolLiteral :: Parser Char Expr
 boolLiteral = do
   boolean <- keyword "true" <|> keyword "false"
   if boolean == "true"
     then return (BoolLit True)
     else return (BoolLit False)
 
-charLiteral :: Parser Expr
+charLiteral :: Parser Char Expr
 charLiteral
    = CharLit <$> bracket (char '\'') character (char '\'')
 
-pairLiteral :: Parser Expr
+pairLiteral :: Parser Char Expr
 pairLiteral
   = keyword "null" >> return PairLiteral
 
-exprIdent :: Parser Expr
+exprIdent :: Parser Char Expr
 exprIdent
   = IdentE <$> identifier
 
-stringLiter :: Parser Expr
+stringLiter :: Parser Char Expr
 stringLiter
   = StringLit <$> bracket (char '\"') (many character) (char '\"')
 
@@ -74,18 +76,18 @@ stringLiter
 -- because of the potential lookup failue
 -- PRE: None
 -- POST: Parses all valid application of unary operators expressions.
-unaryExpr :: Parser Expr
+unaryExpr :: Parser Char Expr
 unaryExpr
   = parseUnaryAppHigh <|> parseUnaryAppLow
 
-parseUnaryAppLow :: Parser Expr
+parseUnaryAppLow :: Parser Char Expr
 parseUnaryAppLow = do
   op <- foldr1 (<|>) (map (keyword.fst) unOpAssoc)
   let op1 = fromJust $ lookup op unOpAssoc
   expr <- parseExpr
   return $ UnaryApp op1 expr
 
-parseUnaryAppHigh :: Parser Expr
+parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
   op <- parseFromMap unOpAssocHigher
   expr <- parseExpr'
@@ -99,30 +101,30 @@ The design of the parser combinators take in to acccount the precdence of binary
 -- PRE: None
 -- POST: Parses all valid binary expressions
 -- Example Usage: parse  binaryExpr "1 + 2" will return BinaryApp Mul (IntLit 1) (IntLit 2)
-binaryExpr :: Parser Expr
+binaryExpr :: Parser Char Expr
 binaryExpr = lowBinaryExpr
 
-parseBinaryOpLow :: Parser BinOp
+parseBinaryOpLow :: Parser Char BinOp
 parseBinaryOpLow
   = parseFromMap lowBinOps
 
-parseBinaryOpHigh :: Parser BinOp
+parseBinaryOpHigh :: Parser Char BinOp
 parseBinaryOpHigh
   = parseFromMap highBinOps
 
-parseBinaryOpHigher :: Parser BinOp
+parseBinaryOpHigher :: Parser Char BinOp
 parseBinaryOpHigher
   = parseFromMap higherBinOps
 
-lowBinaryExpr :: Parser Expr
+lowBinaryExpr :: Parser Char Expr
 lowBinaryExpr
   = highBinaryExpr `chainl1` parseBinaryOpLow
 
-highBinaryExpr :: Parser Expr
+highBinaryExpr :: Parser Char Expr
 highBinaryExpr
   = higherBinaryExpr `chainl1` parseBinaryOpHigh
 
-higherBinaryExpr :: Parser Expr
+higherBinaryExpr :: Parser Char Expr
 higherBinaryExpr
   = parseExpr' `chainl1` parseBinaryOpHigher
 
@@ -131,7 +133,7 @@ higherBinaryExpr
 -- e.g the operator (+). The parser returns the expression wrapped up in the appropriate data constructors.
 -- Assume existence of parser which returns the Add data constructor as its result, call it parseAdd
 -- Example Usage: parse (chainl1 intLiteral parseAdd) "1 + 2 + 3" will return Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
-chainl1 :: Parser Expr -> Parser BinOp -> Parser Expr
+chainl1 :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
 chainl1 p op
   = trimWS $ p >>= rest
   where
@@ -143,25 +145,25 @@ chainl1 p op
 
 -- PRE: None
 -- POST: Parser of bracketed expressions. Parser removes whitespace and throws away brackets.
-bracketedExpr :: Parser Expr
+bracketedExpr :: Parser Char Expr
 bracketedExpr
   = bracket (punctuation '(') parseExpr (punctuation ')')
 
 -- PRE: None
 -- POST: Parses references to array elements.
 -- Example usage: parse arrayElem "abc[1][2]" will return ArrayElem "abc" [IntLit 1, IntLit 2]
-arrayElem :: Parser ArrayElem
+arrayElem :: Parser Char ArrayElem
 arrayElem
   = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr (punctuation ']'))
 
 -- PRE: None
 -- POST: Wraps parsed array elements in appropriate data constructor.
-arrayElemExpr :: Parser Expr
+arrayElemExpr :: Parser Char Expr
 arrayElemExpr
   = ExprArray <$> arrayElem
 
 -- PRE: None
 -- POST: Parses a list of expressions.
-parseExprList :: Char -> Char -> Parser [Expr]
+parseExprList :: Char -> Char -> Parser Char [Expr]
 parseExprList open close
   = bracket (punctuation open) (sepby parseExpr (punctuation ',')) (punctuation close)

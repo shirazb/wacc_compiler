@@ -23,21 +23,24 @@ import           Utility.BasicCombinators
 import           Utility.Declarations
 import           Utility.Definitions
 
+-- runParser :: Parser t a -> [t] -> Position -> Either Err (Maybe((a,[t]), Position))
+
 main = do
   args <- getArgs
   let filename = head args
   contents <- readFile filename
-  let c = parse parseProgram contents
   putStrLn "------------------------------------------------"
   putStrLn "THE PROGRAM WE HAVE PARSED"
   putStrLn "------------------------------------------------"
-  print ((fst . head) c)
+  case runParser parseProgram contents (0,0) of
+    Right (Just ((a,b), _)) -> print a
+    _ -> print "[]"
   return ()
 
-runParser :: String -> Program
-runParser = fst . head . parse parseProgram
+-- runParser :: String -> Program
+-- runParser = fst . head . parse parseProgram
 
-parseProgram :: Parser Program
+parseProgram :: Parser Char Program
 parseProgram
   = bracket (keyword "begin") parseProgram' (string "end")
   where

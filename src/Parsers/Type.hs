@@ -13,19 +13,19 @@ import           Utility.Definitions
 --PRE: None
 --POST: Parser of types for the WACC language, built up using the more basic parsers of types.
 -- Returns type wrapped in appropriate data constructor.
-parseType :: Parser Type
+parseType :: Parser Char Type
 parseType
   =   parseArrayType
   <|> PairT  <$>  parsePairType
   <|> BaseT  <$> parseBaseType
 
 
-parseBaseType :: Parser BaseType
+parseBaseType :: Parser Char BaseType
 parseBaseType
   = parseFromMap baseTypes
 
 
-multiDimArray :: Parser (ArrayType -> Type)
+multiDimArray :: Parser Char (ArrayType -> Type)
 multiDimArray
   = token "[]" >> rest ArrayT
   where
@@ -34,13 +34,13 @@ multiDimArray
       rest (ArrayT . x)) <|> return x
 
 
-parseArrayType :: Parser ArrayType
+parseArrayType :: Parser Char ArrayType
 parseArrayType = do
   t          <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
   dimension  <- multiDimArray
   return (dimension t)
 
-parsePairType :: Parser PairType
+parsePairType :: Parser Char PairType
 parsePairType = trimWS $ do
   token "pair"
   punctuation '('
@@ -50,11 +50,11 @@ parsePairType = trimWS $ do
   punctuation ')'
   return $ PairType t1 t2
 
-parseNestedPairType :: Parser PairElemType
+parseNestedPairType :: Parser Char PairElemType
 parseNestedPairType
   = token "pair" >> return Pair
 
-parsePairElemType :: Parser PairElemType
+parsePairElemType :: Parser Char PairElemType
 parsePairElemType
   =   parseNestedPairType
   <|> ArrayP <$> parseArrayType
