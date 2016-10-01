@@ -1,7 +1,5 @@
-{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoMonomorphismRestriction  #-}
 {-# LANGUAGE UndecidableInstances       #-}
@@ -12,7 +10,6 @@ module Utility.BasicCombinators where
 import           Control.Applicative
 import           Control.Monad
 import           Data.Maybe
-import           Control.Monad
 import           Control.Monad.State       (MonadState (..), StateT (..))
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Maybe (MaybeT (..))
@@ -31,7 +28,7 @@ import           Utility.Declarations
 item :: Parser Char Char
 item = do
   c <- basicItem
-  updateState (f c)
+  updatePosition (f c)
   return c
 
 
@@ -146,7 +143,7 @@ bracketNoWS :: Parser Char a -> Parser Char b -> Parser Char c -> Parser Char b
 bracketNoWS open p close = do
   open
   x <- p
-  close 
+  close
   return x
 
 -- PRE:  None

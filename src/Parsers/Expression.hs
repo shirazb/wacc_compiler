@@ -66,14 +66,12 @@ exprIdent
 
 stringLiter :: Parser Char Expr
 stringLiter
-  = StringLit <$> bracket (char '\"') (locationReporter (many character) "Invalid char found in sequence") (char '\"')
+  = StringLit <$> bracket (char '\"') (locationReporter (many character) "Invalid char found in string") (char '\"')
 
 {- Complex combinators used to parse larger & complex expressions. They are built using the basic combinators defined above and a few generic
    combinators defined in the BasicCombinators module.
  -}
 
---TODO: THIS IS NOT THE WAY THIS WILL ALWAYS BREAK
--- because of the potential lookup failue
 -- PRE: None
 -- POST: Parses all valid application of unary operators expressions.
 unaryExpr :: Parser Char Expr
@@ -102,7 +100,16 @@ The design of the parser combinators take in to acccount the precdence of binary
 -- POST: Parses all valid binary expressions
 -- Example Usage: parse  binaryExpr "1 + 2" will return BinaryApp Mul (IntLit 1) (IntLit 2)
 binaryExpr :: Parser Char Expr
-binaryExpr = lowBinaryExpr
+binaryExpr
+  = highBinaryExpr `chainl1` parseBinaryOpLow
+
+highBinaryExpr :: Parser Char Expr
+highBinaryExpr
+  = higherBinaryExpr `chainl1` parseBinaryOpHigh
+
+higherBinaryExpr :: Parser Char Expr
+higherBinaryExpr
+  = parseExpr' `chainl1` parseBinaryOpHigher
 
 parseBinaryOpLow :: Parser Char BinOp
 parseBinaryOpLow
@@ -115,18 +122,6 @@ parseBinaryOpHigh
 parseBinaryOpHigher :: Parser Char BinOp
 parseBinaryOpHigher
   = parseFromMap higherBinOps
-
-lowBinaryExpr :: Parser Char Expr
-lowBinaryExpr
-  = highBinaryExpr `chainl1` parseBinaryOpLow
-
-highBinaryExpr :: Parser Char Expr
-highBinaryExpr
-  = higherBinaryExpr `chainl1` parseBinaryOpHigh
-
-higherBinaryExpr :: Parser Char Expr
-higherBinaryExpr
-  = parseExpr' `chainl1` parseBinaryOpHigher
 
 -- PRE: None
 -- POST: Returns a parser which parses a sequence of expressions seperated by a meaningful seperator

@@ -12,8 +12,9 @@ import           Data.Maybe               (fromJust)
 import           Utility.BasicCombinators
 import           Utility.Declarations
 import           Utility.Definitions
-import Debug.Trace
+import           Debug.Trace
 
+commentDelim :: String
 commentDelim
   = "#"
 
@@ -21,7 +22,7 @@ commentDelim
 -- POST: Removes single line comments.
 comments :: Parser Char ()
 comments
-  = void $ string commentDelim >> many (satisfy (/= '\n')) >> char '\n'
+  = void $ string commentDelim >> many (satisfy (/= '\n')) >> locationReporter (char '\n') "No newline after comment"
 
 -- PRE: None
 -- Post: Removes spaces incl \t,\n etc

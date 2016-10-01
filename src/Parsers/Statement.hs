@@ -123,7 +123,9 @@ parseDeclaration = do
   varType    <- parseType
   ident      <- identifier
   punctuation '='
+  traceM "We are in parse declaration"
   assignRHS  <- locationReporter parseRHS "Invalid RHS in declaration"
+  checkInvalidRHS
   return $ Declaration varType ident assignRHS
 
 -- PRE: None
@@ -133,7 +135,13 @@ parseAssignment = do
   lhs <- parseLHS
   locationReporter (punctuation '=') "Missing equal sign in assignment"
   rhs <- locationReporter parseRHS "Invalid RHS in assignment"
+  checkInvalidRHS
   return $ Assignment lhs rhs
+
+checkInvalidRHS :: Parser Char ()
+checkInvalidRHS = do
+  junk
+  locationReporter (check (\c -> c == '\n' || c == ';')) "Invalid RHS"
 
 {-
 Defines a number of parser combinators which can parse all valid lhs and rhs of
@@ -194,8 +202,11 @@ assignToFuncCall = do
 -- PRE: None
 -- POST: Parses array literals (rhs)
 assignToArrayLit :: Parser Char AssignRHS
-assignToArrayLit
-  = ArrayLitAssign <$> parseExprList '[' ']'
+assignToArrayLit = do
+  punctuation '['
+  exprList <- sepby parseExpr (punctuation ',')
+  locationReporter (punctuation ']') "No closing bracket in array literal"
+  return $ ArrayLitAssign exprList
 
 -- PRE: None
 -- POST: Parses a newpair declaration (rhs)

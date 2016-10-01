@@ -12,6 +12,8 @@ import           Control.Applicative
 import           Control.Monad
 import           Debug.Trace
 import           System.Environment
+import           Control.Monad.State       (MonadState (..), StateT (..))
+import           Control.Monad.Except
 
 {- Local Imports -}
 
@@ -30,11 +32,12 @@ main = do
   let filename = head args
   contents <- readFile filename
   putStrLn "------------------------------------------------"
-  putStrLn "THE PROGRAM WE HAVE PARSED"
+  putStrLn "           THE PROGRAM WE HAVE PARSED           "
   putStrLn "------------------------------------------------"
   case runParser parseProgram contents (0,0) of
     Right (Just ((a,b), _)) -> print a
     Left err -> print err
+    _ -> print "Program Failure"
   return ()
 
 -- runParser :: String -> Program
@@ -42,37 +45,22 @@ main = do
 
 parseProgram :: Parser Char Program
 parseProgram
-  = bracket (keyword "begin") parseProgram' (string "end")
+  = bracket (keyword "begin") parseProgram' endingParse
   where
     parseProgram' = liftM2 Program (many parseFunction) parseStatement
 
 
-
--- keyword :: String -> Parser String
--- keyword k = do
---   kword <- leadingWS (string k)
---   check isSpace <|> check isPunctuation <|> check isComment
---   junk
---   return kword
---
--- endingParse = do
---    string "end"
---    junk s
---    st <- get
---    if length (st) != 0 then mzero else result "!"
-
-
-
--- Y: end
--- Y: end___
--- N: endasuidhas
--- N: end    sjdhasd
--- Y: end   #asjkdhaskjda
--- Y: end#dhasiudhasd
-
+endingParse :: Parser Char String
+endingParse = do
+   string "end"
+   junk
+   unusedInputString <- get
+   pos <- getPosition
+   traceM ("The unused input string is: " ++ unusedInputString)
+   if null unusedInputString
+     then return "Valid Program"
+     else throwError ("Invalid Program", updateRowPosition pos)
 
 -- specification for the function that we need at the end of parse Program
 -- is one that consumes the rest of the string and it fails if it finds
 -- something that is not whitespace or is not a comment
-
--- sdgjgs \nsdjqws
