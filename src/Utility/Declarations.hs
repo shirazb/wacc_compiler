@@ -64,14 +64,14 @@ f '\n' (ln, c)
 f _ (ln, c)
   = (ln , c + 1)
 
-errorReporterParser :: (MonadError e m, Alternative m) => e -> m a -> m a
-errorReporterParser err p
+errorReporterParser :: (MonadError e m, Alternative m) => m a -> e -> m a
+errorReporterParser p err
   = p <|> throwError err
 
-locationReporter :: String -> Parser Char a -> Parser Char a
-locationReporter message parser = do
+locationReporter :: Parser Char a -> String -> Parser Char a
+locationReporter parser errorMessage = do
   p <- getState
-  errorReporterParser (message, p) parser
+  errorReporterParser parser ("Syntax Error: " ++ errorMessage, p)
 
 
 --

@@ -24,8 +24,8 @@ parseStatement
 parseStatement' :: Parser Char Stat
 parseStatement'
   =   parseDeclaration
-  <|> parseAssignment
   <|> parseRead
+  <|> parseAssignment
   <|> parseBuiltInFunc "free"    Free
   <|> parseBuiltInFunc "return"  Return
   <|> parseBuiltInFunc "exit"    Exit
@@ -52,8 +52,11 @@ parseRead
   = keyword "read" >> (Read <$> parseLHS)
 
 parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Char Stat
-parseBuiltInFunc funcName func
-  = keyword funcName >> (func <$> parseExpr)
+parseBuiltInFunc funcName func = do
+  keyword funcName
+  expr1 <- locationReporter parseExpr ("Invalid arguments to " ++ funcName ++ " function")
+  return $ func expr1
+
 
 
 {-
@@ -66,12 +69,12 @@ Parsers for all the synctactic structures in the WACC language that make up a st
 parseIfStat :: Parser Char Stat
 parseIfStat = do
   keyword "if"
-  cond <- parseExpr
-  keyword "then"
-  thenStat <- parseStatement
-  keyword "else"
-  elseStat <- parseStatement
-  keyword "fi"
+  cond <- locationReporter parseExpr "Invalid expression for if condition"
+  locationReporter (keyword "then") "Missing 'then' keyword"
+  thenStat <- locationReporter parseStatement "Invalid statement for then branch"
+  locationReporter (keyword "else") "Missing 'else' keyword"
+  elseStat <- locationReporter parseStatement "Invalid statement for else branch"
+  locationReporter (keyword "fi") "Missing 'fi' keyword"
   return $ If cond thenStat elseStat
 
 
@@ -80,31 +83,30 @@ parseIfStat = do
 parseWhileStat :: Parser Char Stat
 parseWhileStat = do
   keyword "while"
-  cond       <- parseExpr
-  keyword "do"
-  loopBody   <- parseStatement
-  keyword "done"
+  cond  <- locationReporter parseExpr "Invalid expression in while condition"
+  locationReporter (keyword "do") "Missing 'do' keyword"
+  loopBody   <- locationReporter parseStatement "Invalid statement for while condition"
+  locationReporter (keyword "done") "Missing 'done' keyword"
   return $ While cond loopBody
 
 
 -- PRE: None
 -- POST: Parses a new block of statements.
 parseBlock :: Parser Char Stat
-parseBlock
-  = Block <$> do
-    keyword "begin"
-    s <- parseStatement
-    keyword "end"
-    return s
+parseBlock = Block <$> do
+  keyword "begin"
+  s <- locationReporter parseStatement "Invalid statement in block"
+  locationReporter (keyword "end") "Missing 'end' keyword in block"
+  return s
 
 -- PRE: None
 -- POST: Parses a sequence of statements seperated by semi-colons.
 parseSeq :: Parser Char Stat
-parseSeq = parseStatement' >>= \s -> rest s
+parseSeq = parseStatement' >>= rest
   where
     rest s = (do
       punctuation ';'
-      s' <- parseStatement
+      s' <-  locationReporter parseStatement "Invalid statement in sequence"
       rest $ Seq s s') <|> return s
 
 
@@ -121,7 +123,7 @@ parseDeclaration = do
   varType    <- parseType
   ident      <- identifier
   punctuation '='
-  assignRHS  <- parseRHS
+  assignRHS  <- locationReporter parseRHS "Invalid RHS in declaration"
   return $ Declaration varType ident assignRHS
 
 -- PRE: None
@@ -129,13 +131,13 @@ parseDeclaration = do
 parseAssignment :: Parser Char Stat
 parseAssignment = do
   lhs <- parseLHS
-  punctuation '='
-  rhs <- parseRHS
+  locationReporter (punctuation '=') "Missing equal sign in assignment"
+  rhs <- locationReporter parseRHS "Invalid RHS in assignment"
   return $ Assignment lhs rhs
 
 {-
 Defines a number of parser combinators which can parse all valid lhs and rhs of
-a declaration or assignment. These combinators are used to build parseAssignment
+a declaration assignment. These combinators are used to build parseAssignment
 & parseDeclaration
 -}
 
@@ -169,7 +171,7 @@ assignToExpr
 pairElem :: Parser Char PairElem
 pairElem = do
   fstOrSnd  <- keyword "fst" <|> keyword "snd"
-  expr      <- parseExpr
+  expr      <- locationReporter parseExpr "Invalid Expr for pairElem"
   if fstOrSnd == "fst"
     then return (Fst  expr)
     else return (Snd expr)
@@ -185,8 +187,8 @@ assignToPairElem
 assignToFuncCall :: Parser Char AssignRHS
 assignToFuncCall = do
   keyword "call"
-  name     <- identifier
-  arglist  <- parseExprList '(' ')'
+  name     <- locationReporter identifier "Invalid Function Name"
+  arglist  <- locationReporter (parseExprList '(' ')') "Invalid parameter list"
   return $ FuncCallAssign name arglist
 
 -- PRE: None
@@ -200,9 +202,9 @@ assignToArrayLit
 assignToNewPair :: Parser Char AssignRHS
 assignToNewPair = do
   token "newpair"
-  punctuation '('
-  expr1 <- parseExpr
-  punctuation ','
-  expr2 <- parseExpr
-  punctuation ')'
+  locationReporter (punctuation '(') "Missing opening parenthesis for newpair"
+  expr1 <- locationReporter parseExpr "Invalid Expr for first expression in newpair"
+  locationReporter (punctuation ',') "No comma in new pair declaration"
+  expr2 <- locationReporter parseExpr "Invalid Expr for second expression in newpair"
+  locationReporter (punctuation ')') "Missing closing parenthesis for newpair"
   return $ NewPairAssign expr1 expr2

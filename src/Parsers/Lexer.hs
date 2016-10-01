@@ -90,7 +90,10 @@ punctuation
   = trimWS . char
 
 -- List of keywords defined in the wacc language.
-keywords = ["while", "if", "fi", "else", "null", "pair", "is", "begin", "skip", "end", "call", "newpair", "fst", "snd"]
+keywords = ["while", "if", "fi", "else", "null", "pair", "is", "begin", "skip", "end", "call",
+            "newpair", "fst", "snd", "return", "read", "free", "exit", "println", "print",
+            "then", "do", "done", "int", "bool", "char", "string", "len", "chr", "ord",
+            "true", "false"]
 
 -- PRE: None
 -- POST: A parser for identifiers used to parse identifers in the wacc language, removes trailing whitespace.

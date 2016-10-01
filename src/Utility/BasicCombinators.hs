@@ -144,9 +144,9 @@ sepby' p sep = do
 -- account any white space.
 bracketNoWS :: Parser Char a -> Parser Char b -> Parser Char c -> Parser Char b
 bracketNoWS open p close = do
-  open
+  open 
   x <- p
-  close
+  locationReporter close "Closing Delimter missing"
   return x
 
 -- PRE:  None

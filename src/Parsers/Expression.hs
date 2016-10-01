@@ -54,7 +54,7 @@ boolLiteral = do
 
 charLiteral :: Parser Char Expr
 charLiteral
-   = CharLit <$> bracket (char '\'') character (char '\'')
+   = CharLit <$> bracket (char '\'') (locationReporter character "This is not a valid character") (char '\'')
 
 pairLiteral :: Parser Char Expr
 pairLiteral
@@ -138,8 +138,8 @@ chainl1 p op
   = trimWS $ p >>= rest
   where
     rest x = (do
-      f <- op
-      y <- p
+      f <-  op
+      y <-  p
       rest $ BinaryApp f x y) <|> return x
 
 

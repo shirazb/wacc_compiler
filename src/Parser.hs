@@ -34,7 +34,7 @@ main = do
   putStrLn "------------------------------------------------"
   case runParser parseProgram contents (0,0) of
     Right (Just ((a,b), _)) -> print a
-    _ -> print "[]"
+    Left err -> print err
   return ()
 
 -- runParser :: String -> Program
