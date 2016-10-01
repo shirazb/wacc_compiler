@@ -105,7 +105,7 @@ character  = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
 escapeChar :: Parser Char Char
 escapeChar  = do
               char '\\'
-              escaped_char <- item
+              escaped_char <- locationReporter item "Invalid Escape Char"
               return $ fromJust $ lookup escaped_char escapeCharAssoc
               where
               escapeCharAssoc =  [('b','\b'), ('n','\n'), ('f','\f'),
@@ -144,9 +144,9 @@ sepby' p sep = do
 -- account any white space.
 bracketNoWS :: Parser Char a -> Parser Char b -> Parser Char c -> Parser Char b
 bracketNoWS open p close = do
-  open 
+  open
   x <- p
-  locationReporter close "Closing Delimter missing"
+  close 
   return x
 
 -- PRE:  None

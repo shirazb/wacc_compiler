@@ -54,7 +54,7 @@ boolLiteral = do
 
 charLiteral :: Parser Char Expr
 charLiteral
-   = CharLit <$> bracket (char '\'') (locationReporter character "This is not a valid character") (char '\'')
+   = CharLit <$> bracket (char '\'') (locationReporter character "Invalid character found") (char '\'')
 
 pairLiteral :: Parser Char Expr
 pairLiteral
@@ -66,7 +66,7 @@ exprIdent
 
 stringLiter :: Parser Char Expr
 stringLiter
-  = StringLit <$> bracket (char '\"') (many character) (char '\"')
+  = StringLit <$> bracket (char '\"') (locationReporter (many character) "Invalid char found in sequence") (char '\"')
 
 {- Complex combinators used to parse larger & complex expressions. They are built using the basic combinators defined above and a few generic
    combinators defined in the BasicCombinators module.
@@ -84,13 +84,13 @@ parseUnaryAppLow :: Parser Char Expr
 parseUnaryAppLow = do
   op <- foldr1 (<|>) (map (keyword.fst) unOpAssoc)
   let op1 = fromJust $ lookup op unOpAssoc
-  expr <- parseExpr
+  expr <- locationReporter parseExpr "Invalid argument to unary operator"
   return $ UnaryApp op1 expr
 
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
   op <- parseFromMap unOpAssocHigher
-  expr <- parseExpr'
+  expr <- locationReporter parseExpr' "Invalid argument to unary operator"
   return $ UnaryApp op expr
 
 {-
@@ -139,7 +139,7 @@ chainl1 p op
   where
     rest x = (do
       f <-  op
-      y <-  p
+      y <-  locationReporter p "Invalid argument to binary expression"
       rest $ BinaryApp f x y) <|> return x
 
 
@@ -147,7 +147,7 @@ chainl1 p op
 -- POST: Parser of bracketed expressions. Parser removes whitespace and throws away brackets.
 bracketedExpr :: Parser Char Expr
 bracketedExpr
-  = bracket (punctuation '(') parseExpr (punctuation ')')
+  = bracket (punctuation '(') (locationReporter parseExpr "Invalid Expression in brackets") (locationReporter (punctuation ')') "Missing closing parenthesis to bracketed expression")
 
 -- PRE: None
 -- POST: Parses references to array elements.

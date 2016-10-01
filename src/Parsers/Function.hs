@@ -20,9 +20,9 @@ parseFunction = do
   returnType <- parseType
   name <- identifier
   paramList <- bracket (punctuation '(') parseParamList (locationReporter (punctuation ')') "Missing closing parenthesis to function param list")
-  keyword "is"
-  funcBody <- parseStatement
-  keyword "end"
+  locationReporter (keyword "is") "Missing 'is' keyword"
+  funcBody <- locationReporter parseStatement "Invalid function body"
+  locationReporter (keyword "end") "Missing 'end' keyword"
   return $ Func returnType name paramList funcBody
 
 -- PRE: None
