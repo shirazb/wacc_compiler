@@ -24,8 +24,8 @@ import           Control.Monad.Except
 
 parseFunctionBody :: Parser Char Stat
 parseFunctionBody = do
-  funcBody <- parseStatement
-  pos <- getPosition
+  funcBody  <- parseStatement
+  pos       <- getPosition
   traceM $ "The position of the parser is:" ++ show pos
   parseStatAndCheckExecPathEnds funcBody
   return funcBody
@@ -56,14 +56,14 @@ parseStatAndCheckExecPathEnds _ = do
 -- POST: Parses a function defintion.
 parseFunction :: Parser Char Func
 parseFunction = do
-  returnType <- parseType
+  returnType   <- parseType
   -- do we have to check for a space after this?
   traceM $ "The return-type of the function is: " ++ show returnType
-  name <- identifier
+  name         <- identifier
   traceM $ "The name of the function is: " ++ show name
-  paramList <- bracket (punctuation '(') parseParamList (locationReporter (punctuation ')') "Missing closing parenthesis of paramter list.")
+  paramList    <- bracket (punctuation '(') (locationReporter parseParamList "Invalid parameter list.") (locationReporter (punctuation ')') "Missing closing parenthesis of paramter list.")
   locationReporter (keyword "is") "Missing 'is' keyword"
-  funcBody <- locationReporter parseFunctionBody "Invalid function body"
+  funcBody     <- locationReporter parseFunctionBody "Invalid function body"
   locationReporter (keyword "end") "Missing 'end' keyword"
   return $ Func returnType name paramList funcBody
 
@@ -71,7 +71,7 @@ parseFunction = do
 -- POST: Attempts to parse a list of parameters if there is one.
 parseParamList :: Parser Char ParamList
 parseParamList
-  = ParamList <$> sepby (locationReporter parseParam "Invalid parameter") (punctuation ',')
+  = ParamList <$> sepby parseParam (punctuation ',')
 
 -- PRE: None
 -- POST: Parses a parameter
