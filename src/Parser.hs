@@ -51,7 +51,7 @@ parseProgram
       traceM "We are parsing the program"
       functions <- many parseFunction
       traceM $ "Functions we have parsed: " ++ show functions
-      statement <-  locationReporter parseStatement "No Program body"
+      statement <-  locationReporter parseStatement "Invalid/Missing Program body"
       traceM $ "The statement(s) are: " ++ show statement
       return $ Program functions statement
 

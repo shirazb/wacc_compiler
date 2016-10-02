@@ -86,7 +86,7 @@ updateRowPosition (ln, c) = (ln + 1, c)
 errorReporterParser :: (MonadError e m, Alternative m) => m a -> e -> m a
 errorReporterParser p err
   = p <|> throwError err
-
+  
 locationReporter :: Parser Char a -> String -> Parser Char a
 locationReporter parser errorMessage = do
   p <- getPosition

@@ -143,7 +143,7 @@ parseDeclaration = do
 parseAssignment :: Parser Char Stat
 parseAssignment = do
   lhs <- parseLHS
-  locationReporter (punctuation '=') "Missing equal sign in assignment"
+  locationReporter (punctuation '=') "Missing equal sign in assignment. Did you misspell or forget a keyword?"
   rhs <- locationReporter parseRHS "Invalid RHS in assignment"
   --checkInvalidRHS
   return $ Assignment lhs rhs
