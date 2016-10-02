@@ -61,15 +61,9 @@ parseFunction = do
   traceM $ "The return-type of the function is: " ++ show returnType
   name <- identifier
   traceM $ "The name of the function is: " ++ show name
-  paramList <- bracket (punctuation '(') (locationReporter parseParamList "Invalid function parameter list") (locationReporter (punctuation ')') "Missing closing parenthesis to function param list")
+  paramList <- bracket (punctuation '(') parseParamList (locationReporter (punctuation ')') "Missing closing parenthesis of paramter list.")
   locationReporter (keyword "is") "Missing 'is' keyword"
   funcBody <- locationReporter parseFunctionBody "Invalid function body"
-  -- pos <- getPosition
-  -- unless parseStatAndCheckExecPathEnds funcBody $ throwError
-  -- if (parseStatAndCheckExecPathEnds funcBody)
-  --   then return ()
-  --   else throwError ("342",pos)
-  --- write a function which walks through the list of statements
   locationReporter (keyword "end") "Missing 'end' keyword"
   return $ Func returnType name paramList funcBody
 
@@ -77,7 +71,7 @@ parseFunction = do
 -- POST: Attempts to parse a list of parameters if there is one.
 parseParamList :: Parser Char ParamList
 parseParamList
-  = ParamList <$> sepby parseParam (punctuation ',')
+  = ParamList <$> sepby (locationReporter parseParam "Invalid parameter") (punctuation ',')
 
 -- PRE: None
 -- POST: Parses a parameter

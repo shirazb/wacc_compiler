@@ -83,9 +83,10 @@ updateParserPosition _ (ln, c)
 updateRowPosition :: Position -> Position
 updateRowPosition (ln, c) = (ln + 1, c)
 
+-- REVIEW WITH SARAH if we should updateRowPosition
 errorReporterParser :: (MonadError e (Parser Char), Alternative (Parser Char)) => Parser Char a -> String -> Parser Char a
 errorReporterParser p errorMessage
-  = p <|> do {pos <- getPosition; throwError (errorMessage, pos)}
+  = p <|> do {pos <- getPosition; throwError (errorMessage, updateRowPosition pos)}
 
 locationReporter :: Parser Char a -> String -> Parser Char a
 locationReporter parser errorMessage
