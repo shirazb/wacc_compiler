@@ -25,8 +25,6 @@ import           Control.Monad.Except
 parseFunctionBody :: Parser Char Stat
 parseFunctionBody = do
   funcBody  <- parseStatement
-  pos       <- getPosition
-  traceM $ "The position of the parser is:" ++ show pos
   parseStatAndCheckExecPathEnds funcBody
   return funcBody
 
@@ -41,13 +39,11 @@ parseStatAndCheckExecPathEnds (While _ s1)
  = parseStatAndCheckExecPathEnds s1
 parseStatAndCheckExecPathEnds (Block s1)
  = parseStatAndCheckExecPathEnds s1
--- Make this normal...
 parseStatAndCheckExecPathEnds (Seq s1 s2)
- | ifStat@If{} <- s1  = parseStatAndCheckExecPathEnds s2
- | otherwise          = parseStatAndCheckExecPathEnds s2
+ = parseStatAndCheckExecPathEnds s2
 parseStatAndCheckExecPathEnds _ = do
   pos <- getPosition
-  throwError ("Mising return or exit statement", pos)
+  throwError ("Mising return or exit statement in function body ending at: ", pos)
 
 -- we can actually add error handling to all parts of parseFunction
 -- because it will only get called if there are functions
