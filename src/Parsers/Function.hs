@@ -53,10 +53,8 @@ parseStatAndCheckExecPathEnds _ = do
 parseFunction :: Parser Char Func
 parseFunction = do
   returnType   <- parseType
-  -- do we have to check for a space after this?
-  traceM $ "The return-type of the function is: " ++ show returnType
+  -- do we check for a space?
   name         <- identifier
-  traceM $ "The name of the function is: " ++ show name
   paramList    <- bracket (punctuation '(') parseParamList (locationReporter (punctuation ')') "Invalid parameter list")
   locationReporter (keyword "is") "Missing 'is' keyword"
   funcBody     <- locationReporter parseFunctionBody "Invalid function body"
