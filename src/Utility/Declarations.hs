@@ -83,11 +83,11 @@ updateParserPosition _ (ln, c)
 updateRowPosition :: Position -> Position
 updateRowPosition (ln, c) = (ln + 1, c)
 
--- REVIEW WITH SARAH if we should updateRowPosition
-errorReporterParser :: (MonadError e (Parser Char), Alternative (Parser Char)) => Parser Char a -> String -> Parser Char a
-errorReporterParser p errorMessage
-  = p <|> do {pos <- getPosition; throwError (errorMessage, updateRowPosition pos)}
+errorReporterParser :: (MonadError e m, Alternative m) => m a -> e -> m a
+errorReporterParser p err
+  = p <|> throwError err
 
 locationReporter :: Parser Char a -> String -> Parser Char a
-locationReporter parser errorMessage
-  = errorReporterParser parser ("Syntax Error: " ++ errorMessage)
+locationReporter parser errorMessage = do
+  p <- getPosition
+  errorReporterParser parser ("Syntax Error: " ++ errorMessage, updateRowPosition p)
