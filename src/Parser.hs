@@ -37,29 +37,38 @@ main = do
   case runParser parseProgram contents (0,0) of
     Right (Just ((a,b), _)) -> print a
     Left err -> print err
-    _ -> print "Program Failure"
+    Right Nothing -> print "Program Failure"
   return ()
 
 -- runParser :: String -> Program
 -- runParser = fst . head . parse parseProgram
-
+-- TODO: WE NEED TO CHANGE THE ERROR MESSAGE HERE
 parseProgram :: Parser Char Program
 parseProgram
-  = bracket (keyword "begin") parseProgram' endingParse
+  = bracket (locationReporter (keyword "begin") "Invalid Program start") parseProgram' endingParse
   where
-    parseProgram' = liftM2 Program (many parseFunction) parseStatement
+    parseProgram' = do
+      traceM "We are parsing the program"
+      functions <- many parseFunction
+      traceM $ "Functions we have parsed: " ++ show functions
+      statement <-  locationReporter parseStatement "No Program body"
+      traceM $ "The statement(s) are: " ++ show statement
+      return $ Program functions statement
+
+--    parseProgram' = liftM2 Program (many parseFunction) parseStatement
 
 
 endingParse :: Parser Char String
 endingParse = do
-   string "end"
+   locationReporter (string "end") "Unexpected Symbol (CHANGE THIS MESSAGE)"
    junk
    unusedInputString <- get
    pos <- getPosition
+   traceM $ show (null unusedInputString)
    traceM ("The unused input string is: " ++ unusedInputString)
    if null unusedInputString
      then return "Valid Program"
-     else throwError ("Invalid Program", updateRowPosition pos)
+     else throwError ("Syntax Error: Invalid Program", updateRowPosition pos)
 
 -- specification for the function that we need at the end of parse Program
 -- is one that consumes the rest of the string and it fails if it finds

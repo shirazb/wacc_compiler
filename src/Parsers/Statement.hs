@@ -13,6 +13,7 @@ import           Parsers.Type
 import           Utility.BasicCombinators
 import           Utility.Declarations
 import           Utility.Definitions
+import Data.Char
 
 -- PRE:  None
 -- POST: Parses all valid statements in the WACC language, it is factored out like
@@ -71,10 +72,19 @@ parseIfStat = do
   keyword "if"
   cond <- locationReporter parseExpr "Invalid expression for if condition"
   locationReporter (keyword "then") "Missing 'then' keyword"
+
   thenStat <- locationReporter parseStatement "Invalid statement for then branch"
+  posBeforeElse <- getPosition
+  traceM $ "The position before the else is: " ++ show posBeforeElse
   locationReporter (keyword "else") "Missing 'else' keyword"
+  posAfterElse <- getPosition
+  traceM $ "The position after the else is: " ++ show posAfterElse
   elseStat <- locationReporter parseStatement "Invalid statement for else branch"
+  pos <- getPosition
+  traceM $ "The position before fi is: " ++ show pos
   locationReporter (keyword "fi") "Missing 'fi' keyword"
+  pos1 <- getPosition
+  traceM $ "The postion after fi is: " ++ show pos1
   return $ If cond thenStat elseStat
 
 
@@ -125,7 +135,7 @@ parseDeclaration = do
   punctuation '='
   traceM "We are in parse declaration"
   assignRHS  <- locationReporter parseRHS "Invalid RHS in declaration"
-  checkInvalidRHS
+  --checkInvalidRHS
   return $ Declaration varType ident assignRHS
 
 -- PRE: None
@@ -135,13 +145,13 @@ parseAssignment = do
   lhs <- parseLHS
   locationReporter (punctuation '=') "Missing equal sign in assignment"
   rhs <- locationReporter parseRHS "Invalid RHS in assignment"
-  checkInvalidRHS
+  --checkInvalidRHS
   return $ Assignment lhs rhs
 
 checkInvalidRHS :: Parser Char ()
 checkInvalidRHS = do
   junk
-  locationReporter (check (\c -> c == '\n' || c == ';')) "Invalid RHS"
+  locationReporter (check (\c -> isSpace c || c == ';')) "Invalid RHS"
 
 {-
 Defines a number of parser combinators which can parse all valid lhs and rhs of

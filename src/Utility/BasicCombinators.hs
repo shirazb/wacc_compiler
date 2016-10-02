@@ -28,13 +28,13 @@ import           Utility.Declarations
 item :: Parser Char Char
 item = do
   c <- basicItem
-  updatePosition (f c)
+  updatePosition (updateParserPosition c)
   return c
 
 
 -- PRE:  None
 -- POST: Consumes a single character if it satisfies the predicate, fails
---       otherwise (denoted by empty string)
+--       otherwise (denoted by Nothing)
 satisfy  :: (Char -> Bool) -> Parser Char Char
 satisfy p = item >>= \x -> if p x then return x else mzero
 
@@ -102,7 +102,8 @@ character  = satisfy (\s -> s `notElem` ['\\', '\"', '\'']) <|> escapeChar
 escapeChar :: Parser Char Char
 escapeChar  = do
               char '\\'
-              escaped_char <- locationReporter item "Invalid Escape Char"
+              locationReporter (check (\c -> c `elem` map fst escapeCharAssoc)) "Invalid Escape Char"
+              escaped_char <- item
               return $ fromJust $ lookup escaped_char escapeCharAssoc
               where
               escapeCharAssoc =  [('b','\b'), ('n','\n'), ('f','\f'),

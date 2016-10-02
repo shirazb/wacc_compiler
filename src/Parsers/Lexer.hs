@@ -72,7 +72,7 @@ keyword k = do
 
 -- List of operators defined in the WACC language
 operators :: String
-operators = map (head.fst) (lowBinOps ++ highBinOps ++ higherBinOps)
+operators = map (head . fst) (lowBinOps ++ highBinOps ++ higherBinOps)
 
 -- PRE : None
 -- POST: Returns True if the given input is either a seperator or an operator.
@@ -122,7 +122,7 @@ identifier = trimWS $ do
 -- if it succeeds it will return the corresponding a value. Essentially a parser lookup function. It removes trailing WS.
 parseFromMap :: (Show a) => [(String, a)] -> Parser Char a
 parseFromMap assoclist = do
-  value <- foldr1 (<|>) (map (token . fst) assoclist)
+  value <- foldr1 (<|>) (map (keyword . fst) assoclist)
   return $ fromJust (lookup value assoclist)
 
 

@@ -50,7 +50,8 @@ newtype Parser t a = Parser {parse :: StateT [t] (StateT Position (MaybeT (Eithe
 
 -- newtype Parser t a = Parser {parse :: StateT [t] (StateT Position (ExceptT Err [])) a}
 runParser :: Parser t a -> [t] -> Position -> Either Err (Maybe((a,[t]), Position))
-runParser p inputString initialPos = runMaybeT $ runStateT (runStateT (parse p) inputString) initialPos
+runParser p inputString initialPos
+  = runMaybeT $ runStateT (runStateT (parse p) inputString) initialPos
 
 --getPosition :: Parser Char [Position]
 getPosition :: Parser Char Position
@@ -66,27 +67,26 @@ updatePosition :: (Position -> Position) -> Parser Char ()
 updatePosition f
   = getPosition >>= (putPosition . f)
 
-basicItem :: (MonadState [t] m, Alternative m) => m t
+basicItem :: (MonadState [t] m, MonadPlus m) => m t
 basicItem = do
   state <- get
   case state of
     (x:xs) -> do {put xs; return x}
-    [] -> empty
+    [] -> mzero
 
-f :: Char -> Position -> Position
-f '\n' (ln, c)
+updateParserPosition :: Char -> Position -> Position
+updateParserPosition '\n' (ln, c)
   = (ln + 1, 1)
-f _ (ln, c)
+updateParserPosition _ (ln, c)
   = (ln, c + 1)
 
 updateRowPosition :: Position -> Position
 updateRowPosition (ln, c) = (ln + 1, c)
 
-errorReporterParser :: (MonadError e m, Alternative m) => m a -> e -> m a
-errorReporterParser p err
-  = p <|> throwError err
+errorReporterParser :: (MonadError e (Parser Char), Alternative (Parser Char)) => Parser Char a -> String -> Parser Char a
+errorReporterParser p errorMessage
+  = p <|> do {pos <- getPosition; throwError (errorMessage, pos)}
 
 locationReporter :: Parser Char a -> String -> Parser Char a
-locationReporter parser errorMessage = do
-  p <- getPosition
-  errorReporterParser parser ("Syntax Error: " ++ errorMessage, updateRowPosition p)
+locationReporter parser errorMessage
+  = errorReporterParser parser ("Syntax Error: " ++ errorMessage)
