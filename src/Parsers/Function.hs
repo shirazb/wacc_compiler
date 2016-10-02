@@ -57,7 +57,7 @@ parseFunction = do
   traceM $ "The return-type of the function is: " ++ show returnType
   name         <- identifier
   traceM $ "The name of the function is: " ++ show name
-  paramList    <- bracket (punctuation '(') (locationReporter parseParamList "Invalid parameter list.") (locationReporter (punctuation ')') "Missing closing parenthesis of paramter list.")
+  paramList    <- bracket (punctuation '(') parseParamList (locationReporter (punctuation ')') "Invalid parameter list")
   locationReporter (keyword "is") "Missing 'is' keyword"
   funcBody     <- locationReporter parseFunctionBody "Invalid function body"
   locationReporter (keyword "end") "Missing 'end' keyword"
