@@ -9,6 +9,7 @@ import           Parsers.Lexer
 import           Utility.BasicCombinators
 import           Utility.Declarations
 import           Utility.Definitions
+import           Data.Maybe
 
 --PRE: None
 --POST: Parser of types for the WACC language, built up using the more basic parsers of types.
@@ -21,8 +22,9 @@ parseType
 
 
 parseBaseType :: Parser Char BaseType
-parseBaseType
-  = parseFromMap baseTypes
+parseBaseType = do
+  baseTypeString <- foldr1 (<|>) (map (keyword . fst) baseTypes)
+  return $ fromJust (lookup baseTypeString baseTypes)
 
 
 multiDimArray :: Parser Char (ArrayType -> Type)

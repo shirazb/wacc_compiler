@@ -122,7 +122,7 @@ identifier = trimWS $ do
 -- if it succeeds it will return the corresponding a value. Essentially a parser lookup function. It removes trailing WS.
 parseFromMap :: (Show a) => [(String, a)] -> Parser Char a
 parseFromMap assoclist = do
-  value <- foldr1 (<|>) (map (keyword . fst) assoclist)
+  value <- foldr1 (<|>) (map (token . fst) assoclist)
   return $ fromJust (lookup value assoclist)
 
 

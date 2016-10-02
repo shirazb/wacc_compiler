@@ -135,7 +135,6 @@ parseDeclaration = do
   punctuation '='
   traceM "We are in parse declaration"
   assignRHS  <- locationReporter parseRHS "Invalid RHS in declaration"
-  --checkInvalidRHS
   return $ Declaration varType ident assignRHS
 
 -- PRE: None
@@ -145,13 +144,7 @@ parseAssignment = do
   lhs <- parseLHS
   locationReporter (punctuation '=') "Missing equal sign in assignment. Did you misspell or forget a keyword?"
   rhs <- locationReporter parseRHS "Invalid RHS in assignment"
-  --checkInvalidRHS
   return $ Assignment lhs rhs
-
-checkInvalidRHS :: Parser Char ()
-checkInvalidRHS = do
-  junk
-  locationReporter (check (\c -> isSpace c || c == ';')) "Invalid RHS"
 
 {-
 Defines a number of parser combinators which can parse all valid lhs and rhs of
