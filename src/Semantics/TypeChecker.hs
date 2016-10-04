@@ -31,9 +31,22 @@ newtype Checker a
 
 runCheck :: Checker a -> Either Error a
 runCheck e
+<<<<<<< 1d5525268b24ae4149d459410788615897e22850:src/Semantics/TypeChecker.hs
   = (flip evalState initState) . runExceptT $ runChecker e
   where
     initState = Map.empty
+=======
+  = flip evalState initState . runExceptT $ runChecker e
+           where initState = Map.empty
+
+-- #TODO
+-- checkAT :: Expr -> Checker ArrayType
+-- checkAT  = null
+
+-- #TODO
+-- checkPT :: Expr -> Checker PairType
+-- checkPT  = null
+>>>>>>> Changed name of locationReporter to tryParser:src/TypeCheck.hs
 
 -- POST: Checks BaseType
 checkBT :: Expr -> Checker BaseType

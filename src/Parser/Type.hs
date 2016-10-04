@@ -46,11 +46,11 @@ parseArrayType
 parsePairType :: Parser Char PairType
 parsePairType = trimWS $ do
   token "pair"
-  locationReporter (punctuation '(') "Missing opening parenthesis in pair-type"
-  t1 <- locationReporter parsePairElemType "Invalid first pair-type"
-  locationReporter (punctuation ',') "Missing comma in pair-type declaration"
-  t2 <- locationReporter parsePairElemType "Invalid second pair-type"
-  locationReporter (punctuation ')') "Missing closing parenthesis in pair-type"
+  tryParser (punctuation '(') "Missing opening parenthesis in pair-type"
+  t1 <- tryParser parsePairElemType "Invalid first pair-type"
+  tryParser (punctuation ',') "Missing comma in pair-type declaration"
+  t2 <- tryParser parsePairElemType "Invalid second pair-type"
+  tryParser (punctuation ')') "Missing closing parenthesis in pair-type"
   return $ PairType t1 t2
 
 parseNestedPairType :: Parser Char PairElemType

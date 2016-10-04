@@ -86,14 +86,14 @@ alphanum
 -- POST: Parser for all characters including escape chararacters
 character :: Parser Char Char
 character
-  = satisfy (flip notElem ['\\', '\"', '\'']) <|> escapeChar
+  = satisfy ( `notElem` ['\\', '\"', '\'']) <|> escapeChar
 
 -- POST: Parser for escape characters
 escapeChar :: Parser Char Char
 escapeChar
   = do
       char '\\'
-      locationReporter (check (\c -> c `elem` map fst escapeCharAssoc))
+      tryParser (check (\c -> c `elem` map fst escapeCharAssoc))
                        "Invalid Escape Char"
       escaped_char <- item
       return $ fromJust $ lookup escaped_char escapeCharAssoc

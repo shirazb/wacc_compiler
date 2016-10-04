@@ -1,4 +1,4 @@
-{- 
+{-
 This module defines the parser type which will be used in the rest of the
 program. It also defines a number of typeclass instances, enabling us to
 benefit from the functions that these typeclasses provide. The functions
@@ -79,9 +79,7 @@ errorReporterParser :: (MonadError e m, Alternative m) => m a -> e -> m a
 errorReporterParser p err
   = p <|> throwError err
 
-locationReporter :: Parser Char a -> String -> Parser Char a
-locationReporter parser errorMessage
-  = do
-      p <- getPosition
-      errorReporterParser parser
-        ("Syntax Error: " ++ errorMessage, updateRowPosition p)
+tryParser :: Parser Char a -> String -> Parser Char a
+tryParser parser errorMessage = do
+  p <- getPosition
+  errorReporterParser parser ("Syntax Error: " ++ errorMessage, updateRowPosition p)

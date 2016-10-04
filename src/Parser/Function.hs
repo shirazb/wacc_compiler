@@ -45,10 +45,10 @@ parseFunction :: Parser Char Func
 parseFunction = do
   returnType   <- parseType
   name         <- identifier
-  paramList    <- bracket (punctuation '(') parseParamList (locationReporter (punctuation ')') "Invalid parameter list")
-  locationReporter (keyword "is") "Missing 'is' keyword"
-  funcBody     <- locationReporter parseFunctionBody "Invalid function body"
-  locationReporter (keyword "end") "Missing 'end' keyword"
+  paramList    <- bracket (punctuation '(') parseParamList (tryParser (punctuation ')') "Invalid parameter list")
+  tryParser (keyword "is") "Missing 'is' keyword"
+  funcBody     <- tryParser parseFunctionBody "Invalid function body"
+  tryParser (keyword "end") "Missing 'end' keyword"
   return $ Func returnType name paramList funcBody
 
 -- POST: Attempts to parse a list of parameters if there is one.

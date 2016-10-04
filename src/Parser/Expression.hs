@@ -58,7 +58,7 @@ quoted c p
 charLiteral :: Parser Char Expr
 charLiteral
   = CharLit <$> quoted '\''
-      (locationReporter character "Invalid character found")
+      (tryParser character "Invalid character found")
 
 pairLiteral :: Parser Char Expr
 pairLiteral
@@ -71,8 +71,7 @@ exprIdent
 stringLiter :: Parser Char Expr
 stringLiter
   = StringLit <$> quoted '\"'
-      (locationReporter (many character) "Invalid char found in string")
-
+      (tryParser (many character) "Invalid char found in string")
 {-
 Complex combinators used to parse larger and more complex expressions.
 They are built using the basic combinators defined above and a few
@@ -86,19 +85,17 @@ unaryExpr
   = parseUnaryAppHigh <|> parseUnaryAppLow
 
 parseUnaryAppLow :: Parser Char Expr
-parseUnaryAppLow
-  = do
-      op     <- foldr1 (<|>) (map (keyword.fst) unOpAssoc)
-      let op1 = fromJust $ lookup op unOpAssoc
-      expr   <- locationReporter parseExpr "Invalid argument to unary operator"
-      return  $ UnaryApp op1 expr
+parseUnaryAppLow = do
+  op <- foldr1 (<|>) (map (keyword.fst) unOpAssoc)
+  let op1 = fromJust $ lookup op unOpAssoc
+  expr <- tryParser parseExpr "Invalid argument to unary operator"
+  return $ UnaryApp op1 expr
 
 parseUnaryAppHigh :: Parser Char Expr
-parseUnaryAppHigh
-  = do
-      op    <- parseFromMap unOpAssocHigher
-      expr  <- locationReporter parseExpr' "Invalid argument to unary operator"
-      return $ UnaryApp op expr
+parseUnaryAppHigh = do
+  op <- parseFromMap unOpAssocHigher
+  expr <- tryParser parseExpr' "Invalid argument to unary operator"
+  return $ UnaryApp op expr
 
 {-
 A number of parsers used to parse valid binary expressions in the WACC
@@ -147,8 +144,8 @@ chainl1 p op
   = trimWS $ p >>= rest
   where
     rest x = (do
-      f   <-  op
-      y   <-  locationReporter p "Invalid argument to binary expression"
+      f <-  op
+      y <-  tryParser p "Invalid argument to binary expression"
       rest $ BinaryApp f x y) <|> return x
 
 chainr :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
@@ -167,7 +164,7 @@ chainr p op
 -- away brackets.
 bracketedExpr :: Parser Char Expr
 bracketedExpr
-  = bracket (punctuation '(') (locationReporter parseExpr "Invalid Expression in brackets") (locationReporter (punctuation ')') "Missing closing parenthesis to bracketed expression")
+  = bracket (punctuation '(') (tryParser parseExpr "Invalid Expression in brackets") (tryParser (punctuation ')') "Missing closing parenthesis to bracketed expression")
 
 -- PRE: None
 -- POST: Parses references to array elements.

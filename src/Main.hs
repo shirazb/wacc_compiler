@@ -23,7 +23,7 @@ import Parser.Combinators
 import Utilities.Declarations
 import Utilities.Definitions
 
-main 
+main
   = do
       args        <- getArgs
       let filename = head args
@@ -39,15 +39,15 @@ main
 
 parseProgram :: Parser Char Program
 parseProgram
-  = bracket (locationReporter (keyword "begin") "Invalid Program start") 
+  = bracket (locationReporter (keyword "begin") "Invalid Program start")
       parseProgram' endingParse
   where
-    parseProgram' 
-      = liftM2 Program (many parseFunction) 
+    parseProgram'
+      = liftM2 Program (many parseFunction)
           (locationReporter parseStatement "Invalid or missing program body")
 
 endingParse :: Parser Char String
-endingParse 
+endingParse
   = do
       locationReporter (string "end") "Unexpected Symbol"
       junk
@@ -55,5 +55,5 @@ endingParse
       pos               <- getPosition
       if null unusedInputString
         then return "Valid Program"
-        else throwError 
+        else throwError
                ("Syntax Error: Invalid Program", updateRowPosition pos)
