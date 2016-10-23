@@ -4,23 +4,18 @@
 {-# LANGUAGE NoMonomorphismRestriction  #-}
 {-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE TypeFamilies               #-}
----
--- Function Parsing.
----
-module Parsers.Function  where
 
-import           Control.Monad
+module Parser.Function  where
 
-import           Debug.Trace
-import           Parsers.Lexer
-import           Parsers.Statement
-import           Parsers.Type
-import           Utility.BasicCombinators
-import           Utility.Declarations
-import           Utility.Definitions
-import           Control.Monad.Except
+import Control.Monad
+import Control.Monad.Except
 
-
+import Parser.Lexer
+import Parser.Statement
+import Parser.Type
+import Parser.Combinators
+import Utilities.Declarations
+import Utilities.Definitions
 
 parseFunctionBody :: Parser Char Stat
 parseFunctionBody = do
@@ -45,15 +40,10 @@ parseStatAndCheckExecPathEnds _ = do
   pos <- getPosition
   throwError ("Mising return or exit statement in function body ending at: ", pos)
 
--- we can actually add error handling to all parts of parseFunction
--- because it will only get called if there are functions
--- so if it is going to fail then it is destined to fail
--- PRE: None
 -- POST: Parses a function defintion.
 parseFunction :: Parser Char Func
 parseFunction = do
   returnType   <- parseType
-  -- do we check for a space?
   name         <- identifier
   paramList    <- bracket (punctuation '(') parseParamList (locationReporter (punctuation ')') "Invalid parameter list")
   locationReporter (keyword "is") "Missing 'is' keyword"
@@ -61,7 +51,6 @@ parseFunction = do
   locationReporter (keyword "end") "Missing 'end' keyword"
   return $ Func returnType name paramList funcBody
 
--- PRE: None
 -- POST: Attempts to parse a list of parameters if there is one.
 parseParamList :: Parser Char ParamList
 parseParamList

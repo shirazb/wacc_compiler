@@ -1,31 +1,32 @@
 {-
-This module defines a number of combinators which are used to parse the types in the wacc language. Refer to the BNF spec of the wacc language for all the types.
+This module defines a number of combinators which are used to parse the types 
+in the wacc language. Refer to the BNF spec of the wacc language for all the 
+types.
 -}
-module Parsers.Type (parseType) where
 
-import           Control.Applicative
+module Parser.Type (parseType) where
 
-import           Parsers.Lexer
-import           Utility.BasicCombinators
-import           Utility.Declarations
-import           Utility.Definitions
-import           Data.Maybe
+import Control.Monad
+import Control.Applicative
+import Data.Maybe
 
---PRE: None
---POST: Parser of types for the WACC language, built up using the more basic parsers of types.
--- Returns type wrapped in appropriate data constructor.
+import Parser.Lexer
+import Parser.Combinators
+import Utilities.Declarations
+import Utilities.Definitions
+
+--POST: Parser of types for the WACC language, built up using the more basic 
+--      parsers of types. Returns type wrapped in appropriate data constructor.
 parseType :: Parser Char Type
 parseType
   =   parseArrayType
   <|> PairT  <$>  parsePairType
   <|> BaseT  <$> parseBaseType
 
-
 parseBaseType :: Parser Char BaseType
 parseBaseType = do
   baseTypeString <- foldr1 (<|>) (map (keyword . fst) baseTypes)
   return $ fromJust (lookup baseTypeString baseTypes)
-
 
 multiDimArray :: Parser Char (ArrayType -> Type)
 multiDimArray
@@ -35,12 +36,12 @@ multiDimArray
       token "[]"
       rest (ArrayT . x)) <|> return x
 
-
 parseArrayType :: Parser Char ArrayType
-parseArrayType = do
-  t          <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
-  dimension  <- multiDimArray
-  return (dimension t)
+parseArrayType 
+  = do
+      t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)  
+      dimension <- multiDimArray
+      return (dimension t)
 
 parsePairType :: Parser Char PairType
 parsePairType = trimWS $ do

@@ -1,20 +1,23 @@
-module Utility.Definitions where
+{-
+WACC SYNTAX/DATA DEFINITIONS. Definitions used to build Abstract Syntax Tree
+(AST). AST is an internal represenation of the parsed contents of a given
+input file. Module also defines show instances, which are primarily used to
+print the internal represenation in a more human readable format to aid
+debugging.
+-}
 
-{- WACC SYNTAX/DATA DEFINITIONS. Definitions used to build Abstract Syntax Tree (AST).
-   AST is an internal represenation of the parsed contents of a given input file.
-   Module also defines show instances, which are primarily used to print the internal
-   represenation in a more human readable format to aid debugging.  -}
+module Definitions where
 
-import           Data.Char
-import           Data.List
-import           Debug.Trace
+import Data.Char
+import Data.List
 
 type Ident     = String
+type ArrayType = Type
+
 data Program   = Program [Func] Stat                deriving (Eq)
 data Func      = Func Type Ident ParamList Stat     deriving (Eq)
 data ParamList = ParamList [Param]                  deriving (Eq)
 data Param     = Param Type Ident                   deriving (Eq)
-type ArrayType = Type
 data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq)
 data PairType  = PairType PairElemType PairElemType deriving (Eq)
 
@@ -108,59 +111,60 @@ data BinOp
   | NEQ
   deriving (Eq)
 
-lowBinOps   =  [("+", Add), ("-", Sub) , (">=", GTE), (">", Utility.Definitions.GT),
-               ("<=", LTE), ("<", Utility.Definitions.LT), ("==", Utility.Definitions.EQ),
-               ("!=", NEQ), ("&&", AND), ("||", OR)]
-highBinOps   = [("*", Mul)]
-higherBinOps = [("/", Div), ("%", Mod)]
+baseTypes       = [("int", BaseInt), ("bool", BaseBool),
+                  ("char", BaseChar), ("string", BaseString)]
 
-unOpAssoc = [("len", Len), ("ord", Ord), ("chr", Chr)]
+lowBinOps       = [("+", Add), ("-", Sub) , (">=", GTE),
+                  (">", Definitions.GT), ("<=", LTE),
+                  ("<", Definitions.LT), (
+                  "==", Definitions.EQ), ("!=", NEQ),
+                  ("&&", AND), ("||", OR)]
+highBinOps      = [("*", Mul)]
+higherBinOps    = [("/", Div), ("%", Mod)]
+
+unOpAssoc       = [("len", Len), ("ord", Ord), ("chr", Chr)]
 unOpAssocHigher = [("!", Not), ("-", Neg)]
 
-
-baseTypes = [("int", BaseInt),("bool", BaseBool),
-            ("char", BaseChar),("string", BaseString)]
-
-
 {-
-Show instances and utility functions which are used to print the AST built by the parser in a more human readable format.
+The following utility functions and show instances are used to print the AST
+in a clear and readable format.
 -}
 
+{- UTILITY FUNCTIONS: -}
 
-{- Utility Functions -}
 showAndIndent :: Show a => a -> String
 showAndIndent
   = indent . show
 
--- PRE: None
--- POST: Indents the given string by 4 spaces and returns the result as a string.
+-- POST: Indents the given string by 4 spaces and returns the result as a
+--       string
 indent :: String -> String
 indent s
   = unlines indentedLines
   where
     indentedLines = map ("    " ++) (lines s)
 
--- PRE: None
--- POST: Converts a list in to a string, and seperates the elements in the list with a comma.
--- Example usage: listToString "[" [1,2,3] "]" will return "[1,2,3]"
+-- POST:    Converts a list in to a string, and seperates the elements in the
+--          list with a comma
+-- EXAMPLE: listToString "[" [1,2,3] "]" will return "[1,2,3]"
 listToString :: Show a => String -> [a] -> String -> String
 listToString open xs close
   = open ++ intercalate ", " (map show xs) ++ close
 
--- PRE: (key, value) list is not empty and contains the association you are looking for.
--- POST: performs a reverse lookup of a (key,value) list returning the key as the result and taking the value as the input.
+-- PRE:  (key, value) list is not empty and contains the association you are
+--       looking for
+-- POST: Performs a reverse lookup of a (key,value) list returning the key as
+--       the result and taking the value as the input
 flippedLookup :: Eq b => b -> [(a, b)] -> a
 flippedLookup y xs
   = head [ x | (x, y') <- xs, y == y' ]
 
--- PRE: None
--- POST: Generates a string represenation of a list of functions.
+-- POST: Generates a string represenation of a list of functions
 showFuncs :: [Func] -> String
 showFuncs = concatMap (flip (++) "\n" . show)
 
-{-
-Show instances for the data definitions used to represent the AST.
--}
+{- SHOW INSTANCES: -}
+-- These are for the data definitions used to represent the AST
 
 instance Show Program where
   show (Program funcs body)
@@ -168,7 +172,8 @@ instance Show Program where
 
 instance Show Func where
   show (Func t name params body)
-    = show t ++ "  " ++ name ++ show params ++ " is\n" ++ showAndIndent body ++ "end\n"
+    = show t ++ "  " ++ name ++ show params ++ " is\n" ++ showAndIndent body ++
+        "end\n"
 
 instance Show ParamList where
   show (ParamList list)
@@ -214,8 +219,8 @@ instance Show Stat where
   show (Println expr)
     = "println " ++ show expr
   show (If cond stat stat')
-    = "if" ++ " (" ++ show cond ++ ") " ++ "then\n" ++ showAndIndent stat ++ "else\n"
-       ++ showAndIndent stat' ++ "fi"
+    = "if" ++ " (" ++ show cond ++ ") " ++ "then\n" ++ showAndIndent stat ++
+        "else\n" ++ showAndIndent stat' ++ "fi"
   show (While cond body)
     = "while (" ++ show cond ++ ") " ++ "do\n" ++ showAndIndent body ++ "done"
   show (Block stat)
@@ -280,6 +285,7 @@ minPrecedence
   = 0
 
 -- Currently using same relative precedences as Haskell
+
 class Show a => ExpressionTerm a where
   precedence :: a -> Int
 
@@ -310,15 +316,15 @@ instance ExpressionTerm BinOp where
     = 6
   precedence Sub
     = 6
-  precedence Utility.Definitions.LT
+  precedence Definitions.LT
     = 8
   precedence LTE
     = 8
   precedence GTE
     = 8
-  precedence Utility.Definitions.GT
+  precedence Definitions.GT
     = 8
-  precedence Utility.Definitions.EQ
+  precedence Definitions.EQ
     = 10
   precedence NEQ
     = 10
@@ -331,20 +337,22 @@ inBrackets :: String -> String
 inBrackets s
   = "(" ++ s ++ ")"
 
--- In our current use case, this takes an operator and an expression, then
--- adds brackets around the expression if its precedence is weaker than the
--- operator's.
--- I have used the ExpressionTerm class and kept the type more general than Operator -> Expr -> String because
--- we may encounter more complex cases later on.
--- This is as opposed to having precedenceExpr, precedenceUnOp, precedenceBinOp
--- functions, and making the type of this funciton more specific as discussed
--- above.
-showSecondWithoutRedundantBrackets :: (ExpressionTerm a, ExpressionTerm b) => a -> b -> String
-showSecondWithoutRedundantBrackets t t'
-  = let  showT' = show t' in
-    if   precedence t < precedence t'
-    then inBrackets showT'
-    else showT'
+{-
+In our current use case, this takes an operator and an expression, then
+adds brackets around the expression if its precedence is weaker than the
+operator's. I have used the ExpressionTerm class and kept the type more
+general than Operator -> Expr -> String because we may encounter more
+complex cases later on. This is as opposed to having precedenceExpr,
+precedenceUnOp, precedenceBinOp functions, and making the type of this
+funciton more specific as discussed above.
+-}
+
+showWithoutBrackets :: (ExpressionTerm a, ExpressionTerm b) => a -> b -> String
+showWithoutBrackets t t'
+  = let showT' = show t' in
+    if precedence t < precedence t'
+      then inBrackets showT'
+      else showT'
 
 instance Show Expr where
   show (StringLit s)
@@ -363,12 +371,12 @@ instance Show Expr where
     = show arrayElem
 
   show (UnaryApp unOp expr)
-    = unOpString ++ showSecondWithoutRedundantBrackets unOp expr
+    = unOpString ++ showWithoutBrackets unOp expr
     where
       unOpString = show unOp ++ " "
 
   show (BinaryApp binOp expr expr')
     = showExpr ++ " " ++ show binOp ++ " " ++ showExpr'
     where
-      showExpr         = showSecondWithoutRedundantBrackets binOp expr
-      showExpr'        = showSecondWithoutRedundantBrackets binOp expr'
+      showExpr  = showWithoutBrackets binOp expr
+      showExpr' = showWithoutBrackets binOp expr'

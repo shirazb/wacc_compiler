@@ -1,25 +1,26 @@
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-{- Exploratory work in building a typechecker, this is a prototype. -}
+{- Exploratory work in building a typechecker, this is a prototype -}
 
+import Control.Monad
+import Control.Monad.Except
+import Control.Monad.State
+-- import General U
+import qualified Data.Map as Map
 
-import           Utility.Definitions
-
-import           Control.Monad
-import           Control.Monad.Except
-import           Control.Monad.State
-import qualified Data.Map             as Map
+import Definitions
 
 -- Store the environment (variables)
-type CheckerState = Map.Map String Expr
+type CheckerState
+  = Map.Map String Expr
 
 data Error
   = TypeError String
   | UndefinedVar String
   deriving Show
 
--- This is our monad that will execute the type checking
+-- This is the monad that will execute the type checking
 newtype Checker a
   = Checker { runChecker :: ExceptT Error (State CheckerState) a }
   deriving (Functor,
@@ -29,18 +30,11 @@ newtype Checker a
             MonadError Error)
 
 runCheck :: Checker a -> Either Error a
-runCheck e = (flip evalState initState) . runExceptT $ runChecker e
-           where initState = Map.empty
+runCheck e
+  = (flip evalState initState) . runExceptT $ runChecker e
+  where
+    initState = Map.empty
 
--- #TODO
--- checkAT :: Expr -> Checker ArrayType
--- checkAT  = null
-
--- #TODO
--- checkPT :: Expr -> Checker PairType
--- checkPT  = null
-
--- PRE:  None
 -- POST: Checks BaseType
 checkBT :: Expr -> Checker BaseType
 checkBT (IntLit _)           = return BaseInt
@@ -64,10 +58,11 @@ bool = BoolLit
 char = CharLit
 str  = StringLit
 
-testExpr1 = int 5     -- Passes
-testExpr2 = bool True -- Passes
+testExpr1 = int 5
+testExpr2 = bool True
+testExpr3 = BinaryApp Add (testExpr1) (testExpr2)
 
 main = do
-  case runCheck (checkBT testExpr1) of
+  case runCheck (checkBT testExpr3) of
     Right _  -> putStrLn "Type check success"
     Left err -> putStrLn $ "Error: " ++ show err
