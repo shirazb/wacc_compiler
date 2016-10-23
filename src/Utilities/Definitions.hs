@@ -28,7 +28,7 @@ data Stat
   | Read AssignLHS
   | Free Expr
   | Return Expr
-  | Exit Expr
+  | Exit Expr 
   | Print Expr
   | Println Expr
   | If Expr Stat Stat
