@@ -6,7 +6,9 @@ experience to learn the more advanced features of Haskell. The parser
 currently has no error handling.
 -}
 
-module Parser (runParser) where
+module Parsers.Program (
+  runParser
+) where
 
 import Control.Applicative
 import Control.Monad
@@ -40,7 +42,6 @@ main
 parseProgram :: Parser Char Program
 parseProgram
   = bracket (tryParser (keyword "begin") "Invalid Program start")
-      parseProgram' endingParse
   where
     parseProgram'
       = liftM2 Program (many parseFunction)
