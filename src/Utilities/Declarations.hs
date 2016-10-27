@@ -18,6 +18,7 @@ found on the Haskell wiki.
 
 module Utilities.Declarations where
 
+import Utilities.Definitions
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Except
@@ -25,9 +26,6 @@ import Control.Monad.State       (MonadState (..), StateT (..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.List                 (nub)
-
-type Position = (Int, Int)
-type Err      = (String, Position)
 
 newtype Parser t a
   = Parser { parse :: StateT [t] (StateT Position (MaybeT (Either Err))) a }

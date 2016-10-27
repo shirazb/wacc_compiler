@@ -10,9 +10,13 @@ module Utilities.Definitions where
 
 import Data.Char
 import Data.List
+import qualified Data.Map as Map
 
-type Ident     = String
+type Env       = Map.Map (String, Context) Info
 type ArrayType = Type
+type AST       = Program
+type Position  = (Int, Int)
+type Err       = (String, Position)
 
 data Program   = Program [Func] Stat                deriving (Eq)
 data Func      = Func Type Ident ParamList Stat     deriving (Eq)
@@ -20,6 +24,33 @@ data ParamList = ParamList [Param]                  deriving (Eq)
 data Param     = Param Type Ident                   deriving (Eq)
 data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq)
 data PairType  = PairType PairElemType PairElemType deriving (Eq)
+data Ident     = Ident String Info                  deriving (Eq)
+
+data ErrorType
+  = NoError
+  | Duplicate
+  | NotInScope
+  deriving (Eq, Show)
+
+data Info
+  = Info {
+    typeInfo  :: Type,
+    context   :: Context,
+    expr      :: Maybe Expr,
+    errorType :: ErrorType
+  }
+  | NoInfo
+  deriving (Eq, Show)
+
+data Context
+  = Function
+  | Variable
+  deriving (Eq, Ord, Show)
+
+data SymbolTable
+  = ST SymbolTable Env
+  | None
+  deriving (Eq, Show)
 
 data Stat
   = Skip
@@ -171,17 +202,17 @@ instance Show Program where
     =  "begin\n" ++ indent(showFuncs funcs ++ showAndIndent body) ++ "end"
 
 instance Show Func where
-  show (Func t name params body)
-    = show t ++ "  " ++ name ++ show params ++ " is\n" ++ showAndIndent body ++
-        "end\n"
+  show (Func t ident params body)
+    = show t ++ "  " ++ show ident ++ show params ++ " is\n" ++
+      showAndIndent body ++  "end\n"
 
 instance Show ParamList where
   show (ParamList list)
     = listToString "(" list ")"
 
 instance Show Param where
-  show (Param t name)
-    = show t ++ " " ++ name
+  show (Param t ident)
+    = show t ++ " " ++ show ident
 
 instance Show UnOp where
   show unOp
@@ -192,8 +223,8 @@ instance Show BinOp where
     = flippedLookup binOp (lowBinOps ++ highBinOps ++ higherBinOps)
 
 instance Show ArrayElem where
-  show (ArrayElem name elems)
-    = name ++ concatMap (\x ->  "[" ++ show x ++ "]") elems
+  show (ArrayElem ident elems)
+    = show ident ++ concatMap (\x ->  "[" ++ show x ++ "]") elems
 
 instance Show PairType where
   show (PairType pt1 pt2)
@@ -203,7 +234,7 @@ instance Show Stat where
   show Skip
     = "skip"
   show (Declaration typ ident rhs)
-   = show typ ++ " " ++ ident ++ " = " ++ show rhs
+   = show typ ++ " " ++ show ident ++ " = " ++ show rhs
   show (Assignment lhs rhs)
     = show lhs ++ " = " ++ show rhs
   show (Read lhs)
@@ -230,7 +261,7 @@ instance Show Stat where
 
 instance Show AssignLHS where
   show (Var ident)
-    = ident
+    = show ident
   show (ArrayDeref arrayElem)
     = show arrayElem
   show (PairDeref pairElem)
@@ -244,7 +275,7 @@ instance Show AssignRHS where
   show (NewPairAssign e e')
     = "newpair" ++ listToString "(" [e, e'] ")"
   show (FuncCallAssign funcName params)
-    = "call " ++ funcName ++ listToString "(" params ")"
+    = "call " ++ show funcName ++ listToString "(" params ")"
   show (PairElemAssign pair)
     = show pair
 
@@ -354,6 +385,10 @@ showWithoutBrackets t t'
       then inBrackets showT'
       else showT'
 
+instance Show Ident where
+  show (Ident name _)
+    = name
+
 instance Show Expr where
   show (StringLit s)
     = show s
@@ -366,7 +401,7 @@ instance Show Expr where
   show PairLiteral
     = "null"
   show (IdentE ident)
-    = ident
+    = show ident
   show (ExprArray arrayElem)
     = show arrayElem
 
