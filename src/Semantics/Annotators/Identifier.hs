@@ -1,5 +1,5 @@
 module Semantics.Annotators.Identifier (
-  annotateIdent
+  annotateIdent,
   annotateNewIdent
 ) where
 
@@ -37,8 +37,9 @@ annotateNewIdent ident@(Ident name info) = do
     then return (setErrType Duplicate ident)
     else do { put newST; return ident }
 
-annotateIdent :: Ident -> LexicalScope Ident
+annotateIdent :: Ident -> LexicalScoper Ident
 annotateIdent ident@(Ident name info) = do
+  st <- get
   if lookUpIdent ident st
     then return ident
-    else return (setErrType NotInScope ident)
+    else return $ setErrType NotInScope ident
