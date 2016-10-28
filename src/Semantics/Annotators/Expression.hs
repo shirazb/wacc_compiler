@@ -10,5 +10,9 @@ import Semantics.ErrorMsgs
 import Utilities.Definitions
 
 annotateExpr :: Expr -> LexicalScoper Expr
-annotateExpr
-  = undefined
+annoateExpr (IdentE ident)
+  = IdentE <$> annotateIdent ident
+annotateExpr i@(IntLit _)
+  = return i
+annotateExpr e
+  = return e
