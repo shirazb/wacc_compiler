@@ -9,6 +9,7 @@ import Control.Monad.State.Strict
 import Semantics.Annotators.Expression
 import Semantics.Annotators.Function
 import Semantics.Annotators.Statement
+import Semantics.Annotators.Util
 import Semantics.ErrorMsgs
 import Utilities.Definitions
 
@@ -18,8 +19,5 @@ annotateAST (Program fs main)
   where
     (newAST, _) = runState annotateProgram None
     annotateProgram = do
-      newFs        <- mapM annotateFunc fs
-      globalScope  <- get
-      put (ST globalScope Map.empty)
-      newMain      <- annotateStat main
-      return $ Program newFs newMain
+      newFs <- mapM annotateFunc fs
+      inChildScopeAndWrap (Program newFs) (annotateStat main)

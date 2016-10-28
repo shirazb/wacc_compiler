@@ -2,28 +2,34 @@ module Semantics.Annotators.Function (
   annotateFunc
 ) where
 
+import Control.Monad.State.Strict
+import qualified Data.Map as Map
+
 import Semantics.ErrorMsgs
 import Utilities.Definitions
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
+import Semantics.Annotators.Util
 
+-- TODO: Refactor to make look nicer, try use Util.inChildScope(AndWrap)
 annotateFunc :: Func -> LexicalScoper Func
-annotateFunc f@(Func t ident paramList body) = do
-  globalST@(ST None globalEnv) <- get
+annotateFunc (Func t ident paramList body) = do
+  globalST          <- get
   newIdent          <- annotateNewIdent ident
 
   -- needs a temporary Env with newIdent, we will only update actual
   -- global ST if newIdent not a duplicate
-  let newGlobalEnv  = Map.insert (nameAndContext newIdent) info globalEnv
-  let newGlobalST   = ST None newGlobalEnv
+  -- NB: If function name is a duplicate, we are having to assume that
+  --        all uses of the name in the body are recursive calls.
+  let newGlobalST   = addToST newIdent globalST
 
   -- initialise function ST
   let funcST        = ST newGlobalST Map.empty
   put funcST
-  newParamList <- annotateParamList
+  newParamList      <- annotateParamList paramList
 
   -- annotate the function body
-  newBody      <- annotateStat
+  newBody           <- annotateStat body
 
   -- restore global symbol table; discard function's ST
   if identHasError newIdent
@@ -33,12 +39,7 @@ annotateFunc f@(Func t ident paramList body) = do
   -- return annotated function
   return $ Func t newIdent newParamList newBody
 
-identHasError :: Ident -> Bool
-identHasError (Ident _ (Info _ _ _ NoError))
-  = False
-identHasError _
-  = True
-
+  -- Zubair's code
   -- st@(ST parent env) <- get
   -- let newEnv = Map.insert (nameAndContext ident) info env
   -- let newGlobalST = ST parent newEnv
@@ -54,13 +55,13 @@ identHasError _
   --   errIdent = setErrType Duplicate ident
   --   nonErrIdent = setErrType NoError ident
 
-annotateParamList :: ParamList -> LexicalScope ParamList
+annotateParamList :: ParamList -> LexicalScoper ParamList
 annotateParamList (ParamList ps)
-  = mapM annotateParam ps
+  = ParamList <$> mapM annotateParam ps
 
 annotateParam :: Param -> LexicalScoper Param
 annotateParam (Param tp ident)
-  = annotateNewIdent ident
+  = Param tp <$> annotateNewIdent ident
   --
   -- st@(ST parent env) <- get
   -- let newEnv       = Map.insert (nameAndContext ident) info env

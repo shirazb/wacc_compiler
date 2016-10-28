@@ -6,7 +6,7 @@ print the internal represenation in a more human readable format to aid
 debugging.
 -}
 
--- TODO: WE SHOULD PROBABLY HAVE DIFFERENT DEFINITIONS FILES FOR DIFFERENT
+-- TODO: WE SHOULD HAVE DIFFERENT DEFINITIONS FILES FOR DIFFERENT
 --       COMPILATION STAGES
 
 module Utilities.Definitions where

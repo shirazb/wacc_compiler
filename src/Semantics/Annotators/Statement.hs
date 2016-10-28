@@ -9,6 +9,7 @@ import qualified Data.Map as Map
 import Semantics.ErrorMsgs
 import Semantics.Annotators.Expression
 import Semantics.Annotators.Identifier
+import Semantics.Annotators.Util
 import Utilities.Definitions
 
 annotateStat :: Stat -> LexicalScoper Stat
@@ -22,14 +23,16 @@ annotateStat (Declaration t ident rhs) = do
   newIdent <- annotateNewIdent ident
   return $ Declaration t newIdent newRHS
 
-annotateBlock (Block s) = do
-  currST  <- get
-  put (ST currST Map.empty)
-  s'      <- annotateStat s
-  -- returning the scope to what it orignally was
-  -- before entring the block
-  put currST
-  return $ Block s'
+annotateStat (Block s)
+  = inChildScopeAndWrap Block (annotateStat s);
+  --   do
+  -- currST  <- get
+  -- put (ST currST Map.empty)
+  -- s'      <- annotateStat s
+  -- -- returning the scope to what it orignally was
+  -- -- before entring the block
+  -- put currST
+  -- return $ Block s'
 
 annotateExprList :: [Expr] -> LexicalScoper [Expr]
 annotateExprList
