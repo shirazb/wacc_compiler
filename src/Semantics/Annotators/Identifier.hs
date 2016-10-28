@@ -1,5 +1,6 @@
 module Semantics.Annotators.Identifier (
   annotateIdent
+  annotateNewIdent
 ) where
 
 import qualified Data.Map as Map
@@ -27,11 +28,17 @@ lookUpIdent ident st@(ST parentST env)
     Nothing -> lookUpIdent ident parentST
     Just _  -> True
 
-annotateIdent :: Ident -> LexicalScoper Ident
-annotateIdent ident@(Ident name info) = do
+annotateNewIdent :: Ident -> LexicalScoper Ident
+annotateNewIdent ident@(Ident name info) = do
   st@(ST parentST env)  <- get
   let newEnv            = Map.insert (nameAndContext ident) info env
   let newST             = ST parentST newEnv
   if lookUpIdent ident st
     then return (setErrType Duplicate ident)
     else do { put newST; return ident }
+
+annotateIdent :: Ident -> LexicalScope Ident
+annotateIdent ident@(Ident name info) = do
+  if lookUpIdent ident st
+    then return ident
+    else return (setErrType NotInScope ident)

@@ -6,5 +6,5 @@ import Semantics.ErrorMsgs
 import Utilities.Definitions
 
 annotateFunc :: Func -> LexicalScoper Func
-annotateFunc f
-  = undefined
+annotateFunc
+  = return

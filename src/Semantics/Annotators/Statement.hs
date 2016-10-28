@@ -13,10 +13,12 @@ annotateStat :: Stat -> LexicalScoper Stat
 annotateStat (Seq s1 s2)
   = liftM2 Seq (annotateStat s1) (annotateStat s2)
 
--- Must annotate RHS first so new identifier is not in
+-- Cannot use lift: Must annotate RHS first so new identifier is not in
 -- its symbol table, otherwise "int x = x + 3" would be valid, for example.
-annotateStat (Declaration t ident rhs)
-  = liftM2 (Declaration t) (annotateIdent ident) (annotateRHS rhs)
+annotateStat (Declaration t ident rhs) = do
+  newRHS   <- annotateRHS
+  newIdent <- annotateNewIdent ident
+  return $ Declaration t newIdent newRHS
 
 annotateExprList :: [Expr] -> LexicalScoper [Expr]
 annotateExprList

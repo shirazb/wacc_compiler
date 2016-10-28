@@ -10,9 +10,22 @@ import Semantics.ErrorMsgs
 import Utilities.Definitions
 
 annotateExpr :: Expr -> LexicalScoper Expr
-annoateExpr (IdentE ident)
+annotateExpr (IdentE ident)
   = IdentE <$> annotateIdent ident
-annotateExpr i@(IntLit _)
-  = return i
-annotateExpr e
-  = return e
+
+annotateExpr (ExprArray (ArrayElem ident exprs)) = do
+  newIdent <- annotateIdent ident
+  newExprs <- mapM annotateExpr exprs
+  return $ ExprArray (ArrayElem newIdent newExprs)
+
+annotateExpr (UnaryApp unOp expr) = do
+  newExpr <- annotateExpr expr
+  return $ UnaryApp unOp newExpr
+
+annotateExpr (BinaryApp binOp e e') = do
+  newE  <- annotateExpr e
+  newE' <- annotateExpr e'
+  return $ BinaryApp binOp newE newE'
+
+annotateExpr literal
+  = return literal
