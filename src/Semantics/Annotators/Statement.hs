@@ -14,6 +14,9 @@ import Utilities.Definitions
 
 annotateStat :: Stat -> LexicalScoper Stat
 
+annotateStat Skip
+  = return Skip
+
 -- Cannot use lift: Must annotate RHS first so new identifier is not in
 -- its symbol table, otherwise "int x = x + 3" would be valid, for example.
 annotateStat (Declaration t ident rhs) = do
