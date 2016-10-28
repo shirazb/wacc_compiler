@@ -23,15 +23,7 @@ type Position  = (Int, Int)
 type Err       = (String, Position)
 
 -- errrr, someone come up with a better name pls...
--- Do we need to manually implement Monad instance so it concats sym tabs
--- like below?
 type LexicalScoper a = State SymbolTable a
-
--- concatSymTab :: SymbolTable -> SymbolTable -> SymbolTable
--- concatSymTab (ST parent env) (ST parent' env')
---   | parent /= parent' = error assertSameParentScope
---   | otherwise         = ST parent (Map.union env env')
---                         duplicate check??
 
 data Program   = Program [Func] Stat                deriving (Eq)
 data Func      = Func Type Ident ParamList Stat     deriving (Eq)

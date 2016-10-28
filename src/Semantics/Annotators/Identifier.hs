@@ -24,7 +24,6 @@ lookUpIdent ident st@(ST None env)
   = case Map.lookup (nameAndContext ident) env of
     Nothing -> False
     Just _  -> True
-
 lookUpIdent ident st@(ST parentST env)
   = case Map.lookup (nameAndContext ident) env of
     Nothing -> lookUpIdent ident parentST
@@ -38,6 +37,9 @@ annotateNewIdent ident@(Ident name info) = do
   -- do we actually need NoInfo
   -- im guessing in the parsing stage
   -- we will now encode the information about
+  -----------------------------------------------------
+  -- It does not override the definition of the old variable, 'put newST' is
+  -- not called in the case of the lookup succeeding.
   let newEnv            = Map.insert (nameAndContext ident) info env
   let newST             = ST parentST newEnv
   if lookUpIdent ident st
@@ -48,5 +50,6 @@ annotateIdent :: Ident -> LexicalScoper Ident
 annotateIdent ident@(Ident name info) = do
   st <- get
   if lookUpIdent ident st
-    then return setErrType NoError ident
+      -- should already by NoError
+    then return $ setErrType NoError ident
     else return $ setErrType NotInScope ident
