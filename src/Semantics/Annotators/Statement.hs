@@ -3,6 +3,8 @@ module Semantics.Annotators.Statement (
 ) where
 
 import Control.Monad (liftM2, mapM)
+import Control.Monad.State.Strict
+import qualified Data.Map as Map
 
 import Semantics.ErrorMsgs
 import Semantics.Annotators.Expression
@@ -16,9 +18,16 @@ annotateStat (Seq s1 s2)
 -- Cannot use lift: Must annotate RHS first so new identifier is not in
 -- its symbol table, otherwise "int x = x + 3" would be valid, for example.
 annotateStat (Declaration t ident rhs) = do
-  newRHS   <- annotateRHS
+  newRHS   <- annotateRHS rhs
   newIdent <- annotateNewIdent ident
   return $ Declaration t newIdent newRHS
+
+annotateBlock (Block s) = do
+  currST  <- get
+  put (ST currST Map.empty)
+  s'      <- annotateStat s
+  put currST
+  return $ Block s'
 
 annotateExprList :: [Expr] -> LexicalScoper [Expr]
 annotateExprList
