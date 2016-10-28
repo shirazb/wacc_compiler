@@ -26,6 +26,8 @@ annotateBlock (Block s) = do
   currST  <- get
   put (ST currST Map.empty)
   s'      <- annotateStat s
+  -- returning the scope to what it orignally was
+  -- before entring the block
   put currST
   return $ Block s'
 

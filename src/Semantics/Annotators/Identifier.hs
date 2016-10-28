@@ -18,11 +18,13 @@ setErrType errType (Ident name (Info t context expr _))
   = Ident name (Info t context expr errType)
 
 -- TODO: less duplication
+
 lookUpIdent :: Ident -> SymbolTable -> Bool
 lookUpIdent ident st@(ST None env)
   = case Map.lookup (nameAndContext ident) env of
     Nothing -> False
     Just _  -> True
+
 lookUpIdent ident st@(ST parentST env)
   = case Map.lookup (nameAndContext ident) env of
     Nothing -> lookUpIdent ident parentST
@@ -31,6 +33,11 @@ lookUpIdent ident st@(ST parentST env)
 annotateNewIdent :: Ident -> LexicalScoper Ident
 annotateNewIdent ident@(Ident name info) = do
   st@(ST parentST env)  <- get
+  -- Do we want to do this?
+  -- it will override the definition of the old variable?
+  -- do we actually need NoInfo
+  -- im guessing in the parsing stage
+  -- we will now encode the information about
   let newEnv            = Map.insert (nameAndContext ident) info env
   let newST             = ST parentST newEnv
   if lookUpIdent ident st
