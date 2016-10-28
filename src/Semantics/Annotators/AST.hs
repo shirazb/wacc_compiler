@@ -12,7 +12,14 @@ import Semantics.Annotators.Statement
 import Semantics.ErrorMsgs
 import Utilities.Definitions
 
--- How do you have fs in the parent scope of stat?
 annotateAST :: AST -> AST
-annotateAST (Program fs stat)
-  = undefined
+annotateAST (Program fs main)
+  = newAST
+  where
+    (newAST, _) = runState annotateProgram None
+    annotateProgram = do
+      newFs        <- mapM annotateFunc fs
+      globalScope  <- get
+      put (ST globalScope Map.Empty)
+      newMain      <- annotateStat
+      return $ Program newFs newMain
