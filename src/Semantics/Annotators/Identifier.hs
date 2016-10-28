@@ -42,11 +42,11 @@ annotateNewIdent ident@(Ident name info) = do
   let newST             = ST parentST newEnv
   if lookUpIdent ident st
     then return (setErrType Duplicate ident)
-    else do { put newST; return ident }
+    else do { put newST; return setErrType NoError ident }
 
 annotateIdent :: Ident -> LexicalScoper Ident
 annotateIdent ident@(Ident name info) = do
   st <- get
   if lookUpIdent ident st
-    then return ident
+    then return setErrType NoError ident
     else return $ setErrType NotInScope ident
