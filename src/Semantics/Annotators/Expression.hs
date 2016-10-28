@@ -1,5 +1,6 @@
 module Semantics.Annotators.Expression (
-  annotateExpr
+  annotateExpr,
+  annotateExprList
 ) where
 
 import Control.Monad.State.Strict
@@ -29,3 +30,7 @@ annotateExpr (BinaryApp binOp e e') = do
 
 annotateExpr literal
   = return literal
+
+annotateExprList :: [Expr] -> LexicalScoper [Expr]
+annotateExprList
+  = mapM annotateExpr

@@ -13,8 +13,6 @@ import Semantics.Annotators.Util
 import Utilities.Definitions
 
 annotateStat :: Stat -> LexicalScoper Stat
-annotateStat (Seq s1 s2)
-  = liftM2 Seq (annotateStat s1) (annotateStat s2)
 
 -- Cannot use lift: Must annotate RHS first so new identifier is not in
 -- its symbol table, otherwise "int x = x + 3" would be valid, for example.
@@ -23,21 +21,49 @@ annotateStat (Declaration t ident rhs) = do
   newIdent <- annotateNewIdent ident
   return $ Declaration t newIdent newRHS
 
+annotateStat (Assignment lhs rhs)
+  = liftM2 Assignment (annotateLHS lhs) (annotateRHS rhs)
+
+annotateStat (Read lhs)
+  = Read <$> annotateLHS lhs
+annotateStat (Free expr)
+  = Free <$> annotateExpr expr
+annotateStat (Return expr)
+  = Return <$> annotateExpr expr
+annotateStat (Exit expr)
+  = Exit <$> annotateExpr expr
+annotateStat (Print expr)
+  = Print <$> annotateExpr expr
+annotateStat (Println expr)
+  = Println <$> annotateExpr expr
+
+annotateStat (If cond thenStat elseStat)
+  = liftM3
+      If
+      (annotateExpr cond)
+      (inChildScope (annotateStat thenStat))
+      (inChildScope (annotateStat elseStat))
+
+annotateStat (While cond body)
+  = liftM2 While (annotateExpr cond) (inChildScope (annotateStat body))
+
 annotateStat (Block s)
-  = inChildScopeAndWrap Block (annotateStat s);
-  --   do
-  -- currST  <- get
-  -- put (ST currST Map.empty)
-  -- s'      <- annotateStat s
-  -- -- returning the scope to what it orignally was
-  -- -- before entring the block
-  -- put currST
-  -- return $ Block s'
+  = inChildScopeAndWrap Block (annotateStat s)
 
-annotateExprList :: [Expr] -> LexicalScoper [Expr]
-annotateExprList
-  = mapM annotateExpr
+annotateStat (Seq s1 s2)
+  = liftM2 Seq (annotateStat s1) (annotateStat s2)
 
+-- Annotates an AssignLHS
+annotateLHS :: AssignLHS -> LexicalScoper AssignLHS
+annotateLHS (Var ident)
+  = Var <$> annotateIdent ident
+annotateLHS (ArrayDeref (ArrayElem ident exprs))
+  = ArrayDeref <$>
+      liftM2 ArrayElem (annotateIdent ident) (annotateExprList exprs)
+annotateLHS (PairDeref (PairElem elemSelector expr))
+  = (PairDeref . PairElem elemSelector) <$> annotateExpr expr
+
+-- Annotates an AssignRHS
 annotateRHS :: AssignRHS -> LexicalScoper AssignRHS
 annotateRHS (ExprAssign expr)
   = ExprAssign <$> annotateExpr expr
@@ -49,11 +75,8 @@ annotateRHS (ArrayLitAssign es)
 annotateRHS (NewPairAssign fstExpr sndExpr)
   = liftM2 NewPairAssign (annotateExpr fstExpr) (annotateExpr sndExpr)
 
-annotateRHS (PairElemAssign pairElem)
-  = PairElemAssign <$> annotatePairElem pairElem
-  where
-    annotatePairElem (Fst expr) = Fst <$> annotateExpr expr
-    annotatePairElem (Snd expr) = Snd <$> annotateExpr expr
+annotateRHS (PairElemAssign (PairElem selector expr))
+  = (PairElemAssign . PairElem selector) <$> annotateExpr expr
 
 annotateRHS (FuncCallAssign f es)
   = liftM2 FuncCallAssign (annotateIdent f) (annotateExprList es)

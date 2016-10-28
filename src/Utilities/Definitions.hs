@@ -90,8 +90,12 @@ data AssignRHS
   deriving (Eq)
 
 data PairElem
-  = Fst Expr
-  | Snd Expr
+  = PairElem PairElemSelector Expr
+  deriving (Eq)
+
+data PairElemSelector
+  = Fst
+  | Snd
   deriving (Eq)
 
 data Type
@@ -287,10 +291,14 @@ instance Show AssignRHS where
     = show pair
 
 instance Show PairElem where
-  show (Fst e)
-    = "fst " ++ show e
-  show (Snd e)
-    = "snd " ++ show e
+  show (PairElem selector expr)
+    = show selector ++ " " ++ show expr
+
+instance Show PairElemSelector where
+  show Fst
+    = "fst"
+  show Snd
+    = "snd"
 
 instance Show Type where
   show (BaseT baseType)
