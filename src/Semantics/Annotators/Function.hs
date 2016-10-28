@@ -8,21 +8,21 @@ import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
 --
 annotateFunc :: Func -> LexicalScoper Func
-annotateFunc f@(Func t ident (ParamList ps) stat) = do
+annotateFunc f@(Func t ident pl@(ParamList ps) stat) = do
   st@(ST parent env) <- get
   let newEnv = Map.insert (nameAndContext ident) info env
   let newGlobalST = ST parent newEnv
-  if lookUpIdent (nameAndContext ident) st
-    then (let funcName = setErrType Duplicate ident) -- no such thing as side effects
-    else (let funcName = setErrType NoError ident
-  -- now lets initiate a symbol table for functions
-  -- add all the parameters, then pass this symbol table in to stat
   let funcST = ST st Map.empty
   put funcST
-  newParamList <- mapM addParam ps
+  pl'          <- mapM addParam ps
   stat'        <- annotateStat stat
-
-  return ident
+  put st
+  if lookUpIdent ident st
+    then return (Func t errIdent pl stat)
+    else return (Func t nonErrIdent pl' stat')
+  where
+    errIdent = setErrType Duplicate ident
+    nonErrIdent = setErrType NoError
 
 
 addParam :: Param -> LexicalScoper Param
