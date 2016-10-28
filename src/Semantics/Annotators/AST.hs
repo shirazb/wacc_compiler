@@ -20,6 +20,6 @@ annotateAST (Program fs main)
     annotateProgram = do
       newFs        <- mapM annotateFunc fs
       globalScope  <- get
-      put (ST globalScope Map.Empty)
-      newMain      <- annotateStat
+      put (ST globalScope Map.empty)
+      newMain      <- annotateStat main
       return $ Program newFs newMain
