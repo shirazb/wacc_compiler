@@ -1,6 +1,6 @@
 {-
-This module defines a number of combinators which are used to parse the types 
-in the wacc language. Refer to the BNF spec of the wacc language for all the 
+This module defines a number of combinators which are used to parse the types
+in the wacc language. Refer to the BNF spec of the wacc language for all the
 types.
 -}
 
@@ -15,7 +15,7 @@ import Parser.Combinators
 import Utilities.Declarations
 import Utilities.Definitions
 
---POST: Parser of types for the WACC language, built up using the more basic 
+--POST: Parser of types for the WACC language, built up using the more basic
 --      parsers of types. Returns type wrapped in appropriate data constructor.
 parseType :: Parser Char Type
 parseType
@@ -37,9 +37,9 @@ multiDimArray
       rest (ArrayT . x)) <|> return x
 
 parseArrayType :: Parser Char ArrayType
-parseArrayType 
+parseArrayType
   = do
-      t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)  
+      t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
       dimension <- multiDimArray
       return (dimension t)
 

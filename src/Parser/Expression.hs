@@ -1,12 +1,12 @@
 {-
-This module consists of parser combinators which are used to parse 
-expressions in the WACC language. A number of basic expression 
-combinators have been defined which are then used as building blocks 
-to build more complex parsers of expressions. Refer to BNF spec of WACC 
+This module consists of parser combinators which are used to parse
+expressions in the WACC language. A number of basic expression
+combinators have been defined which are then used as building blocks
+to build more complex parsers of expressions. Refer to BNF spec of WACC
 language to see exactly what an expression is in the WACC language.
 -}
 
-module Parser.Expression (parseExpr, parseExprList, arrayElem, binaryExpr) where
+module Parser.Expression (parseExpr, parseExpr' , parseExprList, arrayElem, binaryExpr, chainr, parseBinaryOpLow) where
 
 import Control.Applicative
 import Control.Monad
@@ -45,7 +45,7 @@ intLiteral
   = trimWS $ (IntLit . read) <$> some digit
 
 boolLiteral :: Parser Char Expr
-boolLiteral 
+boolLiteral
   = do
       boolean <- keyword "true" <|> keyword "false"
       if boolean == "true"
@@ -73,9 +73,9 @@ stringLiter
   = StringLit <$> quoted '\"'
       (locationReporter (many character) "Invalid char found in string")
 
-{- 
-Complex combinators used to parse larger and more complex expressions. 
-They are built using the basic combinators defined above and a few 
+{-
+Complex combinators used to parse larger and more complex expressions.
+They are built using the basic combinators defined above and a few
 generic combinators defined in the BasicCombinators module.
 -}
 
@@ -86,7 +86,7 @@ unaryExpr
   = parseUnaryAppHigh <|> parseUnaryAppLow
 
 parseUnaryAppLow :: Parser Char Expr
-parseUnaryAppLow 
+parseUnaryAppLow
   = do
       op     <- foldr1 (<|>) (map (keyword.fst) unOpAssoc)
       let op1 = fromJust $ lookup op unOpAssoc
@@ -94,21 +94,21 @@ parseUnaryAppLow
       return  $ UnaryApp op1 expr
 
 parseUnaryAppHigh :: Parser Char Expr
-parseUnaryAppHigh 
+parseUnaryAppHigh
   = do
       op    <- parseFromMap unOpAssocHigher
       expr  <- locationReporter parseExpr' "Invalid argument to unary operator"
       return $ UnaryApp op expr
 
 {-
-A number of parsers used to parse valid binary expressions in the WACC 
-language. The design of the parser combinators take in to acccount the 
+A number of parsers used to parse valid binary expressions in the WACC
+language. The design of the parser combinators take in to acccount the
 precdence of binary operators.
 -}
 
 -- PRE: None
 -- POST: Parses all valid binary expressions
--- Example: parse  binaryExpr "1 + 2" will return 
+-- Example: parse  binaryExpr "1 + 2" will return
 -- BinaryApp Mul (IntLit 1) (IntLit 2)
 binaryExpr :: Parser Char Expr
 binaryExpr
@@ -135,10 +135,10 @@ parseBinaryOpHigher
   = parseFromMap higherBinOps
 
 -- PRE: None
--- POST: Returns a parser which parses a sequence of expressions seperated by 
--- a meaningful seperator, for example, the operator (+). The parser returns 
--- the expression wrapped up in the appropriate data constructors. Assume 
--- existence of parser which returns the Add data constructor as its result, 
+-- POST: Returns a parser which parses a sequence of expressions seperated by
+-- a meaningful seperator, for example, the operator (+). The parser returns
+-- the expression wrapped up in the appropriate data constructors. Assume
+-- existence of parser which returns the Add data constructor as its result,
 -- call it parseAdd.
 -- Example: parse (chainl1 intLiteral parseAdd) "1 + 2 + 3" will return
 -- Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
@@ -151,6 +151,16 @@ chainl1 p op
       y   <-  locationReporter p "Invalid argument to binary expression"
       rest $ BinaryApp f x y) <|> return x
 
+chainr :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
+chainr p op
+  = p >>= rest
+  where
+    rest x = (do
+      f <- op
+      xs <- chainr p op
+      rest $ BinaryApp f x xs
+      ) <|> return x
+
 
 -- PRE: None
 -- POST: Parser of bracketed expressions. Parser removes whitespace and throws
@@ -161,7 +171,7 @@ bracketedExpr
 
 -- PRE: None
 -- POST: Parses references to array elements.
--- Example: parse arrayElem "abc[1][2]" will return 
+-- Example: parse arrayElem "abc[1][2]" will return
 -- ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser Char ArrayElem
 arrayElem

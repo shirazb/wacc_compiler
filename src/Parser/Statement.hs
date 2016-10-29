@@ -1,6 +1,6 @@
 {-
-This module defines a number of parser combinators used to parse statements in 
-the WACC language. Refer to the BNF specification of the WACC language to see 
+This module defines a number of parser combinators used to parse statements in
+the WACC language. Refer to the BNF specification of the WACC language to see
 exactly what a statement is in the WACC language.
 -}
 
@@ -16,8 +16,8 @@ import Parser.Combinators
 import Utilities.Declarations
 import Utilities.Definitions
 
--- POST: Parses all valid statements in the WACC language, it is factored out 
---       like this to prevent the parser going in to an infinite loop due to 
+-- POST: Parses all valid statements in the WACC language, it is factored out
+--       like this to prevent the parser going in to an infinite loop due to
 --       left recursion
 parseStatement :: Parser Char Stat
 parseStatement
@@ -39,7 +39,7 @@ parseStatement'
   <|> parseSkip
 
 -- The following two parsers parse the built in functions of the WACC language.
--- We have a generic parser for all built in funcs except Read. This is 
+-- We have a generic parser for all built in funcs except Read. This is
 -- because the argument of read differs from the other built in functions
 
 parseRead :: Parser Char Stat
@@ -47,29 +47,29 @@ parseRead
   = keyword "read" >> (Read <$> parseLHS)
 
 parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Char Stat
-parseBuiltInFunc funcName func 
+parseBuiltInFunc funcName func
   = do
       keyword funcName
-      expr1 <- locationReporter parseExpr ("Invalid arguments to " ++ 
+      expr1 <- locationReporter parseExpr ("Invalid arguments to " ++
                  funcName ++ " function")
       return $ func expr1
 
--- Parsers for all the synctactic structures in the WACC language that make up 
+-- Parsers for all the synctactic structures in the WACC language that make up
 -- a statement:
 
 -- POST: Parses a conditional
 parseIfStat :: Parser Char Stat
 parseIfStat = do
   keyword "if"
-  cond          <- locationReporter parseExpr 
+  cond          <- locationReporter parseExpr
                      "Invalid expression for if condition"
   locationReporter (keyword "then") "Missing 'then' keyword"
-  thenStat      <- locationReporter parseStatement 
+  thenStat      <- locationReporter parseStatement
                      "Invalid statement for then branch"
   posBeforeElse <- getPosition
   locationReporter (keyword "else") "Missing 'else' keyword"
   posAfterElse  <- getPosition
-  elseStat      <- locationReporter parseStatement 
+  elseStat      <- locationReporter parseStatement
                      "Invalid statement for else branch"
   pos           <- getPosition
   locationReporter (keyword "fi") "Missing 'fi' keyword"
@@ -80,10 +80,10 @@ parseIfStat = do
 parseWhileStat :: Parser Char Stat
 parseWhileStat = do
   keyword "while"
-  cond      <- locationReporter parseExpr 
+  cond      <- locationReporter parseExpr
                  "Invalid expression in while condition"
   locationReporter (keyword "do") "Missing 'do' keyword"
-  loopBody  <- locationReporter parseStatement 
+  loopBody  <- locationReporter parseStatement
                  "Invalid statement for while condition"
   locationReporter (keyword "done") "Missing 'done' keyword"
   return $ While cond loopBody
@@ -123,7 +123,7 @@ parseDeclaration = do
 parseAssignment :: Parser Char Stat
 parseAssignment = do
   lhs <- parseLHS
-  locationReporter (punctuation '=') 
+  locationReporter (punctuation '=')
     "Missing equal sign in assignment. Did you misspell or forget a keyword?"
   rhs <- locationReporter parseRHS "Invalid RHS in assignment"
   return $ Assignment lhs rhs
@@ -143,7 +143,7 @@ parseRHS
   <|> assignToArrayLit
   <|> assignToNewPair
 
--- POST: Parses all valid LHS of an assignment or the argument of the function 
+-- POST: Parses all valid LHS of an assignment or the argument of the function
 --       read
 parseLHS :: Parser Char AssignLHS
 parseLHS
@@ -165,7 +165,7 @@ pairElem = do
     then return (Fst  expr)
     else return (Snd expr)
 
--- POST: Wraps the result of parsing a pairElem in the appropriate data 
+-- POST: Wraps the result of parsing a pairElem in the appropriate data
 --       constructor
 assignToPairElem :: Parser Char AssignRHS
 assignToPairElem
@@ -192,10 +192,10 @@ assignToNewPair :: Parser Char AssignRHS
 assignToNewPair = do
   token "newpair"
   locationReporter (punctuation '(') "Missing opening parenthesis for newpair"
-  expr1 <- locationReporter parseExpr 
+  expr1 <- locationReporter parseExpr
              "Invalid Expr for first expression in newpair"
   locationReporter (punctuation ',') "No comma in new pair declaration"
-  expr2 <- locationReporter parseExpr 
+  expr2 <- locationReporter parseExpr
              "Invalid Expr for second expression in newpair"
   locationReporter (punctuation ')') "Missing closing parenthesis for newpair"
   return $ NewPairAssign expr1 expr2

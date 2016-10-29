@@ -1,9 +1,9 @@
 {- 
-This module defines the parser type which will be used in the rest of the 
-program. It also defines a number of typeclass instances, enabling us to 
-benefit from the functions that these typeclasses provide. The functions 
-provided by the typeclasses are used in defining parser combinators. 
-Further documentation regarding these typeclasses and their uses can be 
+This module defines the parser type which will be used in the rest of the
+program. It also defines a number of typeclass instances, enabling us to
+benefit from the functions that these typeclasses provide. The functions
+provided by the typeclasses are used in defining parser combinators.
+Further documentation regarding these typeclasses and their uses can be
 found on the Haskell wiki.
 -}
 
@@ -40,7 +40,7 @@ newtype Parser t a
            , MonadPlus
            )
 
-runParser :: Parser t a -> [t] -> Position -> 
+runParser :: Parser t a -> [t] -> Position ->
                Either Err (Maybe((a,[t]), Position))
 runParser p inputString initialPos
   = runMaybeT $ runStateT (runStateT (parse p) inputString) initialPos
@@ -58,7 +58,7 @@ updatePosition f
   = getPosition >>= (putPosition . f)
 
 basicItem :: (MonadState [t] m, MonadPlus m) => m t
-basicItem 
+basicItem
   = do
     state <- get
     case state of
@@ -72,16 +72,16 @@ updateParserPosition _ (ln, c)
   = (ln, c + 1)
 
 updateRowPosition :: Position -> Position
-updateRowPosition (ln, c) 
+updateRowPosition (ln, c)
   = (ln + 1, c)
 
 errorReporterParser :: (MonadError e m, Alternative m) => m a -> e -> m a
 errorReporterParser p err
   = p <|> throwError err
-  
+
 locationReporter :: Parser Char a -> String -> Parser Char a
-locationReporter parser errorMessage 
+locationReporter parser errorMessage
   = do
       p <- getPosition
-      errorReporterParser parser 
+      errorReporterParser parser
         ("Syntax Error: " ++ errorMessage, updateRowPosition p)

@@ -1,6 +1,6 @@
 {-
-This module defines a number of combinators to handle lexical issues, such as 
-removing whitespace and comments. It also handles distinguishing between 
+This module defines a number of combinators to handle lexical issues, such as
+removing whitespace and comments. It also handles distinguishing between
 keywords and identifiers.
 -}
 
@@ -22,7 +22,7 @@ commentDelim
 -- POST: Removes single line comments.
 comments :: Parser Char ()
 comments
-  = void $ string commentDelim >> many (satisfy (/= '\n')) >> 
+  = void $ string commentDelim >> many (satisfy (/= '\n')) >>
       locationReporter (char '\n') "No newline after comment"
 
 -- Post: Removes spaces incl \t,\n etc
@@ -76,13 +76,13 @@ isPunctuation =  flip elem ([';', ',', ']', '[', ')', '('] ++ operators)
 isComment :: Char -> Bool
 isComment = (==) '#'
 
--- POST: Parser for the given input char, it also removes whitespace around 
+-- POST: Parser for the given input char, it also removes whitespace around
 --       the char
 punctuation :: Char -> Parser Char Char
 punctuation
   = trimWS . char
 
--- POST: A parser for identifiers used to parse identifers in the wacc 
+-- POST: A parser for identifiers used to parse identifers in the wacc
 --       language, removes trailing whitespace
 identifiers :: Parser Char String
 identifiers
@@ -99,16 +99,16 @@ identifier = trimWS $ do
   return x
 
 -- PRE:  The given input string contains a value which is present in the map
--- POST: It takes as input a map from strings to values of type a. It attempts 
---       to parse one of the strings in the map and if it succeeds it will 
---       return the corresponding a value. Essentially a parser lookup 
+-- POST: It takes as input a map from strings to values of type a. It attempts
+--       to parse one of the strings in the map and if it succeeds it will
+--       return the corresponding a value. Essentially a parser lookup
 --       function. It removes trailing WS.
 parseFromMap :: (Show a) => [(String, a)] -> Parser Char a
 parseFromMap assoclist = do
   value <- foldr1 (<|>) (map (token . fst) assoclist)
   return $ fromJust (lookup value assoclist)
 
--- POST: Similar to bracketNoWS defined in basic combinators, however it takes 
+-- POST: Similar to bracketNoWS defined in basic combinators, however it takes
 --       whitespaces into account.
 bracket :: Parser Char a -> Parser Char b -> Parser Char c  -> Parser Char b
 bracket open p close
@@ -117,6 +117,6 @@ bracket open p close
 
 -- List of keywords defined in the wacc language
 keywords = ["while", "if", "fi", "else", "null", "pair", "is", "begin", "skip",
-            "end", "call", "newpair", "fst", "snd", "return", "read", "free", 
-            "exit", "println", "print", "then", "do", "done", "int", "bool", 
+            "end", "call", "newpair", "fst", "snd", "return", "read", "free",
+            "exit", "println", "print", "then", "do", "done", "int", "bool",
             "char", "string", "len", "chr", "ord", "true", "false"]
