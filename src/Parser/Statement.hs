@@ -41,11 +41,13 @@ parseStatement'
 {-The following two parsers parse the built in functions of the WACC language.
   We have a generic parser for all built in funcs except Read. This is
   because the argument of read differs from the other built in functions -}
+
 parseRead :: Parser Char Stat
 parseRead
   = keyword "read" >> (Read <$> parseLHS)
 
 parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Char Stat
+<<<<<<< de8511da76c5fd81e6fbb1eedd0b4a763497e818
 parseBuiltInFunc funcName func = do
   keyword funcName
   expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++ " function")
@@ -54,6 +56,12 @@ parseBuiltInFunc funcName func = do
 {-
 Parsers for all the synctactic structures in the WACC language that make up a statement.
 -}
+parseBuiltInFunc funcName func
+  = do
+      keyword funcName
+      expr1 <- tryParser parseExpr ("Invalid arguments to " ++
+                 funcName ++ " function")
+      return $ func expr1
 
 -- POST: Parses a conditional
 parseIfStat :: Parser Char Stat
@@ -71,9 +79,9 @@ parseIfStat = do
 parseWhileStat :: Parser Char Stat
 parseWhileStat = do
   keyword "while"
-  cond  <- tryParser parseExpr "Invalid expression in while condition"
+  cond      <- tryParser parseExpr "Invalid expression in while condition"
   tryParser (keyword "do") "Missing 'do' keyword"
-  loopBody   <- tryParser parseStatement "Invalid statement for while condition"
+  loopBody  <- tryParser parseStatement "Invalid statement for while condition"
   tryParser (keyword "done") "Missing 'done' keyword"
   return $ While cond loopBody
 
@@ -112,7 +120,8 @@ parseDeclaration = do
 parseAssignment :: Parser Char Stat
 parseAssignment = do
   lhs <- parseLHS
-  tryParser (punctuation '=') "Missing equal sign in assignment. Did you misspell or forget a keyword?"
+  tryParser (punctuation '=')
+      "Missing equal sign in assignment. Did you misspell or forget a keyword?"
   rhs <- tryParser parseRHS "Invalid RHS in assignment"
   return $ Assignment lhs rhs
 

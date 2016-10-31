@@ -41,7 +41,10 @@ main
 
 parseProgram :: Parser Char Program
 parseProgram
-  = bracket (tryParser (keyword "begin") "Invalid Program start")
+  = bracket
+      (tryParser (keyword "begin") "Invalid Program start")
+      parseProgram'
+      endingParse
   where
     parseProgram'
       = liftM2 Program (many parseFunction)

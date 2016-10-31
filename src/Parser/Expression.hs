@@ -72,6 +72,7 @@ stringLiter :: Parser Char Expr
 stringLiter
   = StringLit <$> quoted '\"'
       (tryParser (many character) "Invalid char found in string")
+
 {-
 Complex combinators used to parse larger and more complex expressions.
 They are built using the basic combinators defined above and a few
@@ -86,14 +87,14 @@ unaryExpr
 
 parseUnaryAppLow :: Parser Char Expr
 parseUnaryAppLow = do
-  op <- foldr1 (<|>) (map (keyword.fst) unOpAssoc)
-  let op1 = fromJust $ lookup op unOpAssoc
-  expr <- tryParser parseExpr "Invalid argument to unary operator"
-  return $ UnaryApp op1 expr
+  op      <- foldr1 (<|>) (map (keyword . fst) unOpAssoc)
+  let op = fromJust $ lookup op unOpAssoc
+  expr    <- tryParser parseExpr "Invalid argument to unary operator"
+  return $ UnaryApp op expr
 
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
-  op <- parseFromMap unOpAssocHigher
+  op   <- parseFromMap unOpAssocHigher
   expr <- tryParser parseExpr' "Invalid argument to unary operator"
   return $ UnaryApp op expr
 
@@ -144,8 +145,8 @@ chainl1 p op
   = trimWS $ p >>= rest
   where
     rest x = (do
-      f <-  op
-      y <-  tryParser p "Invalid argument to binary expression"
+      f <- op
+      y <- tryParser p "Invalid argument to binary expression"
       rest $ BinaryApp f x y) <|> return x
 
 chainr :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
@@ -157,7 +158,6 @@ chainr p op
       xs <- chainr p op
       rest $ BinaryApp f x xs
       ) <|> return x
-
 
 -- PRE: None
 -- POST: Parser of bracketed expressions. Parser removes whitespace and throws
