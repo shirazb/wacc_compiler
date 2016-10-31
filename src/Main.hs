@@ -6,24 +6,23 @@ experience to learn the more advanced features of Haskell. The parser
 currently has no error handling.
 -}
 
-module Parsers.Program (
-  runParser
-) where
-
-import Control.Applicative
-import Control.Monad
-import Debug.Trace
+import Parser.Program
 import System.Environment
-import Control.Monad.Except
-import Control.Monad.State  (MonadState (..), StateT (..))
+import Utilities.Declarations (runParser)
+import Semantics.Annotators.AST
 
-import Parser.Expression
-import Parser.Function
-import Parser.Lexer
-import Parser.Statement
-import Parser.Combinators
-import Utilities.Declarations
-import Utilities.Definitions
+validProgram = "begin int f(int f) is f = 2; return f end int g(int f) is f = 6; return f end int x = call f(2); int y = 3; if x == 3 then println x else println y fi; begin println y end; println x; println y end "
+notInScope = "begin x = 4 end "
+blockDoesShadow = "begin int x = 4; begin x = 3 end end "
+blockRedeclares = "begin int x = 4; begin string x = \"sdfsdf\"; println x end end "
+redeclaration = "begin int x = 2; int x = 2 end"
+quickSanityCheck = "begin int f() is return 1 end println 2 end"
+duplicateFunc = "begin int f() is int f = 2; return f end int f(int f) is f = 6; return f end println 2 end"
+recursive = "begin int f() is int x = call f(); return x end skip end "
+duplicateParams = "begin int f(int x, int x, char x) is int x = 3; return 2 end skip end "
+bareErrors = "begin int f() is f = 2; return f end int g(int f) is g = 6; return f end int z = 2; int x = call z(); begin char x = 4; x = 2 end end"
+while = "begin while (x == 2) do char c = 3; c = 2; x = c done end "
+nested = "begin while (x == 2) do int[] x = [1, 2, z]; if (cond) then string x = 3 else x = 5 fi done end"
 
 main
   = do
@@ -38,26 +37,3 @@ main
         Left err                -> print err
         Right Nothing           -> print "Program Failure"
       return ()
-
-parseProgram :: Parser Char Program
-parseProgram
-  = bracket
-      (tryParser (keyword "begin") "Invalid Program start")
-      parseProgram'
-      endingParse
-  where
-    parseProgram'
-      = liftM2 Program (many parseFunction)
-          (tryParser parseStatement "Invalid or missing program body")
-
-endingParse :: Parser Char String
-endingParse
-  = do
-      tryParser (string "end") "Unexpected Symbol"
-      junk
-      unusedInputString <- get
-      pos               <- getPosition
-      if null unusedInputString
-        then return "Valid Program"
-        else throwError
-               ("Syntax Error: Invalid Program", updateRowPosition pos)

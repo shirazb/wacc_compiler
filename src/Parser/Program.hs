@@ -15,8 +15,10 @@ import Utilities.Definitions
 
 parseProgram :: Parser Char Program
 parseProgram
-  = bracket (tryParser (keyword "begin") "Invalid Program start")
-      parseProgram' endingParse
+  = bracket
+      (tryParser (keyword "begin") "Invalid Program start")
+      parseProgram'
+      endingParse
   where
     parseProgram'
       = liftM2 Program (many parseFunction)

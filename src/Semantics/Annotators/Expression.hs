@@ -12,22 +12,20 @@ import Utilities.Definitions
 
 annotateExpr :: Expr -> LexicalScoper Expr
 annotateExpr (IdentE ident)
-  = IdentE <$> annotateIdent ident
+  = IdentE <$> annotateIdent Variable ident
 
 annotateExpr (ExprArray (ArrayElem ident exprs)) = do
-  newIdent <- annotateIdent ident
+  newIdent <- annotateIdent Variable ident
   newExprs <- mapM annotateExpr exprs
   return $ ExprArray (ArrayElem newIdent newExprs)
 
-annotateExpr (UnaryApp unOp expr) = do
-  newExpr <- annotateExpr expr
-  return $ UnaryApp unOp newExpr
+annotateExpr (UnaryApp unOp expr)
+  = UnaryApp unOp <$> annotateExpr expr
 
-annotateExpr (BinaryApp binOp e e') = do
-  newE  <- annotateExpr e
-  newE' <- annotateExpr e'
-  return $ BinaryApp binOp newE newE'
+annotateExpr (BinaryApp binOp e e')
+  = liftM2 (BinaryApp binOp) (annotateExpr e) (annotateExpr e')
 
+-- Must be the last case
 annotateExpr literal
   = return literal
 

@@ -82,21 +82,21 @@ punctuation :: Char -> Parser Char Char
 punctuation
   = trimWS . char
 
--- POST: A parser for identifiers used to parse identifers in the wacc
---       language, removes trailing whitespace
-identifiers :: Parser Char String
-identifiers
-  = identifier >>= token
+-- -- POST: A parser for identifiers used to parse identifers in the wacc
+-- --       language, removes trailing whitespace
+-- identifiers :: Parser Char String
+-- identifiers
+--   = identifier >>= token
 
 ident :: Parser Char String
 ident
   = liftM2 (:) (char '_' <|> letter) (many (alphanum <|> char '_'))
 
-identifier :: Parser Char String
+identifier :: Parser Char Ident
 identifier = trimWS $ do
-  x <- ident
-  guard (x `notElem` keywords)
-  return x
+  name <- ident
+  guard (name `notElem` keywords)
+  return $ Ident name NoInfo 
 
 -- PRE:  The given input string contains a value which is present in the map
 -- POST: It takes as input a map from strings to values of type a. It attempts

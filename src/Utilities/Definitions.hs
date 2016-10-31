@@ -31,7 +31,7 @@ data ParamList = ParamList [Param]                  deriving (Eq)
 data Param     = Param Type Ident                   deriving (Eq)
 data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq)
 data PairType  = PairType PairElemType PairElemType deriving (Eq)
-data Ident     = Ident String Info                  deriving (Eq)
+data Ident     = Ident String Info                  deriving (Eq, Show)
 
 data ErrorType
   = NoError
@@ -42,10 +42,9 @@ data ErrorType
 data Info
   = Info {
     typeInfo  :: Type,
-    context   :: Context,
-    expr      :: Maybe Expr,
-    errorType :: ErrorType
+    context   :: Context
   }
+  | ScopeError ErrorType
   | NoInfo
   deriving (Eq, Show)
 
@@ -400,9 +399,9 @@ showWithoutBrackets t t'
       then inBrackets showT'
       else showT'
 
-instance Show Ident where
-  show (Ident name _)
-    = name
+-- instance Show Ident where
+--   show (Ident name _)
+--     = name
 
 instance Show Expr where
   show (StringLit s)

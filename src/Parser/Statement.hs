@@ -154,13 +154,23 @@ assignToExpr
   = ExprAssign <$> parseExpr
 
 -- POST: Parses a pair elem which can be either a lhs or rhs.
+pairElemExpr :: Parser Char Expr
+pairElemExpr
+  = tryParser parseExpr "Invalid Expr for pairElem"
+
+pairFst :: Parser Char PairElemSelector
+pairFst = do
+  keyword "fst"
+  return Fst
+
+pairSnd :: Parser Char PairElemSelector
+pairSnd = do
+  keyword "snd"
+  return Snd
+
 pairElem :: Parser Char PairElem
-pairElem = do
-  fstOrSnd  <- keyword "fst" <|> keyword "snd"
-  expr      <- tryParser parseExpr "Invalid Expr for pairElem"
-  if fstOrSnd == "fst"
-    then return (Fst  expr)
-    else return (Snd expr)
+pairElem
+  = liftA2 PairElem (pairFst <|> pairSnd) pairElemExpr
 
 -- POST: Wraps the result of parsing a pairElem in the appropriate data
 --       constructor

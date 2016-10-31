@@ -1,3 +1,5 @@
+-- DOESN'T WORK NOW -- WRONG INFO TYPE
+
 module Semantics.Annotators.Test where
 
 import Utilities.Definitions

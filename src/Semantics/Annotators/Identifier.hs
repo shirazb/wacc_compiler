@@ -5,30 +5,29 @@ module Semantics.Annotators.Identifier (
 
 import qualified Data.Map as Map
 import Control.Monad.State.Strict
+import Debug.Trace
 
 import Semantics.Annotators.Util
 import Utilities.Definitions
+import Semantics.ErrorMsgs
 
-annotateNewIdent :: Ident -> LexicalScoper Ident
-annotateNewIdent ident@(Ident name info) = do
-  st          <- get
-  -- Do we want to do this?
-  -- it will override the definition of the old variable?
-  -- do we actually need NoInfo
-  -- im guessing in the parsing stage
-  -- we will now encode the information about
-  -----------------------------------------------------
-  -- It does not override the definition of the old variable, 'put newST' is
-  -- not called in the case of the lookup succeeding.
-  let newST   = addToST ident st
-  if lookUpIdent ident st
-    then return (setErrType Duplicate ident)
-    else do { put newST; return (setErrType NoError ident) }
+-- PRE: info contains NoError
+annotateNewIdent :: Ident -> Info -> LexicalScoper Ident
+annotateNewIdent (Ident name NoInfo) info = do
+  st            <- get
+  let newIdent  = Ident name info
+  let newST     = addToST newIdent st
+  case lookUpIdentCurrScope (name, context info) st of
+    Just _  -> return (setErrType Duplicate newIdent)
+    Nothing -> do { put newST; return newIdent }
+annotateNewIdent (Ident name info) info'
+  = error $ assertReannotatingNewIdent name info info'
 
-annotateIdent :: Ident -> LexicalScoper Ident
-annotateIdent ident@(Ident name info) = do
+annotateIdent :: Context -> Ident -> LexicalScoper Ident
+annotateIdent ctext ident@(Ident name NoInfo) = do
   st <- get
-  if lookUpIdent ident st
-      -- should already by NoError
-    then return $ setErrType NoError ident
-    else return $ setErrType NotInScope ident
+  return $ case lookUpIdent (name, ctext) st of
+    Nothing   -> setErrType NotInScope ident
+    Just info -> setInfo info ident
+annotateIdent _ _
+  = error "make a proper error message -- annotateIdent"

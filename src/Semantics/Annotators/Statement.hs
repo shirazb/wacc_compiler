@@ -5,6 +5,7 @@ module Semantics.Annotators.Statement (
 import Control.Monad (liftM2, mapM)
 import Control.Monad.State.Strict
 import qualified Data.Map as Map
+import Debug.Trace
 
 import Semantics.ErrorMsgs
 import Semantics.Annotators.Expression
@@ -13,7 +14,6 @@ import Semantics.Annotators.Util
 import Utilities.Definitions
 
 annotateStat :: Stat -> LexicalScoper Stat
-
 annotateStat Skip
   = return Skip
 
@@ -21,7 +21,7 @@ annotateStat Skip
 -- its symbol table, otherwise "int x = x + 3" would be valid, for example.
 annotateStat (Declaration t ident rhs) = do
   newRHS   <- annotateRHS rhs
-  newIdent <- annotateNewIdent ident
+  newIdent <- annotateNewIdent ident (Info t Variable)
   return $ Declaration t newIdent newRHS
 
 annotateStat (Assignment lhs rhs)
@@ -59,10 +59,10 @@ annotateStat (Seq s1 s2)
 -- Annotates an AssignLHS
 annotateLHS :: AssignLHS -> LexicalScoper AssignLHS
 annotateLHS (Var ident)
-  = Var <$> annotateIdent ident
+  = Var <$> annotateIdent Variable ident
 annotateLHS (ArrayDeref (ArrayElem ident exprs))
   = ArrayDeref <$>
-      liftM2 ArrayElem (annotateIdent ident) (annotateExprList exprs)
+      liftM2 ArrayElem (annotateIdent Variable ident) (annotateExprList exprs)
 annotateLHS (PairDeref (PairElem elemSelector expr))
   = (PairDeref . PairElem elemSelector) <$> annotateExpr expr
 
@@ -82,4 +82,4 @@ annotateRHS (PairElemAssign (PairElem selector expr))
   = (PairElemAssign . PairElem selector) <$> annotateExpr expr
 
 annotateRHS (FuncCallAssign f es)
-  = liftM2 FuncCallAssign (annotateIdent f) (annotateExprList es)
+  = liftM2 FuncCallAssign (annotateIdent Function f) (annotateExprList es)
