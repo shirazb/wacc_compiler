@@ -21,6 +21,7 @@ library
   build-depends:       base >= 4.7 && < 5
                       , mtl
                       , transformers
+                      , containers
   default-language:    Haskell2010
 
 executable WACC-Haskell-exe
@@ -30,6 +31,7 @@ executable WACC-Haskell-exe
   build-depends:       base
                      , WACC-Haskell
                      , mtl
+                     , containers
   default-language:    Haskell2010
 
 test-suite WACC-Haskell-test
