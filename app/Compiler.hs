@@ -1,8 +1,15 @@
 import System.Environment
-import Parser
+import Parser.Program
 main = do
   args           <- getArgs
-  let fileName   =  head args  
+  let fileName   =  head args
   program        <- readFile fileName
-  --  let ast        =  runParser program
-  print 1
+
+  let (compiled,annotatedCompiled)   = makeAST program
+  print compiled
+  putStrLn "THIS IS THE ANNOTATED AST"
+  putStrLn "#########################"
+  putStrLn "#########################"
+  putStrLn "#########################"
+  print annotatedCompiled
+  return ()

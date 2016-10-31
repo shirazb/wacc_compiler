@@ -1,4 +1,4 @@
-module Parser.Program (parseProgram) where
+module Parser.Program (makeAST, parseProgram) where
 
 import Control.Applicative
 import Control.Monad
@@ -12,6 +12,13 @@ import Parser.Statement
 import Parser.Combinators
 import Utilities.Declarations
 import Utilities.Definitions
+import Semantics.Annotators.AST
+
+makeAST :: String -> (AST, AST)
+makeAST source
+  = (a , annotateAST a)
+  where
+    Right (Just ((a, _), _)) = runParser parseProgram source (0, 0)
 
 parseProgram :: Parser Char Program
 parseProgram
