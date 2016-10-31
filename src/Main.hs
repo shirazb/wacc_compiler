@@ -33,7 +33,7 @@ main
       putStrLn "           THE PROGRAM WE HAVE PARSED           "
       putStrLn "------------------------------------------------"
       case runParser parseProgram contents (0,0) of
-        Right (Just ((a,b), _)) -> print a
+        Right (Just ((a,b), _)) -> print (annotateAST a)
         Left err                -> print err
         Right Nothing           -> print "Program Failure"
       return ()

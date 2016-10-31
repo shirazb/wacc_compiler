@@ -47,7 +47,6 @@ parseRead
   = keyword "read" >> (Read <$> parseLHS)
 
 parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Char Stat
-<<<<<<< de8511da76c5fd81e6fbb1eedd0b4a763497e818
 parseBuiltInFunc funcName func = do
   keyword funcName
   expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++ " function")
@@ -56,12 +55,6 @@ parseBuiltInFunc funcName func = do
 {-
 Parsers for all the synctactic structures in the WACC language that make up a statement.
 -}
-parseBuiltInFunc funcName func
-  = do
-      keyword funcName
-      expr1 <- tryParser parseExpr ("Invalid arguments to " ++
-                 funcName ++ " function")
-      return $ func expr1
 
 -- POST: Parses a conditional
 parseIfStat :: Parser Char Stat

@@ -88,9 +88,9 @@ unaryExpr
 parseUnaryAppLow :: Parser Char Expr
 parseUnaryAppLow = do
   op      <- foldr1 (<|>) (map (keyword . fst) unOpAssoc)
-  let op = fromJust $ lookup op unOpAssoc
+  let op' = fromJust $ lookup op unOpAssoc
   expr    <- tryParser parseExpr "Invalid argument to unary operator"
-  return $ UnaryApp op expr
+  return $ UnaryApp op' expr
 
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
