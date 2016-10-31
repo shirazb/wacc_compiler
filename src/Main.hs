@@ -39,17 +39,17 @@ main
 
 parseProgram :: Parser Char Program
 parseProgram
-  = bracket (locationReporter (keyword "begin") "Invalid Program start")
+  = bracket (tryParser (keyword "begin") "Invalid Program start")
       parseProgram' endingParse
   where
     parseProgram'
       = liftM2 Program (many parseFunction)
-          (locationReporter parseStatement "Invalid or missing program body")
+          (tryParser parseStatement "Invalid or missing program body")
 
 endingParse :: Parser Char String
 endingParse
   = do
-      locationReporter (string "end") "Unexpected Symbol"
+      tryParser (string "end") "Unexpected Symbol"
       junk
       unusedInputString <- get
       pos               <- getPosition
