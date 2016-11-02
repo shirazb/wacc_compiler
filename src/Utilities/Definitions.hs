@@ -65,7 +65,7 @@ data Stat
   | Read AssignLHS
   | Free Expr
   | Return Expr
-  | Exit Expr 
+  | Exit Expr
   | Print Expr
   | Println Expr
   | If Expr Stat Stat
@@ -101,7 +101,19 @@ data Type
   = BaseT BaseType
   | ArrayT ArrayType
   | PairT PairType
-  deriving (Eq)
+  | FuncT Type [Type]
+  | TypeErr
+
+instance Eq Type where
+  TypeErr == _                = True
+  _ == TypeErr                = True
+  (ArrayT t) == (ArrayT t')   = t == t'
+  (PairT pt) == (PairT pt')   = pt == pt'
+  (FuncT retT paramTs) == (FuncT retT' paramTs')
+    = retT == retT' && paramTs == paramTs'
+  _ == _  = False
+
+-- data Type' = ValidType Type | TypeErr [(Type, Type)]
 
 data BaseType
   = BaseInt
