@@ -11,6 +11,53 @@ typeCheckStat (Declaration t ident rhs) = do
   when (typeRHS /= t) (tell ["Type mismatch in declaration"])
   return ()
 
+typeCheckStat (Assignment lhs rhs) = do
+  typeLHS <- typeCheckLHS lhs
+  typeRHS <- typeCheckRHS rhs
+  when (typeLHS /= typeRHS) (tell ["Type mismatch in declaration"])
+  return ()
+
+typeCheckStat (Read lhs) = void $ typeCheckLHS lhs
+
+typeCheckStat (Free expr@(IdentE _)) = do
+  typeCheckExpr expr
+  return ()
+
+typeCheckStat (Free _) = do
+  tell ["Free called with invalid args"]
+  return ()
+
+typeCheckStat (Exit (IntLit _)) = return ()
+
+typeCheckStat (Exit _) = void $ tell ["Exit passed non integer arg"]
+
+typeCheckStat (If cond s1 s2) = do
+  expr <- typeCheckExpr cond
+  when (expr /= BaseT BaseBool) (tell ["If condition not valid"])
+  return ()
+
+typeCheckStat (While cond stat) = do
+  expr <- typeCheckExpr cond
+  when (expr /= BaseT BaseBool) (tell ["While condition not valid"])
+  return ()
+
+typeCheckStat (Return expr) = void $ typeCheckExpr expr
+
+typeCheckStat (Print expr) = void $ typeCheckExpr expr
+
+typeCheckStat (Println expr) = void $ typeCheckExpr expr
+
+typeCheckStat (Block s) = typeCheckStat s
+
+typeCheckStat (Seq s s') = do
+  typeCheckStat s
+  typeCheckStat s'
+  return ()
+
+
+typeCheckLHS :: AssignLHS -> Writer [TypeErrMsg] Type
+typeCheckLHS (Var ident) = undefined
+
 typeCheckRHS :: AssignRHS -> Writer [TypeErrMsg] Type
 typeCheckRHS = undefined
 
