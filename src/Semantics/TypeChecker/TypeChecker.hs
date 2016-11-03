@@ -17,7 +17,8 @@ typeCheckStat (Assignment lhs rhs) = do
   when (typeLHS /= typeRHS) (tell ["Type mismatch in declaration"])
   return ()
 
-typeCheckStat (Read lhs) = void $ typeCheckLHS lhs
+typeCheckStat (Read lhs)
+  = void $ typeCheckLHS lhs
 
 typeCheckStat (Free expr@(IdentE _)) = do
   typeCheckExpr expr
@@ -27,9 +28,11 @@ typeCheckStat (Free _) = do
   tell ["Free called with invalid args"]
   return ()
 
-typeCheckStat (Exit (IntLit _)) = return ()
+typeCheckStat (Exit (IntLit _))
+  = return ()
 
-typeCheckStat (Exit _) = void $ tell ["Exit passed non integer arg"]
+typeCheckStat (Exit _)
+  = void $ tell ["Exit passed non integer arg"]
 
 typeCheckStat (If cond s1 s2) = do
   expr <- typeCheckExpr cond
@@ -40,26 +43,53 @@ typeCheckStat (While cond stat) = do
   expr <- typeCheckExpr cond
   when (expr /= BaseT BaseBool) (tell ["While condition not valid"])
   return ()
+typeCheckStat (Return expr)
+  = void $ typeCheckExpr expr
 
-typeCheckStat (Return expr) = void $ typeCheckExpr expr
+typeCheckStat (Print expr)
+  = void $ typeCheckExpr expr
 
-typeCheckStat (Print expr) = void $ typeCheckExpr expr
+typeCheckStat (Println expr)
+  = void $ typeCheckExpr expr
 
-typeCheckStat (Println expr) = void $ typeCheckExpr expr
-
-typeCheckStat (Block s) = typeCheckStat s
+typeCheckStat (Block s)
+  = typeCheckStat s
 
 typeCheckStat (Seq s s') = do
   typeCheckStat s
   typeCheckStat s'
   return ()
 
-
 typeCheckLHS :: AssignLHS -> Writer [TypeErrMsg] Type
-typeCheckLHS (Var ident) = undefined
+typeCheckLHS (Var ident)
+  = return (identGetType ident)
+
+-- we should jus call the one we have defined already
+-- make it a bit more general
+-- so we can reuse the same logic
+-- its the same thing
+typeCheckLHS (ArrayDeref a)
+  = undefined
+
+typeCheckLHS (PairDeref pe@(PairElem _ (IdentE i)))
+  = return (identGetType i)
+
+typeCheckLHS (PairDeref pe@(PairElem sel _)) = do
+  tell ["Invalid arg to " ++ show sel]
+  return TypeErr
 
 typeCheckRHS :: AssignRHS -> Writer [TypeErrMsg] Type
-typeCheckRHS = undefined
+typeCheckRHS (ExprAssign e)
+  = typeCheckExpr e
+
+-- what type do we return?
+-- because the rhs of an array
+typeCheckRHS (ArrayLitAssign es) = do
+  types <- mapM typeCheckExpr es
+  unless (and (zipWith (==) types (tail types)))
+    (tell ["ArrayLiteral Error -- not all elements same type"])
+  return TypeErr
+
 
 typeCheckExpr :: Expr -> Writer [TypeErrMsg] Type
 typeCheckExpr (IntLit _)
