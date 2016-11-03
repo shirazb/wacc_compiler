@@ -102,14 +102,14 @@ data Type
   = BaseT BaseType
   | ArrayT ArrayType
   | PairT PairType
-<<<<<<< HEAD
   | FuncT Type [Type]
   | TypeErr
   | AllType
+  deriving (Show)
 
 instance Eq Type where
   AllType == _                = True
-  _ == AllType                = True 
+  _ == AllType                = True
   TypeErr == _                = True
   _ == TypeErr                = True
   (ArrayT t) == (ArrayT t')   = t == t'
@@ -119,9 +119,7 @@ instance Eq Type where
   _ == _  = False
 
 -- data Type' = ValidType Type | TypeErr [(Type, Type)]
-=======
-  deriving (Eq, Show)
->>>>>>> 5d395109dbeb85886809eab033adb3201a52dafb
+
 
 data BaseType
   = BaseInt
