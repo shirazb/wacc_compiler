@@ -1,5 +1,22 @@
 module Semantics.ScopeChecker where
 
+
+-----------
+
+
+
+
+
+
+
+
+---- ALL THE IDENT FUNCTIONS HERE WILL HAVE TO BE CHANGED
+---- BECAUSE IDENT HAS CHANGED TYPED
+
+
+
+
+-------------------
 import Utilities.Def2
 type ScopeError = (String, ErrorType, Position)
 

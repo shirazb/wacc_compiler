@@ -14,7 +14,7 @@ import Parser.Lexer
 import Parser.Type
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Definitions
+import Utilities.Def2
 
 -- POST: Parses all valid statements in the WACC language, it is factored out
 --       like this to prevent the parser going in to an infinite loop due to

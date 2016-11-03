@@ -8,7 +8,7 @@ import Control.Monad.State.Strict
 import Debug.Trace
 
 import Semantics.Annotators.Util
-import Utilities.Definitions
+import Utilities.Def2
 import Semantics.ErrorMsgs
 
 -- PRE: info contains NoError

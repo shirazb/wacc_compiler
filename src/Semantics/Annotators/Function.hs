@@ -6,7 +6,7 @@ import Control.Monad.State.Strict
 import qualified Data.Map as Map
 import Debug.Trace
 import Semantics.ErrorMsgs
-import Utilities.Definitions
+import Utilities.Def2
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util

@@ -13,7 +13,7 @@ import Data.Maybe          (fromJust)
 
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Definitions
+import Utilities.Def2
 
 commentDelim :: String
 commentDelim
@@ -96,7 +96,7 @@ identifier :: Parser Char Ident
 identifier = trimWS $ do
   name <- ident
   guard (name `notElem` keywords)
-  return $ Ident name NoInfo 
+  return $ Ident name NoInfo
 
 -- PRE:  The given input string contains a value which is present in the map
 -- POST: It takes as input a map from strings to values of type a. It attempts

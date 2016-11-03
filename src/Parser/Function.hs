@@ -15,7 +15,7 @@ import Parser.Statement
 import Parser.Type
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Definitions
+import Utilities.Def2
 
 parseFunctionBody :: Parser Char Stat
 parseFunctionBody = do

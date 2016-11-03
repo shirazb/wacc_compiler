@@ -43,33 +43,48 @@ parseExpr'
 intLiteral :: Parser Char Expr
 intLiteral = trimWS $ do
   numberString <- some digit
-  pos    <- getPosition
+  pos          <- getPosition
   let numberRep = read numberString
+  -- overflow check
   return (IntLit numberRep pos)
 
 boolLiteral :: Parser Char Expr
 boolLiteral
   = do
       boolean <- keyword "true" <|> keyword "false"
+      pos     <- getPosition
       if boolean == "true"
-        then return (BoolLit True)
-        else return (BoolLit False)
+        then return (BoolLit True pos)
+        else return (BoolLit False pos)
 
 quoted c p
   = bracket (char c) p (char c)
 
 charLiteral :: Parser Char Expr
-charLiteral
-  = CharLit <$> quoted '\''
+charLiteral = do
+  cLit <- quoted '\''
       (tryParser character "Invalid character found")
+  pos <- getPosition
+  return (CharLit cLit pos)
+--
+-- charLiteral
+--   = liftM2 CharLit (quoted '\''
+--     (tryParser character "Invalid character found")) getPosition
+--     -- CharLit <$> quoted '\''
+--     --   (tryParser character "Invalid character found") <*> getPosition
 
 pairLiteral :: Parser Char Expr
+-- pairLiteral =
+  -- do
+  -- keyword "null"
+  -- p <- getPosition
+  -- return $ PairLiteral p
 pairLiteral
-  = keyword "null" >> return PairLiteral
+  = keyword "null" >> liftM (PairLiteral) getPosition
 
 exprIdent :: Parser Char Expr
 exprIdent
-  = IdentE <$> identifier
+  = IdentE <$> identifier <*> getPosition
 
 stringLiter :: Parser Char Expr
 stringLiter

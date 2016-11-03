@@ -31,7 +31,7 @@ data ParamList = ParamList [Param] Position                  deriving (Eq, Show)
 data Param     = Param Type Ident Position                   deriving (Eq, Show)
 data ArrayElem = ArrayElem Ident [Expr] Position             deriving (Eq, Show)
 data PairType  = PairType PairElemType PairElemType Position deriving (Eq, Show)
-data Ident     = Ident String Info Position                  deriving (Eq, Show)
+data Ident     = Ident String Info                           deriving (Eq, Show)
 
 data ErrorType
   = NoError

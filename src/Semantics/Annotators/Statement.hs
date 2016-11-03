@@ -11,7 +11,7 @@ import Semantics.ErrorMsgs
 import Semantics.Annotators.Expression
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Util
-import Utilities.Definitions
+import Utilities.Def2
 
 annotateStat :: Stat -> LexicalScoper Stat
 annotateStat Skip

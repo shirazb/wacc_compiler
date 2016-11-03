@@ -13,7 +13,7 @@ import Data.Maybe
 import Parser.Lexer
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Definitions
+import Utilities.Def2
 
 --POST: Parser of types for the WACC language, built up using the more basic
 --      parsers of types. Returns type wrapped in appropriate data constructor.
