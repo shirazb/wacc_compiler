@@ -8,8 +8,9 @@ scopeErrorGen (Program funcs main)
   = concatMap scopeErrorFunc funcs ++ scopeErrorStat main
 
 scopeErrorFunc :: Func -> [ScopeError]
-scopeErrorFunc (Func t ident paramList stat pos)
-  = undefined
+scopeErrorFunc (Func t ident (ParamList params _) stat _)
+  = scopeErrorIdent ident ++ concatMap scopeErrorParam params
+                          ++ scopeErrorStat stat
 
 scopeErrorStat :: Stat -> [ScopeError]
 scopeErrorStat (Declaration _ ident rhs _)
@@ -38,6 +39,9 @@ scopeErrorStat (Seq stat1 stat2 _)
   = scopeErrorStat stat1 ++ scopeErrorStat stat2
 scopeErrorStat _
   = []
+
+scopeErrorParam (Param _ ident _)
+  = scopeErrorIdent ident
 
 scopeErrorRHS (ExprAssign expr _)
   = scopeErrorExpr expr
