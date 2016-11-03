@@ -25,7 +25,7 @@ type Err       = (String, Position)
 -- errrr, someone come up with a better name pls...
 type LexicalScoper a = State SymbolTable a
 
-data Program   = Program [Func] Stat                         deriving (Eq, Show)
+data Program   = Program [Func] Stat                 deriving (Eq, Show)
 data Func      = Func Type Ident ParamList Stat      deriving (Eq, Show)
 data ParamList = ParamList [Param]                   deriving (Eq, Show)
 data Param     = Param Type Ident                    deriving (Eq, Show)
@@ -102,10 +102,10 @@ data Type
   = BaseT BaseType
   | ArrayT ArrayType
   | PairT PairType
-<<<<<<< HEAD
   | FuncT Type [Type]
   | TypeErr
   | AllType
+  deriving (Show)
 
 instance Eq Type where
   AllType == _                = True
@@ -119,9 +119,7 @@ instance Eq Type where
   _ == _  = False
 
 -- data Type' = ValidType Type | TypeErr [(Type, Type)]
-=======
-  deriving (Eq, Show)
->>>>>>> 5d395109dbeb85886809eab033adb3201a52dafb
+-- deriving (Eq, Show)
 
 data BaseType
   = BaseInt

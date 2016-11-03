@@ -10,6 +10,7 @@ import Parser.Program
 import System.Environment
 import Utilities.Declarations (runParser)
 import Semantics.Annotators.AST
+import Semantics.ScopeChecker
 
 validProgram = "begin int f(int f) is f = 2; return f end int g(int f) is f = 6; return f end int x = call f(2); int y = 3; if x == 3 then println x else println y fi; begin println y end; println x; println y end "
 notInScope = "begin x = 4 end "
