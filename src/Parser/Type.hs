@@ -19,8 +19,8 @@ import Utilities.Definitions
 --      parsers of types. Returns type wrapped in appropriate data constructor.
 parseType :: Parser Char Type
 parseType
-  =   parseArrayType
-  <|> PairT  <$>  parsePairType
+  =   ArrayT <$> parseArrayType
+  <|> PairT  <$> parsePairType
   <|> BaseT  <$> parseBaseType
 
 parseBaseType :: Parser Char BaseType
@@ -28,20 +28,20 @@ parseBaseType = do
   baseTypeString <- foldr1 (<|>) (map (keyword . fst) baseTypes)
   return $ fromJust (lookup baseTypeString baseTypes)
 
-multiDimArray :: Parser Char (ArrayType -> Type)
+multiDimArray :: Parser Char Int
 multiDimArray
-  = token "[]" >> rest ArrayT
+  = token "[]" >> rest 1
   where
-    rest x = (do
+    rest x = do
       token "[]"
-      rest (ArrayT . x)) <|> return x
+      rest (x + 1) <|> return x
 
 parseArrayType :: Parser Char ArrayType
-parseArrayType
-  = do
-      t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
-      dimension <- multiDimArray
-      return (dimension t)
+parseArrayType = do
+  -- t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
+  t          <- parseType
+  dimension  <- multiDimArray
+  return $ Array dimension t
 
 parsePairType :: Parser Char PairType
 parsePairType = trimWS $ do

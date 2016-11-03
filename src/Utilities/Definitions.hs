@@ -17,7 +17,6 @@ import qualified Data.Map as Map
 import Control.Monad.State.Strict
 
 type Env       = Map.Map (String, Context) Info
-type ArrayType = Type
 type AST       = Program
 type Position  = (Int, Int)
 type Err       = (String, Position)
@@ -97,6 +96,10 @@ data PairElemSelector
   | Snd
   deriving (Eq)
 
+data ArrayType
+  = Array Int Type
+  deriving (Eq, Show)
+
 data Type
   = BaseT BaseType
   | ArrayT ArrayType
@@ -107,11 +110,12 @@ data Type
 
 instance Eq Type where
   AllType == _                = True
-  _ == AllType                = True 
+  _ == AllType                = True
   TypeErr == _                = True
   _ == TypeErr                = True
-  (ArrayT t) == (ArrayT t')   = t == t'
-  (PairT pt) == (PairT pt')   = pt == pt'
+  (ArrayT (Array n t)) == (ArrayT (Array n' t'))
+    = n == n' && t == t'
+  (PairT pt) == (PairT pt')        = pt == pt'
   (FuncT retT paramTs) == (FuncT retT' paramTs')
     = retT == retT' && paramTs == paramTs'
   _ == _  = False
