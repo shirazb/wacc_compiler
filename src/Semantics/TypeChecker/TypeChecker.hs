@@ -96,8 +96,18 @@ typeCheckRHS (ArrayLitAssign es) = do
       tell ["ArrayLiteral Error -- not all elements same type"];
       return TypeErr;
     } else
-      return (constructAType (countDimension (head types)) (head types))
-typeCheckRHS (NewPairAssign e e') = undefined
+      return (constructArrayType (countDimension (head types)) (head types))
+
+typeCheckRHS (NewPairAssign e e') = do
+  e1 <- typeCheckExpr e
+  e2 <- typeCheckExpr e'
+  -- are we sure we want typeErr to be equal to everything
+  -- because what do we return in this case then?
+  -- if any of the sub exprs are TypeErr, how do we check for it??
+  return undefined
+
+
+
 
 
 
@@ -128,9 +138,9 @@ typeCheckArrayDeref (e : es) = do
   rest <- typeCheckArrayDeref es
   return $ ArrayT rest
 
-constructAType :: Int -> Type -> ArrayType
-constructAType 0 t = t
-constructAType n t = ArrayT (constructAType (n - 1) t)
+constructArrayType :: Int -> Type -> ArrayType
+constructArrayType 0 t = t
+constructArrayType n t = ArrayT (constructArrayType (n - 1) t)
 
 
 countDimension :: Type -> Int
