@@ -9,7 +9,7 @@ debugging.
 -- TODO: WE SHOULD HAVE DIFFERENT DEFINITIONS FILES FOR DIFFERENT
 --       COMPILATION STAGES
 
-module Utilities.Definitions where
+module Utilities.Def2 where
 
 import Data.Char
 import Data.List
@@ -26,12 +26,12 @@ type Err       = (String, Position)
 type LexicalScoper a = State SymbolTable a
 
 data Program   = Program [Func] Stat                         deriving (Eq, Show)
-data Func      = Func Type Ident ParamList Stat      deriving (Eq, Show)
-data ParamList = ParamList [Param]                   deriving (Eq, Show)
-data Param     = Param Type Ident                    deriving (Eq, Show)
-data ArrayElem = ArrayElem Ident [Expr]              deriving (Eq, Show)
-data PairType  = PairType PairElemType PairElemType  deriving (Eq, Show)
-data Ident     = Ident String Info                   deriving (Eq, Show)
+data Func      = Func Type Ident ParamList Stat Position     deriving (Eq, Show)
+data ParamList = ParamList [Param] Position                  deriving (Eq, Show)
+data Param     = Param Type Ident Position                   deriving (Eq, Show)
+data ArrayElem = ArrayElem Ident [Expr] Position             deriving (Eq, Show)
+data PairType  = PairType PairElemType PairElemType Position deriving (Eq, Show)
+data Ident     = Ident String Info Position                  deriving (Eq, Show)
 
 data ErrorType
   = NoError
@@ -59,38 +59,38 @@ data SymbolTable
   deriving (Eq, Show)
 
 data Stat
-  = Skip
-  | Declaration Type Ident AssignRHS
-  | Assignment AssignLHS AssignRHS
-  | Read AssignLHS
-  | Free Expr
-  | Return Expr
-  | Exit Expr
-  | Print Expr
-  | Println Expr
-  | If Expr Stat Stat
-  | While Expr Stat
-  | Block Stat
-  | Seq Stat Stat
+  = Skip Position
+  | Declaration Type Ident AssignRHS Position
+  | Assignment AssignLHS AssignRHS Position
+  | Read AssignLHS Position
+  | Free Expr Position
+  | Return Expr Position
+  | Exit Expr Position
+  | Print Expr Position
+  | Println Expr Position
+  | If Expr Stat Stat Position
+  | While Expr Stat Position
+  | Block Stat Position
+  | Seq Stat Stat Position
   deriving (Eq, Show)
 
 data AssignLHS
-  = Var Ident
-  | ArrayDeref ArrayElem
-  | PairDeref PairElem
+  = Var Ident Position
+  | ArrayDeref ArrayElem Position
+  | PairDeref PairElem Position
   deriving (Eq, Show)
 
 -- do we need to carry around types of assignRHS
 data AssignRHS
-  = ExprAssign Expr
-  | ArrayLitAssign [Expr]
-  | NewPairAssign  Expr Expr
-  | PairElemAssign PairElem
-  | FuncCallAssign Ident [Expr]
+  = ExprAssign Expr Position
+  | ArrayLitAssign [Expr] Position
+  | NewPairAssign  Expr Expr Position
+  | PairElemAssign PairElem Position
+  | FuncCallAssign Ident [Expr] Position
   deriving (Eq, Show)
 
 data PairElem
-  = PairElem PairElemSelector Expr
+  = PairElem PairElemSelector Expr Position
   deriving (Eq, Show)
 
 data PairElemSelector
@@ -99,29 +99,10 @@ data PairElemSelector
   deriving (Eq, Show)
 
 data Type
-  = BaseT BaseType
-  | ArrayT ArrayType
-  | PairT PairType
-<<<<<<< HEAD
-  | FuncT Type [Type]
-  | TypeErr
-  | AllType
-
-instance Eq Type where
-  AllType == _                = True
-  _ == AllType                = True 
-  TypeErr == _                = True
-  _ == TypeErr                = True
-  (ArrayT t) == (ArrayT t')   = t == t'
-  (PairT pt) == (PairT pt')   = pt == pt'
-  (FuncT retT paramTs) == (FuncT retT' paramTs')
-    = retT == retT' && paramTs == paramTs'
-  _ == _  = False
-
--- data Type' = ValidType Type | TypeErr [(Type, Type)]
-=======
+  = BaseT BaseType Position
+  | ArrayT ArrayType Position
+  | PairT PairType Position
   deriving (Eq, Show)
->>>>>>> 5d395109dbeb85886809eab033adb3201a52dafb
 
 data BaseType
   = BaseInt
@@ -137,15 +118,15 @@ data PairElemType
   deriving (Eq, Show)
 
 data Expr
-  = StringLit String
-  | CharLit Char
-  | IntLit Int
-  | BoolLit Bool
-  | PairLiteral
-  | IdentE Ident
-  | ExprArray ArrayElem
-  | UnaryApp UnOp Expr
-  | BinaryApp BinOp Expr Expr
+  = StringLit String Position
+  | CharLit Char Position
+  | IntLit Int Position
+  | BoolLit Bool Position
+  | PairLiteral Position
+  | IdentE Ident Position
+  | ExprArray ArrayElem Position
+  | UnaryApp UnOp Expr Position
+  | BinaryApp BinOp Expr Expr Position
   deriving (Eq, Show)
 
 data UnOp
@@ -176,9 +157,9 @@ baseTypes       = [("int", BaseInt), ("bool", BaseBool),
                   ("char", BaseChar), ("string", BaseString)]
 
 lowBinOps       = [("+", Add), ("-", Sub) , (">=", GTE),
-                  (">", Utilities.Definitions.GT), ("<=", LTE),
-                  ("<", Utilities.Definitions.LT), (
-                  "==", Utilities.Definitions.EQ), ("!=", NEQ),
+                  (">", Utilities.Def2.GT), ("<=", LTE),
+                  ("<", Utilities.Def2.LT), (
+                  "==", Utilities.Def2.EQ), ("!=", NEQ),
                   ("&&", AND), ("||", OR)]
 highBinOps      = [("*", Mul)]
 higherBinOps    = [("/", Div), ("%", Mod)]
@@ -190,7 +171,7 @@ unOpAssocHigher = [("!", Not), ("-", Neg)]
 The following utility functions and show instances are used to print the AST
 in a clear and readable format.
 -}
---
+
 -- {- UTILITY FUNCTIONS: -}
 --
 -- showAndIndent :: Show a => a -> String
@@ -381,15 +362,15 @@ in a clear and readable format.
 --     = 6
 --   precedence Sub
 --     = 6
---   precedence Utilities.Definitions.LT
+--   precedence Utilities.Def2.LT
 --     = 8
 --   precedence LTE
 --     = 8
 --   precedence GTE
 --     = 8
---   precedence Utilities.Definitions.GT
+--   precedence Utilities.Def2.GT
 --     = 8
---   precedence Utilities.Definitions.EQ
+--   precedence Utilities.Def2.EQ
 --     = 10
 --   precedence NEQ
 --     = 10
