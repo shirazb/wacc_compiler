@@ -25,7 +25,7 @@ type Err       = (String, Position)
 -- errrr, someone come up with a better name pls...
 type LexicalScoper a = State SymbolTable a
 
-data Program   = Program [Func] Stat                         deriving (Eq, Show)
+data Program   = Program [Func] Stat                 deriving (Eq, Show)
 data Func      = Func Type Ident ParamList Stat      deriving (Eq, Show)
 data ParamList = ParamList [Param]                   deriving (Eq, Show)
 data Param     = Param Type Ident                    deriving (Eq, Show)

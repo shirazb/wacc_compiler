@@ -15,7 +15,7 @@ import Data.Maybe
 import Parser.Lexer
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Definitions
+import Utilities.Def2
 
 -- PRE:  None
 -- POST: Parses all valid expressions in the WACC language, it is factored out like
@@ -41,8 +41,11 @@ parseExpr'
 -- Used to parse atomic expressions
 
 intLiteral :: Parser Char Expr
-intLiteral
-  = trimWS $ (IntLit . read) <$> some digit
+intLiteral = trimWS $ do
+  numberString <- some digit
+  pos    <- getPosition
+  let numberRep = read numberString
+  return (IntLit numberRep pos)
 
 boolLiteral :: Parser Char Expr
 boolLiteral
