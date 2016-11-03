@@ -103,8 +103,11 @@ data Type
   | PairT PairType
   | FuncT Type [Type]
   | TypeErr
+  | AllType
 
 instance Eq Type where
+  AllType == _                = True
+  _ == AllType                = True 
   TypeErr == _                = True
   _ == TypeErr                = True
   (ArrayT t) == (ArrayT t')   = t == t'

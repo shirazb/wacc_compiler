@@ -84,11 +84,21 @@ typeCheckRHS (ExprAssign e)
 
 -- what type do we return?
 -- because the rhs of an array
+-- what do we know about arrays in wacc
+-- empty array is any type right, so we need something
+-- that represents that
+typeCheckRHS (ArrayLitAssign [])
+  = return AllType
 typeCheckRHS (ArrayLitAssign es) = do
   types <- mapM typeCheckExpr es
-  unless (and (zipWith (==) types (tail types)))
-    (tell ["ArrayLiteral Error -- not all elements same type"])
-  return TypeErr
+  if not $ and (zipWith (==) types (tail types))
+    then do {
+      tell ["ArrayLiteral Error -- not all elements same type"];
+      return TypeErr;
+    } else
+      return (constructAType (countDimension (head types)) (head types))
+typeCheckRHS (NewPairAssign e e') = undefined
+
 
 
 typeCheckExpr :: Expr -> Writer [TypeErrMsg] Type
@@ -117,6 +127,11 @@ typeCheckArrayDeref (e : es) = do
       (tell ["type of array index must be int, actually: " ++ show eType])
   rest <- typeCheckArrayDeref es
   return $ ArrayT rest
+
+constructAType :: Int -> Type -> ArrayType
+constructAType 0 t = t
+constructAType n t = ArrayT (constructAType (n - 1) t)
+
 
 countDimension :: Type -> Int
 countDimension (ArrayT t)
