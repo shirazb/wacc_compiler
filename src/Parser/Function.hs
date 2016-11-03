@@ -23,6 +23,10 @@ parseFunctionBody = do
   parseStatAndCheckExecPathEnds funcBody
   return funcBody
 
+{-
+  Should check patterns (Seq (Return _) _) and (Seq (Exit _) _), throwing an
+  error; unreachable statements are not permitted.
+-}
 parseStatAndCheckExecPathEnds :: Stat -> Parser Char Stat
 parseStatAndCheckExecPathEnds s@Return{}
  = return s
