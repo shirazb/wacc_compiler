@@ -38,9 +38,8 @@ multiDimArray
 
 parseArrayType :: Parser Char ArrayType
 parseArrayType = do
-  -- t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
-  t          <- parseType
-  dimension  <- multiDimArray
+  t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
+  dimension <- multiDimArray
   return $ Array dimension t
 
 parsePairType :: Parser Char PairType
