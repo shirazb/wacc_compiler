@@ -2,5 +2,11 @@
 # Ruby front-end for your compiler.
 # You are free to change the language used for this script,
 # but do *not* change its name.
+puts "Compiling"
 
-puts "TODO: setup this script to call your WACC compiler"
+filename = ARGV[0]
+
+output  = `stack exec WACC-HASKELL #{filename}`
+puts output
+
+puts "Compilation Done"
