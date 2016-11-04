@@ -6,7 +6,9 @@ puts "Compiling"
 
 filename = ARGV[0]
 
-output  = `cabal run WACC-HASKELL #{filename}`
-puts output
+output = `cabal run WACC-HASKELL #{filename}`
+exitCode = $?.exitstatus
 
 puts "Compilation Done"
+
+exit (exitCode)
