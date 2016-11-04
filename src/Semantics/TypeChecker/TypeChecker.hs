@@ -46,10 +46,13 @@ typeCheckStat (Exit _)
 typeCheckStat (If cond s1 s2) = do
   expr <- typeCheckExpr cond
   when (expr /= BaseT BaseBool) (tell ["If condition not valid"])
+  typeCheckStat s1
+  typeCheckStat s2
 
 typeCheckStat (While cond stat) = do
   expr <- typeCheckExpr cond
   when (expr /= BaseT BaseBool) (tell ["While condition not valid"])
+  typeCheckStat stat
 
 typeCheckStat (Return expr)
   = void $ typeCheckExpr expr
@@ -94,7 +97,8 @@ typeCheckLHS (PairDeref _)
 typeCheckRHS :: AssignRHS -> Writer [TypeErrMsg] Type
 typeCheckRHS (ExprAssign es)
   = typeCheckExpr es
-typeCheckRHS (ArrayLitAssign []) = return UnitType
+typeCheckRHS (ArrayLitAssign [])
+  = return UnitType
 
 typeCheckRHS (ArrayLitAssign es) = do
   esType <- mapM typeCheckExpr es
@@ -103,7 +107,7 @@ typeCheckRHS (ArrayLitAssign es) = do
     else
     if checkSameType esType
       then
-        return (constructArray ((getDimension (head esType)) + 1) (head esType)
+        return $ constructArray ((getDimension (head esType)) + 1) (head esType)
       else
         tell["Elements of array are of diff types"] >> return TypeErr
 
