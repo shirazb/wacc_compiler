@@ -1,4 +1,5 @@
 all:
+        cabal update
 	cabal configure
 	cabal build
 
