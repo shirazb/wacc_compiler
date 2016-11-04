@@ -16,7 +16,7 @@ data TypeError
 --   |
 
 typeCheckStat :: Stat -> Writer [TypeErrMsg] ()
-typeCheckStat (Declaration t ident rhs pos) = do
+typeCheckStat (Declaration t ident rhs) = do
   typeRHS <- typeCheckRHS rhs
   when (typeRHS /= t) (tell ["mismatch"])
 
@@ -104,14 +104,13 @@ typeCheckRHS (ArrayLitAssign es) = do
   esType <- mapM typeCheckExpr es
   if checkForTypeErrInList esType
     then return TypeErr
-    else
-    if checkSameType esType
+    else if checkSameType esType
       then
         return $ constructArray ((getDimension (head esType)) + 1) (head esType)
       else
         tell["Elements of array are of diff types"] >> return TypeErr
 
-constructArray :: Int -> Type -> Type
+constructArray :: Int -> DataType -> Type
 constructArray dim baseType
   = DataT (ArrayT (Array dim baseType))
 
@@ -123,11 +122,12 @@ getDimension _
 
 
 checkSameType :: [Type] -> Bool
-checkSameType es = and $ zipWith (==) (es) (tail es)
+checkSameType es
+  = and $ zipWith (==) es (tail es)
 
 checkForTypeErrInList :: [Type] -> Bool
-checkForTypeErrInList es
-  = any (== TypeErr) es
+checkForTypeErrInList
+  = any (== TypeErr)
 
 typeCheckExpr :: Expr -> Writer [TypeErrMsg] Type
 typeCheckExpr (IntLit _)
