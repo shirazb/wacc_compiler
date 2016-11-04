@@ -5,13 +5,26 @@ import Utilities.Definitions
 
 type TypeErrMsg = String
 
+data ErrorClass = ErrorClass Position TypeError
+
+data TypeError
+  = Mismatch Type Type
+  | InvalidArgs Type Type
+--
+-- data Mismatch
+--   = DeclarationMismatch
+--   |
+
 typeCheckStat :: Stat -> Writer [TypeErrMsg] ()
-typeCheckStat (Declaration t ident rhs) = do
+typeCheckStat (Declaration t ident rhs pos) = do
   typeRHS <- typeCheckRHS rhs
-  when (typeRHS /= t) (tell ["Type mismatch in declaration"])
+  when (typeRHS /= t) (tell ["mismatch"])
 
 typeCheckStat (Assignment lhs rhs) = do
   typeLHS <- typeCheckLHS lhs
+
+  -- typeCheckRHS will type check params in functions
+  -- it will return the return type
   typeRHS <- typeCheckRHS rhs
   when (typeLHS /= typeRHS) (tell ["Type mismatch in declaration"])
 
@@ -56,69 +69,81 @@ typeCheckStat (Seq s s') = do
 
 typeCheckLHS :: AssignLHS -> Writer [TypeErrMsg] Type
 typeCheckLHS (Var ident)
-  = return (identGetType ident)
-
--- we should jus call the one we have defined already
--- make it a bit more general
--- so we can reuse the same logic
--- its the same thing
-typeCheckLHS (ArrayDeref a)
-  = undefined
-
-typeCheckLHS (PairDeref pe@(PairElem _ (IdentE i)))
-  = return (identGetType i)
-
-typeCheckLHS (PairDeref pe@(PairElem sel _)) = do
-  tell ["Invalid arg to " ++ show sel]
-  return TypeErr
+  = typeCheckIdent ident
+typeCheckLHS (ArrayDeref (ArrayElem ident es))
+  = typeCheckArrayDeref ident es
+-- COMMENT
+-- MAKE SURE YOU READ THIS
+-- I COULD BE DOING SOMETHING PRETTY WRONG
+-- BUT FROM MY UNDERSTANDING
+-- pair dereferences can only have identifiers
+-- so any other thing should throw and Error
+-- should we explicitly checkk for null
+-- benefit is that we will have better messages
+typeCheckLHS (PairDeref (PairElem pairElemSelector ident@IdentE{})) = do
+  -- this pattern match will fail if you have a type Error
+  DataT (PairT pt pt') <- typeCheckExpr ident
+  case pairElemSelector of
+    Fst -> return (DataT pt)
+    Snd -> return (DataT pt')
+typeCheckLHS (PairDeref (PairElem _ PairLiteral))
+  = tell ["Trying to dereference a null"] >> return TypeErr
+typeCheckLHS (PairDeref _)
+  = tell ["Trying to derefernce not a pair"] >> return TypeErr
 
 typeCheckRHS :: AssignRHS -> Writer [TypeErrMsg] Type
-typeCheckRHS (ExprAssign e)
-  = typeCheckExpr e
+typeCheckRHS (ExprAssign es)
+  = typeCheckExpr es
+typeCheckRHS (ArrayLitAssign []) = return UnitType
 
--- what type do we return?
--- because the rhs of an array
--- what do we know about arrays in wacc
--- empty array is any type right, so we need something
--- that represents that
-typeCheckRHS (ArrayLitAssign [])
-  = return AllType
 typeCheckRHS (ArrayLitAssign es) = do
-  types <- mapM typeCheckExpr es
-  if not $ and (zipWith (==) types (tail types))
-    then do {
-      tell ["ArrayLiteral Error -- not all elements same type"];
-      return TypeErr;
-    } else
-      return (constructArrayType (countDimension (head types)) (head types))
+  esType <- mapM typeCheckExpr es
+  if checkForTypeErrInList esType
+    then return TypeErr
+    else
+    if checkSameType esType
+      then
+        return (constructArray ((getDimension (head esType)) + 1) (head esType)
+      else
+        tell["Elements of array are of diff types"] >> return TypeErr
 
-typeCheckRHS (NewPairAssign e e') = do
-  e1 <- typeCheckExpr e
-  e2 <- typeCheckExpr e'
-  -- are we sure we want typeErr to be equal to everything
-  -- because what do we return in this case then?
-  -- if any of the sub exprs are TypeErr, how do we check for it??
-  return undefined
+constructArray :: Int -> Type -> Type
+constructArray dim baseType
+  = DataT (ArrayT (Array dim baseType))
+
+getDimension :: Type -> Int
+getDimension (DataT (ArrayT (Array n _)))
+  = n
+getDimension _
+  = 0
+
+
+checkSameType :: [Type] -> Bool
+checkSameType es = and $ zipWith (==) (es) (tail es)
+
+checkForTypeErrInList :: [Type] -> Bool
+checkForTypeErrInList es
+  = any (== TypeErr) es
 
 typeCheckExpr :: Expr -> Writer [TypeErrMsg] Type
 typeCheckExpr (IntLit _)
-  = return (BaseT BaseInt)
-typeCheckExpr (ExprArray arrayElem@(ArrayElem ident es))
+  = return $ DataT (BaseT BaseInt)
+typeCheckExpr (ExprArray (ArrayElem ident es))
   = typeCheckArrayDeref ident es
 
 -- Returns the type of an identifier
-identGetType :: Ident -> Type
-identGetType (Ident _ (Info t _))
-  = t
+typeCheckIdent :: Ident -> Writer [TypeErrMsg] Type
+typeCheckIdent (Ident _ (Info t _))
+  = return t
 
 -- checks type of each expression is an int, by delegating to helper that writes error msgs
 -- check type of ident derefence
 typeCheckArrayDeref :: Ident -> [Expr] -> Writer [TypeErrMsg] Type
-typeCheckArrayDeref (Ident _ (Info (ArrayT a@(Array n t)) Variable)) es = do
-  mapM_ (checkExprHasType (BaseT BaseInt)) es
+typeCheckArrayDeref (Ident _ (Info (DataT (ArrayT a@(Array n t))) Variable)) es = do
+  mapM_ (checkExprHasType (DataT (BaseT BaseInt))) es
   if n < length es
     then tell ["Cannot derefence; not an array."] >> return TypeErr
-    else return $ ArrayT a
+    else return $ DataT $ ArrayT a
 typeCheckArrayDeref _ _
   = tell ["Cannot derefence; not an array."] >> return TypeErr
 
@@ -130,19 +155,3 @@ checkExprHasType t e = do
   eType <- typeCheckExpr e
   when (eType /= t)
       (tell ["type of array index must be int, actually: " ++ show t])
-
--- -- 'constructArrayType n t' Constructs an n dimensional array with elemet type t
--- constructArrayType :: Int -> Type -> ArrayType
--- constructArrayType _ TypeErr
---   = error ("Assertion failed in TypeChecker.hs: constructing array type from" ++
---            "TypeErr")
--- constructArrayType 0 t
---   = t
--- constructArrayType n t
---   = ArrayT (constructArrayType (n - 1) t)
---
--- countDimension :: Type -> Int
--- countDimension (ArrayT t)
---   = 1 + countDimension t
--- countDimension _
---   = 0

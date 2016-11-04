@@ -23,6 +23,7 @@ duplicateParams = "begin int f(int x, int x, char x) is int x = 3; return 2 end 
 bareErrors = "begin int f() is f = 2; return f end int g(int f) is g = 6; return f end int z = 2; int x = call z(); begin char x = 4; x = 2 end end"
 while = "begin while (x == 2) do char c = 3; c = 2; x = c done end "
 nested = "begin while (x == 2) do int[] x = [1, 2, z]; if (cond) then string x = 3 else x = 5 fi done end"
+pair = "begin pair(int, int) p = newpair(1,1); int x = fst p end"
 
 main
   = do
