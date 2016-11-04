@@ -10,7 +10,7 @@ import Parser.Program
 import System.Environment
 import Utilities.Declarations (runParser)
 import Semantics.Annotators.AST
-
+import System.Exit
 validProgram = "begin int f(int f) is f = 2; return f end int g(int f) is f = 6; return f end int x = call f(2); int y = 3; if x == 3 then println x else println y fi; begin println y end; println x; println y end "
 notInScope = "begin x = 4 end "
 blockDoesShadow = "begin int x = 4; begin x = 3 end end "
@@ -33,7 +33,7 @@ main
       putStrLn "           THE PROGRAM WE HAVE PARSED           "
       putStrLn "------------------------------------------------"
       case runParser parseProgram contents (0,0) of
-        Right (Just ((a,b), _)) -> print (annotateAST a)
-        Left err                -> print err
-        Right Nothing           -> print "Program Failure"
-      return ()
+        Right (Just ((a,b), _)) -> do {print (annotateAST a); exitWith (ExitSuccess)}
+        Left err                -> do {print err; exitWith (ExitFailure 100)}
+        Right Nothing           -> exitWith (ExitSuccess)
+      exitWith (ExitSuccess)

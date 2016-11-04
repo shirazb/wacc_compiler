@@ -1,3 +1,6 @@
 all:
-	stack setup
-	stack build
+	cabal configure
+	cabal build
+
+clean:
+	cabal clean

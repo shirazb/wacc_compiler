@@ -16,7 +16,7 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 executable WACC-HASKELL
-  main-is:             Compiler.hs
+  main-is:             Main.hs
   other-modules:       Parser.Combinators, Parser.Expression, Parser.Function
                        Parser.Lexer, Parser.Program, Parser.Statement, Parser.Type
                        Semantics.Annotators.AST, Semantics.Annotators.Expression,

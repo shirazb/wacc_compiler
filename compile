@@ -6,7 +6,7 @@ puts "Compiling"
 
 filename = ARGV[0]
 
-output  = `stack exec WACC-HASKELL #{filename}`
+output  = `cabal run WACC-HASKELL #{filename}`
 puts output
 
 puts "Compilation Done"
