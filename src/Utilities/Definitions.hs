@@ -65,7 +65,7 @@ data Stat
   | Read AssignLHS
   | Free Expr
   | Return Expr
-  | Exit Expr 
+  | Exit Expr
   | Print Expr
   | Println Expr
   | If Expr Stat Stat
@@ -134,6 +134,7 @@ data UnOp
   | Len
   | Ord
   | Chr
+  | Pos
   deriving (Eq)
 
 data BinOp
@@ -164,7 +165,7 @@ highBinOps      = [("*", Mul)]
 higherBinOps    = [("/", Div), ("%", Mod)]
 
 unOpAssoc       = [("len", Len), ("ord", Ord), ("chr", Chr)]
-unOpAssocHigher = [("!", Not), ("-", Neg)]
+unOpAssocHigher = [("!", Not), ("-", Neg), ("+", Pos)]
 
 {-
 The following utility functions and show instances are used to print the AST
