@@ -40,7 +40,7 @@ data ScopeErrorType
 data Info
   = Info {
     typeInfo :: Type,
-    context   :: Context
+    context  :: Context
   }
   | ScopeError ScopeErrorType
   | NoInfo
@@ -104,8 +104,8 @@ data BaseType
 
 data Type
   = BaseT BaseType
-  | PairT Type Type -- cannot be FuncT
-  | ArrayT Int Type -- can only be PairT or BaseT
+  | PairT Type Type   -- cannot be FuncT
+  | ArrayT Int Type   -- can only be PairT or BaseT
   | Pair
   | FuncT Type [Type] -- cannot be FuncT or Pair
   | NoType
