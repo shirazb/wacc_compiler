@@ -105,10 +105,11 @@ data BaseType
 data Type
   = BaseT BaseType
   | PairT Type Type -- cannot be FuncT
-  | ArrayT Int Type -- can only be PairT or BaseT
+  | ArrayT Int Type -- can only be Pair or BaseT
   | Pair
   | FuncT Type [Type] -- cannot be FuncT or Pair
   | NoType
+  | ArrayPoly
   deriving (Show)
 
 instance Eq Type where
