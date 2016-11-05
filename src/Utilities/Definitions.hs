@@ -109,11 +109,25 @@ data Type
   | Pair
   | FuncT Type [Type] -- cannot be FuncT or Pair
   | NoType
+  | PolyArray
   deriving (Show)
 
 instance Eq Type where
-  NoType == _         = True
-  _        == NoType  = True
+  NoType == _             = True
+  _      == NoType        = True
+  PolyArray  == ArrayT _ _ = True
+  ArrayT _ _ == PolyArray = True
+  PolyArray == (BaseT BaseString) = True
+  (BaseT BaseString) == PolyArray   = True
+  (BaseT  BaseString) == ArrayT 1 (BaseT BaseChar) = True
+  ArrayT 1 (BaseT BaseChar) == (BaseT BaseString) = True
+  _ == PolyArray          = False
+  PolyArray == _          = False
+  FuncT t ts == FuncT t' ts' = t == t' && ts == ts'
+  ArrayT dim t == ArrayT dim' t' = dim == dim' && t == t'
+  PairT t1 t2 == PairT t1' t2' = t1 == t1' && t2 == t2'
+  BaseT t == BaseT t' = t == t'
+  _ == _ = False
 
 data Expr
   = StringLit String
