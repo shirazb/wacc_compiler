@@ -40,7 +40,7 @@ data ScopeErrorType
 data Info
   = Info {
     typeInfo :: Type,
-    context   :: Context
+    context  :: Context
   }
   | ScopeError ScopeErrorType
   | NoInfo
@@ -104,8 +104,8 @@ data BaseType
 
 data Type
   = BaseT BaseType
-  | PairT Type Type -- cannot be FuncT
-  | ArrayT Int Type -- can only be PairT or BaseT
+  | PairT Type Type   -- cannot be FuncT
+  | ArrayT Int Type   -- can only be PairT or BaseT
   | Pair
   | FuncT Type [Type] -- cannot be FuncT or Pair
   | NoType
@@ -128,6 +128,7 @@ instance Eq Type where
   PairT t1 t2 == PairT t1' t2' = t1 == t1' && t2 == t2'
   BaseT t == BaseT t' = t == t'
   _ == _ = False
+
 
 data Expr
   = StringLit String
