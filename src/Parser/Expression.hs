@@ -41,8 +41,12 @@ parseExpr'
 -- Used to parse atomic expressions
 
 intLiteral :: Parser Char Expr
-intLiteral
-  = trimWS $ (IntLit . read) <$> some digit
+intLiteral = trimWS $ do
+  sign <- string "-" <|> string "+" <|> return []
+  num  <- some digit
+  case sign of
+    "-" -> return $ IntLit (-(read num))
+    _   -> return $ IntLit (read num)
 
 boolLiteral :: Parser Char Expr
 boolLiteral

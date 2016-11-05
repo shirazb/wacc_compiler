@@ -134,7 +134,6 @@ data UnOp
   | Len
   | Ord
   | Chr
-  | Pos
   deriving (Eq)
 
 data BinOp
@@ -165,7 +164,7 @@ highBinOps      = [("*", Mul)]
 higherBinOps    = [("/", Div), ("%", Mod)]
 
 unOpAssoc       = [("len", Len), ("ord", Ord), ("chr", Chr)]
-unOpAssocHigher = [("!", Not), ("-", Neg), ("+", Pos)]
+unOpAssocHigher = [("!", Not), ("-", Neg)]
 
 {-
 The following utility functions and show instances are used to print the AST
