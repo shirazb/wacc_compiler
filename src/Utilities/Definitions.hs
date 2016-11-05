@@ -113,7 +113,7 @@ data Type
 
 instance Eq Type where
   NoType == _         = True
-  _        == NoType  = True
+  _      == NoType    = True
 
 data Expr
   = StringLit String
