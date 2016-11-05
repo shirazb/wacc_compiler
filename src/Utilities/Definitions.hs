@@ -95,10 +95,6 @@ data PairElemSelector
   | Snd
   deriving (Eq, Show)
 
-data ArrayType
-  = Array Int DataType
-  deriving (Eq, Show)
-
 data BaseType
   = BaseInt
   | BaseBool
@@ -107,22 +103,17 @@ data BaseType
   deriving (Eq, Show)
 
 data Type
-  = DataT DataType
-  | FuncT Type [Type]
-  | TypeErr
-  | UnitType
+  = BaseT BaseType
+  | PairT Type Type -- cannot be FuncT
+  | ArrayT Int Type -- can only be PairT or BaseT
+  | Pair
+  | FuncT Type [Type] -- cannot be FuncT or Pair
+  | NoType
   deriving (Show)
 
 instance Eq Type where
-  UnitType == _         = True
-  _        == UnitType  = True
-
-data DataType
-  = BaseT BaseType
-  | ArrayT ArrayType
-  | PairT DataType DataType
-  | Pair
-  deriving (Eq, Show)
+  NoType == _         = True
+  _        == NoType  = True
 
 data Expr
   = StringLit String
