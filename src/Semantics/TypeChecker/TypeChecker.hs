@@ -10,10 +10,13 @@ data ErrorClass = ErrorClass Position TypeError
 data TypeError
   = Mismatch Type Type
   | InvalidArgs Type Type
---
+
 -- data Mismatch
 --   = DeclarationMismatch
 --   |
+
+-------------------------------------------------------------------------------
+{- STATEMENTS -}
 
 typeCheckStat :: Stat -> Writer [TypeErrMsg] ()
 typeCheckStat (Declaration t ident rhs) = do
@@ -70,6 +73,9 @@ typeCheckStat (Seq s s') = do
   typeCheckStat s
   typeCheckStat s'
 
+-------------------------------------------------------------------------------
+{- LHS -}
+
 typeCheckLHS :: AssignLHS -> Writer [TypeErrMsg] Type
 typeCheckLHS (Var ident)
   = typeCheckIdent ident
@@ -94,6 +100,9 @@ typeCheckLHS (PairDeref (PairElem _ PairLiteral))
 typeCheckLHS (PairDeref _)
   = tell ["Trying to derefernce not a pair"] >> return TypeErr
 
+-------------------------------------------------------------------------------
+{- RHS -}
+
 typeCheckRHS :: AssignRHS -> Writer [TypeErrMsg] Type
 typeCheckRHS (ExprAssign es)
   = typeCheckExpr es
@@ -110,6 +119,9 @@ typeCheckRHS (ArrayLitAssign es) = do
       else
         tell["Elements of array are of diff types"] >> return TypeErr
 
+-------------------------------------------------------------------------------
+{- ARRAYS -}
+
 constructArray :: Int -> DataType -> Type
 constructArray dim baseType
   = DataT (ArrayT (Array dim baseType))
@@ -120,6 +132,8 @@ getDimension (DataT (ArrayT (Array n _)))
 getDimension _
   = 0
 
+-------------------------------------------------------------------------------
+{- HELPER FUNCTIONS -}
 
 checkSameType :: [Type] -> Bool
 checkSameType es
