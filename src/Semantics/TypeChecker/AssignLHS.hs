@@ -7,7 +7,7 @@ module Semantics.TypeChecker.AssignLHS (
 import Debug.Trace
 
 import Control.Monad.Writer.Strict
-import Semantics.TypeChecker.TypeCheckerExpr
+import Semantics.TypeChecker.Expression
 import Utilities.Definitions
 
 typeCheckLHS :: AssignLHS -> TypeChecker Type
@@ -128,7 +128,7 @@ nonPairExprFails = PairDeref (PairElem Snd (IdentE a))
 
 runTest
   = runWriter . typeCheckLHS
--- 
+--
 --
 -- typeCheckConcat :: [Type] -> TypeChecker Type
 -- typeCheckConcat (NoType : ts)
