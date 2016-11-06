@@ -1,24 +1,20 @@
 module Semantics.TypeChecker.TypeCheckerExpr where
 
-
 import qualified Prelude
 import Prelude hiding (LT, EQ)
--- import Semantics.TypeChecker.AssignLHS
 import Control.Monad.Writer.Strict
+
 import Utilities.Definitions
+import ErrorMessages.Semantic
 import Debug.Trace
 
--- import Semantics.TypeChecker.AssignLHS
+{- TEST CASES -}
 
-
--- data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq, Show)
-
--- tests
 testUnaryApp1  = UnaryApp Neg (BoolLit True)
 testUnaryApp2  = UnaryApp Neg (IntLit 1)
 testUnaryApp3  = UnaryApp Len identTest
 testUnaryApp4  = UnaryApp Len (IntLit 1)
--- test len with array deref expr
+-- Test len with array deref expr
 testUnaryApp5  = UnaryApp Len identTest1
 testUnaryApp6  = UnaryApp Chr (CharLit 'c')
 testUnaryApp7  = UnaryApp Chr (IntLit 1)
@@ -49,7 +45,7 @@ testBinaryEQ5  = BinaryApp (EquOp EQ) identTest identTest
 testBinaryEQ6  = BinaryApp (EquOp EQ) identTest2 identTest
 -- what does it mean to type-check arrays and pairs
 -- do you check the inner types
--- or do you defer that to the run time???
+-- or do you defer that to the run time?
 
 identTest      = IdentE (Ident "x" (Info (ArrayT 1 (BaseT BaseInt)) Variable))
 identTest1     = IdentE (Ident "x" (Info (BaseT BaseChar) Variable))
@@ -74,44 +70,25 @@ testBinaryEQ11 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST4' [IntLit 
 testBinaryEQ12 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST2' [IntLit 1])) (ExprArray (ArrayElem identTEST3' [IntLit 1]))
 testBinaryEq13 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST3' [IntLit 1])) (ExprArray (ArrayElem identTEST3' [IntLit 1]))
 
-
-
 -- check derefernce on all expressions
 
-data Error = Error TypeError deriving (Show)
+type ErrorMsg      = String
+type TypeChecker a = Writer [ErrorMsg] a
 
-type TypeChecker a = Writer [Error] a
+{- Utility -}
 
-data TypeError
-  = Mismatch Type Type
-  | InvalidArgs [Type] [Type]
-  | OnlyIdentifier
-  | BinaryOPErr BinOp TypeError
-  | BinaryOpInvalidArgs BinOp Type Type
-  | MismatchArgs Type Type
-  | UnaryOpErr UnOp TypeError
-  | UnaryOpInvalidArgs UnOp Type Type
-  | BinaryOpInvalidArgsRel Type
-  | DataTypeOnly Type
-  | NullPointerDeref
-  deriving (Show)
-
-{- Utility-}
-
-checkUnAppType ::Type -> Type -> Type -> TypeChecker Type
+checkUnAppType :: Type -> Type -> Type -> TypeChecker Type
 checkUnAppType expectedT actualT opReturnT
   = if actualT /= expectedT
       then do {
-        -- traceM "We are in checkType";
-        tell [Error (Mismatch expectedT actualT)];
-        return NoType;
+        tell [generateErrMsg expectedT actualT];
+        return NoType
       } else return opReturnT
 
--- write error msgs
 checkBinaryApp :: BinOp -> Type -> Type -> Type -> TypeChecker Type
 checkBinaryApp op opT arg1T arg2T
   = if arg1T /= arg2T
-      then tell [Error (BinaryOPErr op (MismatchArgs arg1T arg2T))] >>
+      then tell [""] >>
              return NoType;
       else evalArg
   where
@@ -122,7 +99,7 @@ checkBinaryApp op opT arg1T arg2T
                  NoType -> return NoType
                  _      -> eval
     eval     = if opT /= arg1T || opT /= arg2T
-                 then tell [Error (BinaryOpInvalidArgs op opT arg1T)] >>
+                 then tell [""] >>
                         return NoType
                  else return arg1T
 
@@ -171,16 +148,16 @@ typeCheckExpr (BinaryApp op@(RelOp _) expr expr') = do
   case (t, t') of
     (NoType, _ ) -> return NoType --
     (_,  NoType) -> return NoType
-    _             | t /= t' -> tell [Error (BinaryOPErr op (MismatchArgs t t'))] >> return NoType
+    _             | t /= t' -> tell [""] >> return NoType
                   | checkCharOrInt t || checkCharOrInt t' -> return (BaseT BaseBool)
-                  | otherwise -> tell [Error (BinaryOpInvalidArgsRel t)] >> return NoType
+                  | otherwise -> tell [""] >> return NoType
 typeCheckExpr (BinaryApp op@(EquOp _) expr expr') = do
   t <- typeCheckExpr expr
   t' <- typeCheckExpr expr'
   case (t, t') of
     (NoType, _) -> return NoType
     (_, NoType) -> return NoType
-    _             | t /= t' -> tell [Error (BinaryOPErr op (MismatchArgs t t'))] >> return NoType
+    _             | t /= t' -> tell ["Error (BinaryOPErr op (MismatchArgs t t'))"] >> return NoType
                   | otherwise -> return (BaseT BaseBool)
 
 
