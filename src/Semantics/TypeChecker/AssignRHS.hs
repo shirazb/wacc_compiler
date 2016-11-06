@@ -1,25 +1,58 @@
+{-# LANGUAGE MultiWayIf #-}
+
 module Semantics.TypeChecker.AssignRHS where
 
 import Control.Monad.Writer.Strict
 
-import Utilities.Definitions
 import Semantics.TypeChecker.Expression
 import ErrorMessages.Semantic
+import Utilities.Definitions
 
 typeCheckRHS :: AssignRHS -> TypeChecker Type
-typeCheckRHS (ExprAssign e)       = typeCheckExpr e
-typeCheckRHS (ArrayLitAssign es)  = typeCheckConcat (map typeCheckExpr es)
+typeCheckRHS (ExprAssign e)
+  = typeCheckExpr e
+
+typeCheckRHS (ArrayLitAssign es)  = do
+  ts <- mapM typeCheckExpr es
+  typeCheckConcat ts
+
+
 typeCheckRHS (NewPairAssign e e') = do
   t  <- typeCheckExpr e
   t' <- typeCheckExpr e'
-  return (PairT t t')
-typeCheckRHS (PairElemAssign (PairElem _ e)) = typeCheckExpr e
-typeCheckRHS (FuncCallAssign (Ident _ i) es) = do
-  ts          <- mapM typeCheckExpr es
-  FuncT t ts' <- return (typeInfo i)
-  if ts == ts'
-   then return (FuncT t ts)
-   else tell ["Error (Mismatch (FuncT t ts') (FuncT t ts))"] >> return NoType
+  case (t, t') of
+    (NoType, _) -> return NoType
+    (_, NoType) -> return NoType
+    _           -> return (PairT t t')
 
-typeCheckConcat :: [TypeChecker Type] -> TypeChecker Type
-typeCheckConcat = undefined
+typeCheckRHS (PairElemAssign p)
+  = typeCheckPairElem p
+
+typeCheckRHS (FuncCallAssign (Ident _ i) es) = do
+  ts <- mapM typeCheckExpr es
+  let FuncT t ts' = typeInfo i
+  if | length ts /= length ts' -> tell ["Incorrect number of args func"] >> return NoType
+     | ts == ts'               -> return t
+     | otherwise               -> tell ["Expected: _ Actual: _"] >> return NoType
+
+typeCheckConcat :: [Type] -> TypeChecker Type
+typeCheckConcat ts
+  | checkNoType ts                   = return NoType
+  | and (zipWith (==) ts (tail ts))  = return (head ts)
+  | otherwise                        = return NoType
+
+-- This function has to be recursive as you can only check for NoType in case statements
+checkNoType :: [Type] -> Bool
+checkNoType []             = True
+checkNoType (NoType : ts)  = False
+checkNoType (_ : ts)       = checkNoType ts
+
+-- -- totally better version :)
+-- typeCheckConcat :: [Type] -> TypeChecker Type
+-- typeCheckConcat [t]
+--   return t
+-- typeCheckConcat (NoType : ts)
+--   = return NoType
+-- typeCheckConcat (t : t' : ts)
+--   | t == t'   = typeCheckConcat (t' :ts)
+--   | otherwise = return NoType

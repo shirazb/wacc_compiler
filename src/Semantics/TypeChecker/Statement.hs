@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Semantics.TypeChecker.Statement (typeCheckStat) where
+module Semantics.TypeChecker.Statement (
+  typeCheckStat
+) where
 
 import Control.Monad.Writer.Strict
 

@@ -2,10 +2,14 @@ module ErrorMessages.Semantic (generateErrMsg) where
 
 import Utilities.Definitions
 
-expected  = "Expected:      "
-act  = "Actual:        "
-loc  = "At location:   "
-expr = "In expression: "
+msg1      = "Couldn't match type '"
+msg2      = "' with '"
+msg3      = "'\n"
+expected  = "    Expected type: "
+act       = "      Actual type: "
+loc       = "      At location: "
+expr      = "In the expression: "
 
 generateErrMsg :: Type -> Type -> ErrorMsg
-generateErrMsg expT actT = expected ++ show expT ++ act ++ show actT
+generateErrMsg expT actT
+  = expected ++ show expT ++ act ++ show actT

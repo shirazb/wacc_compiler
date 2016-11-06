@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiWayIf #-}
+
 module Semantics.TypeChecker.Expression where
 
 import qualified Prelude
@@ -158,4 +160,87 @@ typeCheckExpr (BinaryApp op@(EquOp _) expr expr') = do
 
 
 checkCharOrInt :: Type -> Bool
-checkCharOrInt t = t == BaseT BaseChar || t == BaseT BaseInt
+checkCharOrInt t
+  = t == BaseT BaseChar || t == BaseT BaseInt
+
+typeCheckArrayElem :: ArrayElem -> TypeChecker Type
+typeCheckArrayElem (ArrayElem ident indexes) = do
+  -- get ident's type
+  identT <- typeCheckIdent ident
+
+  -- check indexes are ints
+  -- NB: Reports type errors, but does not propagate up NoType
+  mapM_ typeCheckIsInt indexes
+
+  -- minimum array dimension required
+  let numDerefs = length indexes
+  let expectedType = ArrayT numDerefs PolyArray
+
+  -- if ident is an array, check it was not derefenced too many times
+  if isValidArrayType identT
+    then do
+      -- Check dim accomodates the number of derefences
+      let ArrayT dim innerT = identT
+      if numDerefs > dim
+        -- too many derefences; tell error
+        then do
+          tell ["Error (Mismatch expectedType identT)"]
+          return NoType
+
+        -- return type of correct dimension
+        else
+          return $ constructType (dim - numDerefs) innerT
+
+    -- ident was not an array
+    else do
+      tell ["Error (Mismatch PolyArray identT)"]
+      return NoType
+
+
+-- Given a dimension and a Type, constructs an array of that dimension and type.
+-- 0-dimensional arrays are returned just as a type, not wrapped in an ArrayT
+constructType :: Int -> Type -> Type
+constructType dim innerT
+  | dim < 0    = error "Assertion failed in Semantics.TypeChecker.AssignLHS. constructType: negative dimension given."
+  | dim == 0   = innerT
+  | otherwise  = ArrayT dim innerT
+
+-- Checks is an array type, and if so, that its inner type is a PairT or BaseT
+isValidArrayType :: Type -> Bool
+isValidArrayType (ArrayT _ (PairT _ _))
+  = True
+isValidArrayType (ArrayT _ (BaseT _))
+  = True
+isValidArrayType _
+  = False
+
+isValidPairType :: Type -> Bool
+isValidPairType t@FuncT{}
+  = False
+isValidPairType _
+  = True
+
+-- Returns the type of an ident
+typeCheckIdent :: Ident -> TypeChecker Type
+typeCheckIdent (Ident _ info)
+  = return (typeInfo info)
+
+-- checkIsInt e <-> e is an int
+typeCheckIsInt :: Expr -> TypeChecker ()
+typeCheckIsInt e = do
+  eType <- typeCheckExpr e
+  unless (eType == BaseT BaseInt)
+    (tell ["Error (Mismatch (BaseT BaseInt) eType)"])
+
+typeCheckPairElem :: PairElem -> TypeChecker Type
+typeCheckPairElem (PairElem _ PairLiteral)
+  = tell ["Error NullPointerDeref"] >> return NoType
+typeCheckPairElem (PairElem selector expr) = do
+  exprT <- typeCheckExpr expr
+  if  | NoType       <- exprT  -> return NoType
+      | PairT pt pt' <- exprT  -> case selector of
+        Fst  -> return pt
+        Snd  -> return pt'
+      | otherwise -> do
+        tell ["Error (Mismatch PolyPair exprT)"]
+        return NoType
