@@ -155,13 +155,19 @@ data UnOp
 data LogicalOp
   = AND
   | OR
-  | LT
+  deriving (Eq, Show)
+
+data RelationalOp
+  =  LT
   | LTE
-  | EQ
   | GTE
   | GT
-  | NEQ
   deriving (Eq, Show)
+
+data EqOps
+ = EQ
+ | NEQ
+ deriving (Eq, Show)
 
 data ArithOp
   = Mul
@@ -174,6 +180,8 @@ data ArithOp
 data BinOp
   = Logic LogicalOp
   | Arith ArithOp
+  | RelOp RelationalOp
+  | EquOp EqOps
   deriving (Eq, Show)
 
 {- Fundamental Types -}
@@ -188,9 +196,9 @@ binOpPrec4, binOpPrec5, binOpPrec6 :: [(String, BinOp)]
 
 binOpPrec1      = [("/", Arith Div), ("%", Arith Mod), ("*", Arith Mul)]
 binOpPrec2      = [("+", Arith Add), ("-", Arith Sub)]
-binOpPrec3      = [(">=", Logic GTE), (">",  Logic GT),
-                   ("<=", Logic LTE), ("<",  Logic LT)]
-binOpPrec4      = [("==", Logic EQ), ("!=", Logic NEQ)]
+binOpPrec3      = [(">=", RelOp GTE), (">",  RelOp GT),
+                   ("<=", RelOp LTE), ("<",  RelOp LT)]
+binOpPrec4      = [("==", EquOp EQ), ("!=", EquOp NEQ)]
 binOpPrec5      = [("&&", Logic AND)]
 binOpPrec6      = [("||", Logic OR)]
 
