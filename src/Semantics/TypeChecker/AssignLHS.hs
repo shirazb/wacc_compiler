@@ -14,7 +14,7 @@ typeCheckLHS :: AssignLHS -> TypeChecker Type
 typeCheckLHS (Var ident) = do
   identT <- typeCheckIdent ident
   if identT == PolyFunc
-    then tell [Error (DataTypeOnly identT)] >> return NoType
+    then tell ["Error (DataTypeOnly identT)"] >> return NoType
     else return identT
 typeCheckLHS (ArrayDeref arrayElem)
   = typeCheckArrayElem arrayElem
@@ -27,6 +27,7 @@ typeCheckArrayElem (ArrayElem ident indexes) = do
   identT <- typeCheckIdent ident
 
   -- check indexes are ints
+  -- NB: Reports type errors, but does not propagate up NoType
   mapM_ typeCheckIsInt indexes
 
   -- minimum array dimension required
@@ -41,7 +42,7 @@ typeCheckArrayElem (ArrayElem ident indexes) = do
       if numDerefs > dim
         -- too many derefences; tell error
         then do
-          tell [Error (Mismatch expectedType identT)]
+          tell ["Error (Mismatch expectedType identT)"]
           return NoType
 
         -- return type of correct dimension
@@ -50,7 +51,7 @@ typeCheckArrayElem (ArrayElem ident indexes) = do
 
     -- ident was not an array
     else do
-      tell [Error (Mismatch PolyArray identT)]
+      tell ["Error (Mismatch PolyArray identT)"]
       return NoType
 
 
@@ -87,11 +88,11 @@ typeCheckIsInt :: Expr -> TypeChecker ()
 typeCheckIsInt e = do
   eType <- typeCheckExpr e
   unless (eType == BaseT BaseInt)
-    (tell [Error (Mismatch (BaseT BaseInt) eType)])
+    (tell ["Error (Mismatch (BaseT BaseInt) eType)"])
 
 typeCheckPairElem :: PairElem -> TypeChecker Type
 typeCheckPairElem (PairElem _ PairLiteral)
-  = tell [Error NullPointerDeref] >> return NoType
+  = tell ["Error NullPointerDeref"] >> return NoType
 typeCheckPairElem (PairElem selector expr) = do
   exprT <- typeCheckExpr expr
   if  | NoType       <- exprT  -> return NoType
@@ -99,7 +100,7 @@ typeCheckPairElem (PairElem selector expr) = do
         Fst  -> return pt
         Snd  -> return pt'
       | otherwise -> do
-        tell [Error (Mismatch PolyPair exprT)]
+        tell ["Error (Mismatch PolyPair exprT)"]
         return NoType
 
 -- Common test resources
@@ -117,6 +118,7 @@ validArrayDeref = ArrayDeref (ArrayElem a [BinaryApp (Arith Mul) (IntLit 1) (Int
 derefFuncFails = ArrayDeref (ArrayElem f [IntLit 3])
 tooManyDerefsFails = ArrayDeref (ArrayElem a [IntLit 2, IntLit 5, IntLit 2, IntLit 4])
 derefToInnerTypeReturnsInnerType = ArrayDeref (ArrayElem a [IntLit 10, IntLit 2, IntLit 11])
+propagatesTypeErrInIndex = ArrayDeref (ArrayElem a [UnaryApp Neg (BoolLit True)])
 
 -- PairDeref tests
 validPairDeref = PairDeref (PairElem Fst (IdentE p))
@@ -124,5 +126,12 @@ nullPairDeref  = PairDeref (PairElem Snd PairLiteral)
 malformedExprInPairDerefPropagates = PairDeref (PairElem Snd (UnaryApp Not (IntLit 3)))
 nonPairExprFails = PairDeref (PairElem Snd (IdentE a))
 
-runTest lhs
-  = runWriter $ typeCheckLHS lhs
+runTest
+  = runWriter . typeCheckLHS
+-- 
+--
+-- typeCheckConcat :: [Type] -> TypeChecker Type
+-- typeCheckConcat (NoType : ts)
+--   = return NoType
+-- typeCheckConcat (t : ts) = do
+--   result <- typeCheckConcat ts

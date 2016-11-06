@@ -88,7 +88,7 @@ checkUnAppType expectedT actualT opReturnT
 checkBinaryApp :: BinOp -> Type -> Type -> Type -> TypeChecker Type
 checkBinaryApp op opT arg1T arg2T
   = if arg1T /= arg2T
-      then tell [Error (BinaryOPErr op (MismatchArgs arg1T arg2T))] >>
+      then tell [""] >>
              return NoType;
       else evalArg
   where
@@ -99,7 +99,7 @@ checkBinaryApp op opT arg1T arg2T
                  NoType -> return NoType
                  _      -> eval
     eval     = if opT /= arg1T || opT /= arg2T
-                 then tell [Error (BinaryOpInvalidArgs op opT arg1T)] >>
+                 then tell [""] >>
                         return NoType
                  else return arg1T
 
@@ -148,16 +148,16 @@ typeCheckExpr (BinaryApp op@(RelOp _) expr expr') = do
   case (t, t') of
     (NoType, _ ) -> return NoType --
     (_,  NoType) -> return NoType
-    _             | t /= t' -> tell [Error (BinaryOPErr op (MismatchArgs t t'))] >> return NoType
+    _             | t /= t' -> tell [""] >> return NoType
                   | checkCharOrInt t || checkCharOrInt t' -> return (BaseT BaseBool)
-                  | otherwise -> tell [Error (BinaryOpInvalidArgsRel t)] >> return NoType
+                  | otherwise -> tell [""] >> return NoType
 typeCheckExpr (BinaryApp op@(EquOp _) expr expr') = do
   t <- typeCheckExpr expr
   t' <- typeCheckExpr expr'
   case (t, t') of
     (NoType, _) -> return NoType
     (_, NoType) -> return NoType
-    _             | t /= t' -> tell [Error (BinaryOPErr op (MismatchArgs t t'))] >> return NoType
+    _             | t /= t' -> tell ["Error (BinaryOPErr op (MismatchArgs t t'))"] >> return NoType
                   | otherwise -> return (BaseT BaseBool)
 
 
