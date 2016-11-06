@@ -1,8 +1,11 @@
 module Semantics.TypeChecker.TypeCheckerExpr where
+
 import qualified Prelude
 import Prelude hiding (LT, EQ)
 import Control.Monad.Writer.Strict
+
 import Utilities.Definitions
+import ErrorMessages.Semantic
 import Debug.Trace
 
 
@@ -55,36 +58,19 @@ testBinaryEQ8  = BinaryApp (EquOp EQ) identTest identTest2
 
 -- check derefernce on all expressions
 
-data Error = Error TypeError deriving (Show)
+type ErrorMsg      = String
+type TypeChecker a = Writer [ErrorMsg] a
 
-type TypeChecker a = Writer [Error] a
+{- Utility -}
 
-data TypeError
-  = Mismatch Type Type
-  | InvalidArgs [Type] [Type]
-  | OnlyIdentifier
-  | BinaryOPErr BinOp TypeError
-  | BinaryOpInvalidArgs BinOp Type Type
-  | MismatchArgs Type Type
-  | UnaryOpErr UnOp TypeError
-  | UnaryOpInvalidArgs UnOp Type Type
-  | BinaryOpInvalidArgsRel Type
-  | DataTypeOnly Type
-  | NullPointerDeref
-  deriving (Show)
-
-{- Utility-}
-
-checkUnAppType ::Type -> Type -> Type -> TypeChecker Type
+checkUnAppType :: Type -> Type -> Type -> TypeChecker Type
 checkUnAppType expectedT actualT opReturnT
   = if actualT /= expectedT
       then do {
-        -- traceM "We are in checkType";
-        tell [Error (Mismatch expectedT actualT)];
-        return NoType;
+        tell [generateErrMsg expectedT actualT];
+        return NoType
       } else return opReturnT
 
--- write error msgs
 checkBinaryApp :: BinOp -> Type -> Type -> Type -> TypeChecker Type
 checkBinaryApp op opT arg1T arg2T
   = if arg1T /= arg2T
