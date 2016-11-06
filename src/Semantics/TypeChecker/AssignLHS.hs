@@ -5,42 +5,20 @@ module Semantics.TypeChecker.AssignLHS (
 import Control.Monad.Writer.Strict
 import Utilities.Definitions
 
-data TypeError
-  = Mismatch Type Type
-
 data Error
   = TypeError Type Type
+  | DataTypeOnly Type
   | NullPointerDeref
+  deriving (Show, Eq)
 
 type TypeChecker a = Writer [Error] a
 
--- typeCheckLHS :: AssignLHS -> Writer [TypeErrMsg] Type
--- typeCheckLHS (Var ident)
---   = typeCheckIdent ident
--- typeCheckLHS (ArrayDeref (ArrayElem ident es))
---   = typeCheckArrayDeref ident es
--- -- COMMENT
--- -- MAKE SURE YOU READ THIS
--- -- I COULD BE DOING SOMETHING PRETTY WRONG
--- -- BUT FROM MY UNDERSTANDING
--- -- pair dereferences can only have identifiers
--- -- so any other thing should throw and Error
--- -- should we explicitly checkk for null
--- -- benefit is that we will have better messages
--- typeCheckLHS (PairDeref (PairElem pairElemSelector ident@IdentE{})) = do
---   -- this pattern match will fail if you have a type Error
---   DataT (PairT pt pt') <- typeCheckExpr ident
---   case pairElemSelector of
---     Fst -> return (DataT pt)
---     Snd -> return (DataT pt')
--- typeCheckLHS (PairDeref (PairElem _ PairLiteral))
---   = tell ["Trying to dereference a null"] >> return TypeErr
--- typeCheckLHS (PairDeref _)
---   = tell ["Trying to derefernce not a pair"] >> return TypeErr
-
 typeCheckLHS :: AssignLHS -> TypeChecker Type
-typeCheckLHS (Var ident)
-  = typeCheckIdent ident
+typeCheckLHS (Var ident) = do
+  identT <- typeCheckIdent ident
+  if identT == PolyFunc
+    then tell [DataTypeOnly identT] >> return NoType
+    else return identT
 typeCheckLHS (ArrayDeref arrayElem)
   = typeCheckArrayElem arrayElem
 typeCheckLHS (PairDeref pairElem)
@@ -56,7 +34,7 @@ typeCheckArrayElem (ArrayElem ident indexes) = do
 
   -- minimum array dimension required
   let numDerefs = length indexes
-  let expectedType = ArrayT numDerefs ArrayPoly
+  let expectedType = ArrayT numDerefs PolyArray
 
   isValidArrayType <- checkValidArrayType identT
 
@@ -90,18 +68,36 @@ constructType dim innerT
   | otherwise  = ArrayT dim innerT
 
 -- Checks is an array type, and if so, that its inner type is a PairT or BaseT
-checkValidArrayType = undefined
+checkValidArrayType :: Type -> TypeChecker Bool
+checkValidArrayType (ArrayT _ (PairT _ _))
+  = return True
+checkValidArrayType (ArrayT _ (BaseT _))
+  = return True
+checkValidArrayType t = do
+  tell [TypeError PolyArray t]
+  return False
 
-checkValidPairType = undefined
+checkValidPairType :: Type -> TypeChecker Bool
+checkValidPairType t@FuncT{} = do
+  tell [DataTypeOnly t]
+  return False
+checkValidPairType _
+  = return True
 
 -- Returns the type of an ident
-typeCheckIdent = undefined
+typeCheckIdent :: Ident -> TypeChecker Type
+typeCheckIdent (Ident _ info)
+  = return (typeInfo info)
 
 -- type checks an expr
 typeCheckExpr  = undefined
 
 -- checkIsInt e <-> e is an int
-typeCheckIsInt = undefined
+typeCheckIsInt :: Expr -> TypeChecker ()
+typeCheckIsInt e = do
+  eType <- typeCheckExpr e
+  unless (eType == BaseT BaseInt)
+    (tell [TypeError (BaseT BaseInt) eType])
 
 typeCheckPairElem :: PairElem -> TypeChecker Type
 typeCheckPairElem (PairElem _ PairLiteral)
@@ -117,3 +113,31 @@ typeCheckPairElem (PairElem selector expr) = do
         Snd  -> return pt'
     else
       return NoType
+
+-- Common test resources
+x = Ident "x" (Info (PairT (BaseT BaseInt) Pair) Variable)
+f = Ident "f" (Info (FuncT (BaseT BaseChar) [ArrayT 5 (BaseT BaseString)]) Function)
+a = Ident "a" (Info (ArrayT 1 (PairT Pair (ArrayT 2 (BaseT BaseInt)))) Variable)
+p = Ident "p" (Info (PairT (ArrayT 2 (BaseT BaseInt)) (BaseT BaseString)) Variable)
+illegalP
+  = Ident "illegalPair" (Info (PairT Pair (PairT (FuncT (BaseT BaseInt) [BaseT BaseChar]) Pair)) Variable)
+
+-- Var tests
+varX = Var x
+funcVarFails = Var f
+
+-- ArrayDeref tests
+validArrayDeref = ArrayDeref (ArrayElem (Ident "a" (Info (ArrayT 3 (BaseT BaseInt)) Variable)) [BinaryApp (Arith Mul) (IntLit 1) (IntLit 2), UnaryApp Neg (IntLit (-3))])
+derefFuncFails = ArrayDeref (ArrayElem f [IntLit 3])
+tooManyDerefsFails = ArrayDeref (ArrayElem a [IntLit 2, IntLit 5])
+derefToInnerTypeReturnsInnerType = ArrayDeref (ArrayElem a [IntLit 10])
+
+-- PairDeref tests
+validPairDeref = PairDeref (PairElem Fst (IdentE p))
+nullPairDeref  = PairDeref (PairElem Snd PairLiteral)
+malformedExprInPairDerefPropagates = PairDeref (PairElem Snd (UnaryApp Not (IntLit 3)))
+nonPairExprFails = PairDeref (PairElem Snd (IdentE a))
+illegalPairTypeFails = PairDeref (PairElem Snd (IdentE illegalP))
+
+runTest lhs
+  = runWriter $ typeCheckLHS lhs

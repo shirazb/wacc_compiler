@@ -112,6 +112,7 @@ data Type
   | FuncT Type [Type] -- cannot be FuncT or Pair
   | NoType
   | PolyArray
+  | PolyFunc
   deriving (Show)
 
 instance Eq Type where
@@ -129,6 +130,9 @@ instance Eq Type where
   ArrayT dim t == ArrayT dim' t' = dim == dim' && t == t'
   PairT t1 t2 == PairT t1' t2' = t1 == t1' && t2 == t2'
   BaseT t == BaseT t' = t == t'
+  PolyFunc  == PolyFunc  = True
+  PolyFunc  == FuncT _ _ = True
+  FuncT _ _ == PolyFunc  = True
   _ == _ = False
 
 
