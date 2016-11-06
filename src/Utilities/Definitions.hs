@@ -127,7 +127,7 @@ instance Eq Type where
   _ == PolyArray          = False
   PolyArray == _          = False
   FuncT t ts == FuncT t' ts' = t == t' && ts == ts'
-  ArrayT dim t == ArrayT dim' t' = dim == dim' && t == t'
+  ArrayT dim t == ArrayT dim' t' = t == t' && dim == dim'
   PairT t1 t2 == PairT t1' t2' = t1 == t1' && t2 == t2'
   BaseT t == BaseT t' = t == t'
   PolyFunc  == PolyFunc  = True
