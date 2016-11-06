@@ -49,10 +49,10 @@ checkNoType (_ : ts)       = checkNoType ts
 
 -- -- totally better version :)
 -- typeCheckConcat :: [Type] -> TypeChecker Type
--- typeCheckConcat [t]
---   return t
 -- typeCheckConcat (NoType : ts)
 --   = return NoType
+-- typeCheckConcat [t]
+--   return t
 -- typeCheckConcat (t : t' : ts)
---   | t == t'   = typeCheckConcat (t' :ts)
+--   | t == t'   = typeCheckConcat (t' : ts)
 --   | otherwise = return NoType
