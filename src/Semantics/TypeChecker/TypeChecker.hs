@@ -74,52 +74,6 @@ typeCheckStat (Seq s s') = do
   typeCheckStat s'
 
 -------------------------------------------------------------------------------
-{- LHS -}
-
-typeCheckLHS :: AssignLHS -> Writer [TypeErrMsg] Type
-typeCheckLHS (Var ident)
-  = typeCheckIdent ident
-typeCheckLHS (ArrayDeref (ArrayElem ident es))
-  = typeCheckArrayDeref ident es
--- COMMENT
--- MAKE SURE YOU READ THIS
--- I COULD BE DOING SOMETHING PRETTY WRONG
--- BUT FROM MY UNDERSTANDING
--- pair dereferences can only have identifiers
--- so any other thing should throw and Error
--- should we explicitly checkk for null
--- benefit is that we will have better messages
-typeCheckLHS (PairDeref (PairElem pairElemSelector ident@IdentE{})) = do
-  -- this pattern match will fail if you have a type Error
-  DataT (PairT pt pt') <- typeCheckExpr ident
-  case pairElemSelector of
-    Fst -> return (DataT pt)
-    Snd -> return (DataT pt')
-typeCheckLHS (PairDeref (PairElem _ PairLiteral))
-  = tell ["Trying to dereference a null"] >> return TypeErr
-typeCheckLHS (PairDeref _)
-  = tell ["Trying to derefernce not a pair"] >> return TypeErr
-
--------------------------------------------------------------------------------
-{- RHS -}
-
-typeCheckRHS :: AssignRHS -> Writer [TypeErrMsg] Type
-typeCheckRHS (ExprAssign es)
-  = typeCheckExpr es
-typeCheckRHS (ArrayLitAssign [])
-  = return UnitType
-
-typeCheckRHS (ArrayLitAssign es) = do
-  esType <- mapM typeCheckExpr es
-  if checkForTypeErrInList esType
-    then return TypeErr
-    else if checkSameType esType
-      then
-        return $ constructArray ((getDimension (head esType)) + 1) (head esType)
-      else
-        tell["Elements of array are of diff types"] >> return TypeErr
-
--------------------------------------------------------------------------------
 {- ARRAYS -}
 
 constructArray :: Int -> DataType -> Type
