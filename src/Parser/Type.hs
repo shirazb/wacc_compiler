@@ -19,8 +19,8 @@ import Utilities.Definitions
 --      parsers of types. Returns type wrapped in appropriate data constructor.
 parseType :: Parser Char Type
 parseType
-  =   ArrayT <$> parseArrayType
-  <|> PairT  <$> parsePairType
+  =   parseArrayType
+  <|> parsePairType
   <|> BaseT  <$> parseBaseType
 
 parseBaseType :: Parser Char BaseType
@@ -36,28 +36,28 @@ multiDimArray
       token "[]"
       rest (x + 1) <|> return x
 
-parseArrayType :: Parser Char ArrayType
+parseArrayType :: Parser Char Type
 parseArrayType = do
-  t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
+  t         <- (BaseT <$> parseBaseType)  <|> (PairT <$> parseType <*> parseType)
   dimension <- multiDimArray
-  return $ Array dimension t
+  return $ ArrayT dimension t
 
-parsePairType :: Parser Char PairType
+parsePairType :: Parser Char Type
 parsePairType = trimWS $ do
   token "pair"
   tryParser (punctuation '(') "Missing opening parenthesis in pair-type"
-  t1 <- tryParser parsePairElemType "Invalid first pair-type"
+  t1 <- tryParser parseType "Invalid first pair-type"
   tryParser (punctuation ',') "Missing comma in pair-type declaration"
-  t2 <- tryParser parsePairElemType "Invalid second pair-type"
+  t2 <- tryParser parseType "Invalid second pair-type"
   tryParser (punctuation ')') "Missing closing parenthesis in pair-type"
-  return $ PairType t1 t2
+  return $ PairT t1 t2
 
-parseNestedPairType :: Parser Char PairElemType
-parseNestedPairType
-  = token "pair" >> return Pair
-
-parsePairElemType :: Parser Char PairElemType
-parsePairElemType
-  =   parseNestedPairType
-  <|> ArrayP <$> parseArrayType
-  <|> BaseP  <$> parseBaseType
+-- parseNestedPairType :: Parser Char PairElemType
+-- parseNestedPairType
+--   = token "pair" >> return Pair
+--
+-- parsePairElemType :: Parser Char PairElemType
+-- parsePairElemType
+--   =   parseNestedPairType
+--   <|> ArrayP <$> parseArrayType
+--   <|> BaseP  <$> parseBaseType
