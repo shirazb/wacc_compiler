@@ -53,7 +53,16 @@ parseFunction = do
   tryParser (keyword "is") "Missing 'is' keyword"
   funcBody     <- tryParser parseFunctionBody "Invalid function body"
   tryParser (keyword "end") "Missing 'end' keyword"
-  return $ Func returnType name paramList funcBody
+  let paramTypes = map getTypeOfParam (getListOfParams paramList)
+  let functionType = FuncT returnType paramTypes
+  return $ Func functionType name paramList funcBody
+
+getTypeOfParam :: Param -> Type
+getTypeOfParam (Param t _)
+  = t
+
+getListOfParams :: ParamList -> [Param]
+getListOfParams (ParamList list) = list
 
 -- POST: Attempts to parse a list of parameters if there is one.
 parseParamList :: Parser Char ParamList
