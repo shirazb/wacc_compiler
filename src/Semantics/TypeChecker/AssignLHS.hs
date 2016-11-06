@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiWayIf #-}
+
 module Semantics.TypeChecker.AssignLHS (
   typeCheckLHS
 ) where
@@ -36,8 +38,6 @@ typeCheckArrayElem (ArrayElem ident indexes) = do
     then do
       -- Check dim accomodates the number of derefences
       let ArrayT dim innerT = identT
-      traceM $ "numDerefs = " ++ show numDerefs
-      traceM $ "dim       = " ++ show dim
       if numDerefs > dim
         -- too many derefences; tell error
         then do
@@ -93,24 +93,20 @@ typeCheckPairElem :: PairElem -> TypeChecker Type
 typeCheckPairElem (PairElem _ PairLiteral)
   = tell [Error NullPointerDeref] >> return NoType
 typeCheckPairElem (PairElem selector expr) = do
-  exprT            <- typeCheckExpr expr
-  if isValidPairType exprT
-    then
-      let PairT pt pt' = exprT in
-      case selector of
+  exprT <- typeCheckExpr expr
+  if  | NoType       <- exprT  -> return NoType
+      | PairT pt pt' <- exprT  -> case selector of
         Fst  -> return pt
         Snd  -> return pt'
-    else do
-      tell [Error (DataTypeOnly exprT)]
-      return NoType
+      | otherwise -> do
+        tell [Error (Mismatch PolyPair exprT)]
+        return NoType
 
 -- Common test resources
 x = Ident "x" (Info (PairT (BaseT BaseInt) Pair) Variable)
 f = Ident "f" (Info (FuncT (BaseT BaseChar) [ArrayT 5 (BaseT BaseString)]) Function)
 a = Ident "a" (Info (ArrayT 3 (PairT Pair (ArrayT 2 (BaseT BaseInt)))) Variable)
 p = Ident "p" (Info (PairT (ArrayT 2 (BaseT BaseInt)) (BaseT BaseString)) Variable)
-illegalP
-  = Ident "illegalPair" (Info (PairT Pair (PairT (FuncT (BaseT BaseInt) [BaseT BaseChar]) Pair)) Variable)
 
 -- Var tests
 varX = Var x
@@ -120,14 +116,13 @@ funcVarFails = Var f
 validArrayDeref = ArrayDeref (ArrayElem a [BinaryApp (Arith Mul) (IntLit 1) (IntLit 2), UnaryApp Neg (IntLit (-3))])
 derefFuncFails = ArrayDeref (ArrayElem f [IntLit 3])
 tooManyDerefsFails = ArrayDeref (ArrayElem a [IntLit 2, IntLit 5, IntLit 2, IntLit 4])
-derefToInnerTypeReturnsInnerType = ArrayDeref (ArrayElem a [IntLit 10])
+derefToInnerTypeReturnsInnerType = ArrayDeref (ArrayElem a [IntLit 10, IntLit 2, IntLit 11])
 
 -- PairDeref tests
 validPairDeref = PairDeref (PairElem Fst (IdentE p))
 nullPairDeref  = PairDeref (PairElem Snd PairLiteral)
 malformedExprInPairDerefPropagates = PairDeref (PairElem Snd (UnaryApp Not (IntLit 3)))
 nonPairExprFails = PairDeref (PairElem Snd (IdentE a))
-illegalPairTypeFails = PairDeref (PairElem Snd (IdentE illegalP))
 
 runTest lhs
   = runWriter $ typeCheckLHS lhs

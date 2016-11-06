@@ -113,6 +113,7 @@ data Type
   | NoType
   | PolyArray
   | PolyFunc
+  | PolyPair
   deriving (Show)
 
 instance Eq Type where
@@ -133,6 +134,9 @@ instance Eq Type where
   PolyFunc  == PolyFunc  = True
   PolyFunc  == FuncT _ _ = True
   FuncT _ _ == PolyFunc  = True
+  PolyPair  == PairT _ _ = True
+  PairT _ _ == PolyPair  = True
+  PolyPair == PolyPair   = True
   _ == _ = False
 
 
