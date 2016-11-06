@@ -68,6 +68,8 @@ data TypeError
   | UnaryOpErr UnOp TypeError
   | UnaryOpInvalidArgs UnOp Type Type
   | BinaryOpInvalidArgsRel Type
+  | DataTypeOnly Type
+  | NullPointerDeref
   deriving (Show)
 
 {- Utility-}

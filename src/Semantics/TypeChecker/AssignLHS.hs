@@ -3,21 +3,14 @@ module Semantics.TypeChecker.AssignLHS (
 ) where
 
 import Control.Monad.Writer.Strict
+import Semantics.TypeChecker.TypeCheckerExpr
 import Utilities.Definitions
-
-data Error
-  = TypeError Type Type
-  | DataTypeOnly Type
-  | NullPointerDeref
-  deriving (Show, Eq)
-
-type TypeChecker a = Writer [Error] a
 
 typeCheckLHS :: AssignLHS -> TypeChecker Type
 typeCheckLHS (Var ident) = do
   identT <- typeCheckIdent ident
   if identT == PolyFunc
-    then tell [DataTypeOnly identT] >> return NoType
+    then tell [Error (DataTypeOnly identT)] >> return NoType
     else return identT
 typeCheckLHS (ArrayDeref arrayElem)
   = typeCheckArrayElem arrayElem
@@ -46,7 +39,7 @@ typeCheckArrayElem (ArrayElem ident indexes) = do
       if numDerefs > dim
         -- too many derefences; tell error
         then do
-          tell [TypeError expectedType identT]
+          tell [Error (Mismatch expectedType identT)]
           return NoType
 
         -- return type of correct dimension
@@ -55,7 +48,7 @@ typeCheckArrayElem (ArrayElem ident indexes) = do
 
     -- ident was not an array
     else do
-      tell [TypeError expectedType identT]
+      tell [Error (Mismatch expectedType identT)]
       return NoType
 
 
@@ -74,12 +67,12 @@ checkValidArrayType (ArrayT _ (PairT _ _))
 checkValidArrayType (ArrayT _ (BaseT _))
   = return True
 checkValidArrayType t = do
-  tell [TypeError PolyArray t]
+  tell [Error (Mismatch PolyArray t)]
   return False
 
 checkValidPairType :: Type -> TypeChecker Bool
 checkValidPairType t@FuncT{} = do
-  tell [DataTypeOnly t]
+  tell [Error (DataTypeOnly t)]
   return False
 checkValidPairType _
   = return True
@@ -89,19 +82,16 @@ typeCheckIdent :: Ident -> TypeChecker Type
 typeCheckIdent (Ident _ info)
   = return (typeInfo info)
 
--- type checks an expr
-typeCheckExpr  = undefined
-
 -- checkIsInt e <-> e is an int
 typeCheckIsInt :: Expr -> TypeChecker ()
 typeCheckIsInt e = do
   eType <- typeCheckExpr e
   unless (eType == BaseT BaseInt)
-    (tell [TypeError (BaseT BaseInt) eType])
+    (tell [Error (Mismatch (BaseT BaseInt) eType)])
 
 typeCheckPairElem :: PairElem -> TypeChecker Type
 typeCheckPairElem (PairElem _ PairLiteral)
-  = tell [NullPointerDeref] >> return NoType
+  = tell [Error NullPointerDeref] >> return NoType
 typeCheckPairElem (PairElem selector expr) = do
   exprT            <- typeCheckExpr expr
   isValidPairType  <- checkValidPairType exprT
@@ -127,7 +117,7 @@ varX = Var x
 funcVarFails = Var f
 
 -- ArrayDeref tests
-validArrayDeref = ArrayDeref (ArrayElem (Ident "a" (Info (ArrayT 3 (BaseT BaseInt)) Variable)) [BinaryApp (Arith Mul) (IntLit 1) (IntLit 2), UnaryApp Neg (IntLit (-3))])
+validArrayDeref = ArrayDeref (ArrayElem a [BinaryApp (Arith Mul) (IntLit 1) (IntLit 2), UnaryApp Neg (IntLit (-3))])
 derefFuncFails = ArrayDeref (ArrayElem f [IntLit 3])
 tooManyDerefsFails = ArrayDeref (ArrayElem a [IntLit 2, IntLit 5])
 derefToInnerTypeReturnsInnerType = ArrayDeref (ArrayElem a [IntLit 10])
