@@ -5,6 +5,7 @@ import Control.Monad.Writer.Strict
 import Utilities.Definitions
 import Debug.Trace
 
+
 -- data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq, Show)
 
 -- tests
