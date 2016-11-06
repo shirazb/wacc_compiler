@@ -1,9 +1,14 @@
 module Semantics.TypeChecker.TypeCheckerExpr where
+
+
 import qualified Prelude
 import Prelude hiding (LT, EQ)
+-- import Semantics.TypeChecker.AssignLHS
 import Control.Monad.Writer.Strict
 import Utilities.Definitions
 import Debug.Trace
+
+-- import Semantics.TypeChecker.AssignLHS
 
 
 -- data ArrayElem = ArrayElem Ident [Expr]             deriving (Eq, Show)
@@ -45,13 +50,31 @@ testBinaryEQ6  = BinaryApp (EquOp EQ) identTest2 identTest
 -- what does it mean to type-check arrays and pairs
 -- do you check the inner types
 -- or do you defer that to the run time???
-identTest3     = IdentE (Ident "x" (Info (PairT (BaseT BaseInt) (BaseT BaseInt)) Variable))
-identTest4     = IdentE (Ident "y" (Info (PairT (BaseT BaseInt) (BaseT BaseChar)) Variable))
+
 identTest      = IdentE (Ident "x" (Info (ArrayT 1 (BaseT BaseInt)) Variable))
 identTest1     = IdentE (Ident "x" (Info (BaseT BaseChar) Variable))
+identTEST1'    = Ident "x" (Info (BaseT BaseChar) Variable)
 identTest2     = IdentE (Ident "x" (Info (ArrayT 1 (BaseT BaseChar)) Variable))
+identTEST2'    = Ident "x" (Info (ArrayT 1 (BaseT BaseChar)) Variable)
+identTEST3'    = Ident "x" (Info (ArrayT 1 (BaseT BaseInt)) Variable)
+identTEST4'    = Ident "z" (Info (ArrayT 2 (BaseT BaseInt)) Variable)
+identTest3     = IdentE (Ident "x" (Info (PairT (BaseT BaseInt) (BaseT BaseInt)) Variable))
+identTest4     = IdentE (Ident "y" (Info (ArrayT 2 (BaseT BaseInt)) Variable))
+identTest5     = IdentE (Ident "x" (Info (ArrayT 1 (BaseT BaseInt)) Variable))
 testBinaryEQ7  = BinaryApp (EquOp EQ) identTest3 identTest4
 testBinaryEQ8  = BinaryApp (EquOp EQ) identTest identTest2
+-- testing equality with diff dimension arrays
+-- testing when deref is to much
+-- testing when the types of the array differ
+-- testing when its actually okay
+-- testing when derefering equals a literal equality with another literal
+testBinaryEQ9  = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST1' [IntLit 1])) (ExprArray (ArrayElem identTEST2' [IntLit 2]))
+testBinaryEQ10 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST3'[IntLit 1, IntLit 1])) (ExprArray (ArrayElem identTEST2'[IntLit 1]))
+testBinaryEQ11 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST4' [IntLit 1, IntLit 1])) (ExprArray (ArrayElem identTEST1' [IntLit 1]))
+testBinaryEQ12 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST2' [IntLit 1])) (ExprArray (ArrayElem identTEST3' [IntLit 1]))
+testBinaryEq13 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST3' [IntLit 1])) (ExprArray (ArrayElem identTEST3' [IntLit 1]))
+
+
 
 -- check derefernce on all expressions
 
@@ -116,7 +139,7 @@ typeCheckExpr PairLiteral
   = return Pair
 typeCheckExpr (IdentE (Ident _ (Info t _)))
   = return t
-typeCheckExpr (ExprArray (ArrayElem i indexes))
+typeCheckExpr (ExprArray ae@(ArrayElem i indexes))
   = undefined
 typeCheckExpr (UnaryApp Not expr) = do
   t <- typeCheckExpr expr
