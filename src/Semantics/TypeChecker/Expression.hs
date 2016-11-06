@@ -1,4 +1,4 @@
-module Semantics.TypeChecker.TypeCheckerExpr where
+module Semantics.TypeChecker.Expression where
 
 import qualified Prelude
 import Prelude hiding (LT, EQ)
@@ -69,11 +69,6 @@ testBinaryEQ10 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST3'[IntLit 1
 testBinaryEQ11 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST4' [IntLit 1, IntLit 1])) (ExprArray (ArrayElem identTEST1' [IntLit 1]))
 testBinaryEQ12 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST2' [IntLit 1])) (ExprArray (ArrayElem identTEST3' [IntLit 1]))
 testBinaryEq13 = BinaryApp (EquOp EQ) (ExprArray (ArrayElem identTEST3' [IntLit 1])) (ExprArray (ArrayElem identTEST3' [IntLit 1]))
-
--- check derefernce on all expressions
-
-type ErrorMsg      = String
-type TypeChecker a = Writer [ErrorMsg] a
 
 {- Utility -}
 

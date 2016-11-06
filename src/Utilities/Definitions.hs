@@ -16,12 +16,17 @@ import Prelude hiding (GT, LT, EQ)
 import Data.Char
 import Data.List
 import qualified Data.Map as Map
-import Control.Monad.State.Strict
+import Control.Monad.State.Strict (State)
+import Control.Monad.Writer.Strict (Writer)
 
 type Env       = Map.Map (String, Context) Info
 type AST       = Program
 type Position  = (Int, Int)
 type Err       = (String, Position)
+
+-- Type Checking
+type ErrorMsg      = String
+type TypeChecker a = Writer [ErrorMsg] a
 
 -- errrr, someone come up with a better name pls...
 type LexicalScoper a = State SymbolTable a

@@ -1,12 +1,9 @@
-module Semantics.Typechecker.AssignRHS where
+module Semantics.TypeChecker.AssignRHS where
 
 import Control.Monad.Writer.Strict
 
 import Utilities.Definitions
 import ErrorMessages.Semantic
-
-type ErrorMsg      = String
-type TypeChecker a = Writer [ErrorMsg] a
 
 typeCheckRHS :: AssignRHS -> TypeChecker Type
 typeCheckRHS (ExprAssign e)       = typeCheckExpr e
@@ -21,7 +18,7 @@ typeCheckRHS (FuncCallAssign (Ident _ i) es) = do
   FuncT t ts' <- return (typeInfo i)
   if (ts == ts')
    then return (FuncT t ts)
-   else tell [Error (Mismatch (FuncT t ts') (FuncT t ts))] >> return NoType
+   else tell ["Error (Mismatch (FuncT t ts') (FuncT t ts))"] >> return NoType
 
 typeCheckExpr :: Expr -> TypeChecker Type
 typeCheckExpr = undefined
