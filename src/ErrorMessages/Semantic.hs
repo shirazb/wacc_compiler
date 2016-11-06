@@ -2,8 +2,6 @@ module ErrorMessages.Semantic (generateErrMsg) where
 
 import Utilities.Definitions
 
-type ErrorMsg = String
-
 expected  = "Expected:      "
 act  = "Actual:        "
 loc  = "At location:   "
