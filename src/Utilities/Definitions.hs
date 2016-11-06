@@ -11,6 +11,8 @@ debugging.
 
 module Utilities.Definitions where
 
+import qualified Prelude
+import Prelude hiding (GT, LT, EQ)
 import Data.Char
 import Data.List
 import qualified Data.Map as Map
@@ -105,7 +107,7 @@ data BaseType
 data Type
   = BaseT BaseType
   | PairT Type Type   -- cannot be FuncT
-  | ArrayT Int Type   -- can only be PairT or BaseT
+  | ArrayT Int Type   -- can only be PairT or BaseT --should we enforce this
   | Pair
   | FuncT Type [Type] -- cannot be FuncT or Pair
   | NoType
@@ -150,13 +152,8 @@ data UnOp
   | Chr
   deriving (Eq, Show)
 
-data BinOp
-  = Mul
-  | Div
-  | Mod
-  | Add
-  | Sub
-  | AND
+data LogicalOp
+  = AND
   | OR
   | LT
   | LTE
@@ -166,19 +163,43 @@ data BinOp
   | NEQ
   deriving (Eq, Show)
 
+data ArithOp
+  = Mul
+  | Div
+  | Mod
+  | Add
+  | Sub
+  deriving (Eq, Show)
+
+data BinOp
+  = Logic LogicalOp
+  | Arith ArithOp
+  deriving (Eq, Show)
+
+{- Fundamental Types -}
+
 baseTypes       = [("int", BaseInt), ("bool", BaseBool),
-                  ("char", BaseChar), ("string", BaseString)]
+                   ("char", BaseChar), ("string", BaseString)]
 
-lowBinOps       = [("+", Add), ("-", Sub) , (">=", GTE),
-                  (">", Utilities.Definitions.GT), ("<=", LTE),
-                  ("<", Utilities.Definitions.LT), (
-                  "==", Utilities.Definitions.EQ), ("!=", NEQ),
-                  ("&&", AND), ("||", OR)]
-highBinOps      = [("*", Mul)]
-higherBinOps    = [("/", Div), ("%", Mod)]
+{- Binary Operator Precedences -}
 
-unOpAssoc       = [("len", Len), ("ord", Ord), ("chr", Chr)]
-unOpAssocHigher = [("!", Not), ("-", Neg)]
+binOpPrec1, binOpPrec2, binOpPrec3 :: [(String, BinOp)]
+binOpPrec4, binOpPrec5, binOpPrec6 :: [(String, BinOp)]
+
+binOpPrec1      = [("/", Arith Div), ("%", Arith Mod), ("*", Arith Mul)]
+binOpPrec2      = [("+", Arith Add), ("-", Arith Sub)]
+binOpPrec3      = [(">=", Logic GTE), (">",  Logic GT),
+                   ("<=", Logic LTE), ("<",  Logic LT)]
+binOpPrec4      = [("==", Logic EQ), ("!=", Logic NEQ)]
+binOpPrec5      = [("&&", Logic AND)]
+binOpPrec6      = [("||", Logic OR)]
+
+{- Unary Operator Precedences -}
+
+unOpPrec1, unOpPrec2 :: [(String, UnOp)]
+
+unOpPrec1 = [("!", Not), ("-", Neg)]
+unOpPrec2 = [("len", Len), ("ord", Ord), ("chr", Chr)]
 
 {-
 The following utility functions and show instances are used to print the AST
@@ -240,7 +261,7 @@ in a clear and readable format.
 --
 -- instance Show UnOp where
 --   show unOp
---     = flippedLookup unOp (unOpAssoc ++ unOpAssocHigher)
+--     = flippedLookup unOp (unOpAssoc ++ unOpPrec1)
 --
 -- instance Show BinOp where
 --   show binOp
