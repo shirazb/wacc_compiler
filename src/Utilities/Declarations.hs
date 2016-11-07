@@ -18,7 +18,7 @@ found on the Haskell wiki.
 
 module Utilities.Declarations where
 
-import Utilities.Def2
+import Utilities.Definitions
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Except

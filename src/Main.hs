@@ -6,11 +6,15 @@ experience to learn the more advanced features of Haskell. The parser
 currently has no error handling.
 -}
 
+import Control.Monad.Writer.Strict
+
 import Parser.Program
 import System.Environment
 import Utilities.Declarations (runParser)
 import Semantics.Annotators.AST
 import Semantics.ScopeChecker
+import Semantics.TypeChecker.Program
+import Utilities.Definitions
 
 validProgram = "begin int f(int f) is f = 2; return f end int g(int f) is f = 6; return f end int x = call f(2); int y = 3; if x == 3 then println x else println y fi; begin println y end; println x; println y end "
 notInScope = "begin x = 4 end "
@@ -30,17 +34,28 @@ pairTest = "begin int x = 2; pair(int, int) p = newpair(1,1); pair(int, char) z 
 funcP = "begin int func() is return 1 end  int x = call func(1) end"
 pairTest2 = "begin pair(int, int) p = newpair(1,2); pair(int, int) z = newpair(1,3); fst p = fst z end"
 scopeError = "begin int x = 3; y = 3 end"
+pair = "begin pair(int, int) p = newpair(1,1); int x = fst p end"
+
 
 main
   = do
       args        <- getArgs
       let filename = head args
       contents    <- readFile filename
-      putStrLn "------------------------------------------------"
-      putStrLn "           THE PROGRAM WE HAVE PARSED           "
-      putStrLn "------------------------------------------------"
-      case runParser parseProgram contents (0,0) of
-        Right (Just ((a,b), _)) -> print (annotateAST a)
-        Left err                -> print err
-        Right Nothing           -> print "Program Failure"
+
+      -- putStrLn "------------------------------------------------"
+      -- putStrLn "           THE PROGRAM WE HAVE PARSED           "
+      -- putStrLn "------------------------------------------------"
+      -- case runParser parseProgram contents (0,0) of
+      --   Right (Just ((a,b), _)) -> print (annotateAST a)
+      --   Left err                -> print err
+      --   Right Nothing           -> print "Program Failure"
+      let (_, ast) = makeAST contents
+      errorCode    <- printErrMsgs ast
       return ()
+
+printErrMsgs :: AST -> IO Int
+printErrMsgs ast
+  = case runWriter  (typeCheckProgram ast) of
+      (ast ,[]) -> putStrLn "Type Checking passed" >> return 0
+      (_, errors) -> do { mapM_ print errors; return 200}

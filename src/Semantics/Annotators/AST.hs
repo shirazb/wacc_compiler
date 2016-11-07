@@ -11,7 +11,7 @@ import Semantics.Annotators.Function
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
 import Semantics.ErrorMsgs
-import Utilities.Def2
+import Utilities.Definitions
 
 annotateAST :: AST -> AST
 annotateAST (Program fs main)

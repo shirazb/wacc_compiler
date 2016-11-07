@@ -14,7 +14,7 @@ import Parser.Lexer
 import Parser.Type
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Def2
+import Utilities.Definitions
 
 -- POST: Parses all valid statements in the WACC language, it is factored out
 --       like this to prevent the parser going in to an infinite loop due to
@@ -43,14 +43,19 @@ parseStatement'
   because the argument of read differs from the other built in functions -}
 
 parseRead :: Parser Char Stat
-parseRead
-  = keyword "read" >> (Read <$> parseLHS)
+parseRead = do
+  keyword "read"
+  lhs <- parseLHS
+  pos <- getPosition
+  return $ Read lhs pos
 
-parseBuiltInFunc :: String -> (Expr -> Stat) -> Parser Char Stat
+
+parseBuiltInFunc :: String -> (Expr -> Position -> Stat) -> Parser Char Stat
 parseBuiltInFunc funcName func = do
   keyword funcName
   expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++ " function")
-  return $ func expr1
+  pos <- getPosition
+  return $ func expr1 pos
 
 {-
 Parsers for all the synctactic structures in the WACC language that make up a statement.
@@ -101,7 +106,7 @@ parseSeq = parseStatement' >>= rest
 -- POST: Parses the skip keyword.
 parseSkip :: Parser Char Stat
 parseSkip
-  = keyword "skip" >> return Skip <$> getPosition
+  = keyword "skip" >> Skip <$> getPosition
 
 -- POST: Parses a declaration of the form type name = rhs.
 parseDeclaration :: Parser Char Stat

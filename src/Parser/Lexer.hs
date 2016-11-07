@@ -13,7 +13,7 @@ import Data.Maybe          (fromJust)
 
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Def2
+import Utilities.Definitions
 
 commentDelim :: String
 commentDelim
@@ -66,7 +66,8 @@ keyword k = do
 
 -- POST: List of operators defined in the WACC language
 operators :: String
-operators = map (head . fst) (lowBinOps ++ highBinOps ++ higherBinOps)
+operators = map (head . fst) (binOpPrec1 ++ binOpPrec2 ++ binOpPrec3
+                               ++ binOpPrec4 ++ binOpPrec5 ++ binOpPrec6)
 
 -- POST: Returns True if the given input is either a seperator or an operator
 isPunctuation :: Char -> Bool

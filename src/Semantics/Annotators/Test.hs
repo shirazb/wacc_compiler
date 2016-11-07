@@ -2,7 +2,7 @@
 
 module Semantics.Annotators.Test where
 
-import Utilities.Def2
+import Utilities.Definitions
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Identifier
 import Utilities.Declarations

@@ -11,7 +11,7 @@ import Parser.Lexer
 import Parser.Statement
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Def2
+import Utilities.Definitions
 import Semantics.Annotators.AST
 
 makeAST :: String -> (AST, AST)

@@ -15,7 +15,7 @@ import Parser.Statement
 import Parser.Type
 import Parser.Combinators
 import Utilities.Declarations
-import Utilities.Def2
+import Utilities.Definitions
 
 parseFunctionBody :: Parser Char Stat
 parseFunctionBody = do
@@ -23,18 +23,22 @@ parseFunctionBody = do
   parseStatAndCheckExecPathEnds funcBody
   return funcBody
 
+{-
+  Should check patterns (Seq (Return _) _) and (Seq (Exit _) _), throwing an
+  error; unreachable statements are not permitted.
+-}
 parseStatAndCheckExecPathEnds :: Stat -> Parser Char Stat
 parseStatAndCheckExecPathEnds s@Return{}
  = return s
 parseStatAndCheckExecPathEnds s@Exit{}
  = return s
-parseStatAndCheckExecPathEnds (If _ s1 s2)
+parseStatAndCheckExecPathEnds (If _ s1 s2 _)
  = parseStatAndCheckExecPathEnds s1 >> parseStatAndCheckExecPathEnds s2
-parseStatAndCheckExecPathEnds (While _ s1)
+parseStatAndCheckExecPathEnds (While _ s1 _)
  = parseStatAndCheckExecPathEnds s1
-parseStatAndCheckExecPathEnds (Block s1)
+parseStatAndCheckExecPathEnds (Block s1 _)
  = parseStatAndCheckExecPathEnds s1
-parseStatAndCheckExecPathEnds (Seq s1 s2)
+parseStatAndCheckExecPathEnds (Seq s1 s2 _)
  = parseStatAndCheckExecPathEnds s2
 parseStatAndCheckExecPathEnds _ = do
   pos <- getPosition
@@ -50,7 +54,17 @@ parseFunction = do
   funcBody     <- tryParser parseFunctionBody "Invalid function body"
   tryParser (keyword "end") "Missing 'end' keyword"
   pos          <- getPosition
-  return $ Func returnType name paramList funcBody pos
+  let paramTypes = map getTypeOfParam (getListOfParams paramList)
+  let functionType = FuncT returnType paramTypes
+  return $ Func functionType name paramList funcBody pos
+
+getTypeOfParam :: Param -> Type
+getTypeOfParam (Param t _ _)
+  = t
+
+getListOfParams :: ParamList -> [Param]
+getListOfParams (ParamList list _) = list
+
 
 -- POST: Attempts to parse a list of parameters if there is one.
 parseParamList :: Parser Char ParamList

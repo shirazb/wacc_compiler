@@ -11,7 +11,7 @@ import Semantics.ErrorMsgs
 import Semantics.Annotators.Expression
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Util
-import Utilities.Def2
+import Utilities.Definitions
 
 annotateStat :: Stat -> LexicalScoper Stat
 annotateStat (Skip pos)
@@ -64,7 +64,7 @@ annotateStat (Seq s1 s2 pos)
 -- Annotates an AssignLHS
 annotateLHS :: AssignLHS -> LexicalScoper AssignLHS
 annotateLHS (Var ident pos)
-  = Var <$> annotateIdent Variable ident <*> (return pos)
+  = Var <$> annotateIdent Variable ident <*> return pos
 annotateLHS (ArrayDeref (ArrayElem ident exprs pos1) pos2)
   = ArrayDeref <$>
       liftM3

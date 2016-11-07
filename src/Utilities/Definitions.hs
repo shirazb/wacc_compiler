@@ -9,18 +9,24 @@ debugging.
 -- TODO: WE SHOULD HAVE DIFFERENT DEFINITIONS FILES FOR DIFFERENT
 --       COMPILATION STAGES
 
-module Utilities.Def2 where
+module Utilities.Definitions where
 
+import qualified Prelude
+import Prelude hiding (GT, LT, EQ)
 import Data.Char
 import Data.List
 import qualified Data.Map as Map
-import Control.Monad.State.Strict
+import Control.Monad.State.Strict (State)
+import Control.Monad.Writer.Strict (Writer)
 
 type Env       = Map.Map (String, Context) Info
-type ArrayType = Type
 type AST       = Program
 type Position  = (Int, Int)
 type Err       = (String, Position)
+
+-- Type Checking
+type ErrorMsg      = String
+type TypeChecker a = Writer [ErrorMsg] a
 
 -- errrr, someone come up with a better name pls...
 type LexicalScoper a = State SymbolTable a
@@ -30,10 +36,10 @@ data Func      = Func Type Ident ParamList Stat Position     deriving (Eq, Show)
 data ParamList = ParamList [Param] Position                  deriving (Eq, Show)
 data Param     = Param Type Ident Position                   deriving (Eq, Show)
 data ArrayElem = ArrayElem Ident [Expr] Position             deriving (Eq, Show)
-data PairType  = PairType PairElemType PairElemType Position deriving (Eq, Show)
 data Ident     = Ident String Info                           deriving (Eq, Show)
 
-data ErrorType
+
+data ScopeErrorType
   = NoError
   | Duplicate
   | NotInScope
@@ -41,10 +47,10 @@ data ErrorType
 
 data Info
   = Info {
-    typeInfo  :: Type,
-    context   :: Context
+    typeInfo :: Type,
+    context  :: Context
   }
-  | ScopeError ErrorType
+  | ScopeError ScopeErrorType
   | NoInfo
   deriving (Eq, Show)
 
@@ -80,7 +86,6 @@ data AssignLHS
   | PairDeref PairElem Position
   deriving (Eq, Show)
 
--- do we need to carry around types of assignRHS
 data AssignRHS
   = ExprAssign Expr Position
   | ArrayLitAssign [Expr] Position
@@ -88,6 +93,7 @@ data AssignRHS
   | PairElemAssign PairElem Position
   | FuncCallAssign Ident [Expr] Position
   deriving (Eq, Show)
+
 
 data PairElem
   = PairElem PairElemSelector Expr Position
@@ -98,12 +104,6 @@ data PairElemSelector
   | Snd
   deriving (Eq, Show)
 
-data Type
-  = BaseT BaseType Position
-  | ArrayT ArrayType Position
-  | PairT PairType Position
-  deriving (Eq, Show)
-
 data BaseType
   = BaseInt
   | BaseBool
@@ -111,11 +111,41 @@ data BaseType
   | BaseString
   deriving (Eq, Show)
 
-data PairElemType
-  = BaseP BaseType
-  | ArrayP ArrayType
+data Type
+  = BaseT BaseType
+  | PairT Type Type   -- cannot be FuncT
+  | ArrayT Int Type   -- can only be PairT or BaseT --should we enforce this
   | Pair
-  deriving (Eq, Show)
+  | FuncT Type [Type] -- cannot be FuncT or Pair
+  | NoType
+  | PolyArray
+  | PolyFunc
+  | PolyPair
+  deriving (Show)
+
+instance Eq Type where
+  NoType == _             = True
+  _      == NoType        = True
+  PolyArray  == ArrayT _ _ = True
+  ArrayT _ _ == PolyArray = True
+  PolyArray == (BaseT BaseString) = True
+  (BaseT BaseString) == PolyArray   = True
+  (BaseT  BaseString) == ArrayT 1 (BaseT BaseChar) = True
+  ArrayT 1 (BaseT BaseChar) == (BaseT BaseString) = True
+  _ == PolyArray          = False
+  PolyArray == _          = False
+  FuncT t ts == FuncT t' ts' = t == t' && ts == ts'
+  ArrayT dim t == ArrayT dim' t' = t == t' && dim == dim'
+  PairT t1 t2 == PairT t1' t2' = t1 == t1' && t2 == t2'
+  BaseT t == BaseT t' = t == t'
+  PolyFunc  == PolyFunc  = True
+  PolyFunc  == FuncT _ _ = True
+  FuncT _ _ == PolyFunc  = True
+  PolyPair  == PairT _ _ = True
+  PairT _ _ == PolyPair  = True
+  PolyPair == PolyPair   = True
+  _ == _ = False
+
 
 data Expr
   = StringLit String Position
@@ -137,35 +167,62 @@ data UnOp
   | Chr
   deriving (Eq, Show)
 
-data BinOp
+data LogicalOp
+  = AND
+  | OR
+  deriving (Eq, Show)
+
+data RelationalOp
+  =  LT
+  | LTE
+  | GTE
+  | GT
+  deriving (Eq, Show)
+
+data EqOps
+ = EQ
+ | NEQ
+ deriving (Eq, Show)
+
+data ArithOp
   = Mul
   | Div
   | Mod
   | Add
   | Sub
-  | AND
-  | OR
-  | LT
-  | LTE
-  | EQ
-  | GTE
-  | GT
-  | NEQ
   deriving (Eq, Show)
 
+data BinOp
+  = Logic LogicalOp
+  | Arith ArithOp
+  | RelOp RelationalOp
+  | EquOp EqOps
+  deriving (Eq, Show)
+
+{- Fundamental Types -}
+
 baseTypes       = [("int", BaseInt), ("bool", BaseBool),
-                  ("char", BaseChar), ("string", BaseString)]
+                   ("char", BaseChar), ("string", BaseString)]
 
-lowBinOps       = [("+", Add), ("-", Sub) , (">=", GTE),
-                  (">", Utilities.Def2.GT), ("<=", LTE),
-                  ("<", Utilities.Def2.LT), (
-                  "==", Utilities.Def2.EQ), ("!=", NEQ),
-                  ("&&", AND), ("||", OR)]
-highBinOps      = [("*", Mul)]
-higherBinOps    = [("/", Div), ("%", Mod)]
+{- Binary Operator Precedences -}
 
-unOpAssoc       = [("len", Len), ("ord", Ord), ("chr", Chr)]
-unOpAssocHigher = [("!", Not), ("-", Neg)]
+binOpPrec1, binOpPrec2, binOpPrec3 :: [(String, BinOp)]
+binOpPrec4, binOpPrec5, binOpPrec6 :: [(String, BinOp)]
+
+binOpPrec1      = [("/", Arith Div), ("%", Arith Mod), ("*", Arith Mul)]
+binOpPrec2      = [("+", Arith Add), ("-", Arith Sub)]
+binOpPrec3      = [(">=", RelOp GTE), (">",  RelOp GT),
+                   ("<=", RelOp LTE), ("<",  RelOp LT)]
+binOpPrec4      = [("==", EquOp EQ), ("!=", EquOp NEQ)]
+binOpPrec5      = [("&&", Logic AND)]
+binOpPrec6      = [("||", Logic OR)]
+
+{- Unary Operator Precedences -}
+
+unOpPrec1, unOpPrec2 :: [(String, UnOp)]
+
+unOpPrec1 = [("!", Not), ("-", Neg)]
+unOpPrec2 = [("len", Len), ("ord", Ord), ("chr", Chr)]
 
 {-
 The following utility functions and show instances are used to print the AST
@@ -227,7 +284,7 @@ in a clear and readable format.
 --
 -- instance Show UnOp where
 --   show unOp
---     = flippedLookup unOp (unOpAssoc ++ unOpAssocHigher)
+--     = flippedLookup unOp (unOpAssoc ++ unOpPrec1)
 --
 -- instance Show BinOp where
 --   show binOp
@@ -237,9 +294,9 @@ in a clear and readable format.
 --   show (ArrayElem ident elems)
 --     = show ident ++ concatMap (\x ->  "[" ++ show x ++ "]") elems
 --
--- instance Show PairType where
---   show (PairType pt1 pt2)
---     = "pair" ++ listToString "(" [pt1, pt2] ")"
+-- -- instance Show PairType where
+-- --   show (PairType pt1 pt2)
+-- --     = "pair" ++ listToString "(" [pt1, pt2] ")"
 --
 -- instance Show Stat where
 --   show Skip
@@ -294,19 +351,19 @@ in a clear and readable format.
 --   show (PairElem selector expr)
 --     = show selector ++ " " ++ show expr
 --
--- instance Show PairElemSelector where
---   show Fst
---     = "fst"
---   show Snd
---     = "snd"
---
--- instance Show Type where
---   show (BaseT baseType)
---     = show baseType
---   show (ArrayT arrayType)
---     = show arrayType ++ "[]"
---   show (PairT pairType)
---     = show pairType
+-- -- instance Show PairElemSelector where
+-- --   show Fst
+-- --     = "fst"
+-- --   show Snd
+-- --     = "snd"
+-- --
+-- -- instance Show Type where
+-- --   show (BaseT baseType)
+-- --     = show baseType
+-- --   show (ArrayT arrayType)
+-- --     = show arrayType ++ "[]"
+-- --   show (PairT pairType)
+-- --     = show pairType
 --
 -- instance Show BaseType where
 --   show BaseInt
@@ -318,13 +375,13 @@ in a clear and readable format.
 --   show BaseString
 --     = "string"
 --
--- instance Show PairElemType where
---   show (BaseP baseType)
---     = show baseType
---   show (ArrayP arrayType)
---     = show arrayType ++ "[]"
---   show Pair
---     = "pair"
+-- -- instance Show PairElemType where
+-- --   show (BaseP baseType)
+-- --     = show baseType
+-- --   show (ArrayP arrayType)
+-- --     = show arrayType ++ "[]"
+-- --   show Pair
+-- --     = "pair"
 --
 -- minPrecedence :: Int
 -- minPrecedence
@@ -362,15 +419,15 @@ in a clear and readable format.
 --     = 6
 --   precedence Sub
 --     = 6
---   precedence Utilities.Def2.LT
+--   precedence Utilities.Definitions.LT
 --     = 8
 --   precedence LTE
 --     = 8
 --   precedence GTE
 --     = 8
---   precedence Utilities.Def2.GT
+--   precedence Utilities.Definitions.GT
 --     = 8
---   precedence Utilities.Def2.EQ
+--   precedence Utilities.Definitions.EQ
 --     = 10
 --   precedence NEQ
 --     = 10

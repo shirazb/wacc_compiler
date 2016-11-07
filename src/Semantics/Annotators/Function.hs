@@ -6,7 +6,7 @@ import Control.Monad.State.Strict
 import qualified Data.Map as Map
 import Debug.Trace
 import Semantics.ErrorMsgs
-import Utilities.Def2
+import Utilities.Definitions
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
@@ -36,8 +36,8 @@ annotateFunc (Func t ident paramList body pos) = do
 
 annotateParamList :: ParamList -> LexicalScoper ParamList
 annotateParamList (ParamList ps pos)
-  = ParamList <$> mapM annotateParam ps <*> (return pos)
+  = ParamList <$> mapM annotateParam ps <*> return pos
 
 annotateParam :: Param -> LexicalScoper Param
 annotateParam (Param t ident pos)
-  = Param t <$> annotateNewIdent ident (Info t Variable) <*> (return pos)
+  = Param t <$> annotateNewIdent ident (Info t Variable) <*> return pos

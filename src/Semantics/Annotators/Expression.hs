@@ -8,7 +8,7 @@ import qualified Data.Map as Map
 
 import Semantics.Annotators.Identifier
 import Semantics.ErrorMsgs
-import Utilities.Def2
+import Utilities.Definitions
 
 annotateExpr :: Expr -> LexicalScoper Expr
 annotateExpr (IdentE ident pos) = do

@@ -3,7 +3,7 @@ module Semantics.Annotators.Util where
 import qualified Data.Map as Map
 import Control.Monad.State.Strict
 
-import Utilities.Def2
+import Utilities.Definitions
 import Semantics.ErrorMsgs
 
 -- Checks if an identifier has an error in its info
@@ -37,7 +37,7 @@ nameAndContext (Ident name (Info _ context))
 nameAndContext ident
   = error $ assertNoNameAndContext ident
 
-setErrType :: ErrorType -> Ident -> Ident
+setErrType :: ScopeErrorType -> Ident -> Ident
 setErrType errType (Ident name _)
   = Ident name (ScopeError errType)
 
