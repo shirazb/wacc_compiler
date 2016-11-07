@@ -152,6 +152,7 @@ instance Eq Type where
   Pair      == PolyPair  = True
   PairT _ _ == Pair      = True
   Pair      == PairT _ _ = True
+  Pair      == Pair      = True
   _ == _ = False
 
 data Expr
