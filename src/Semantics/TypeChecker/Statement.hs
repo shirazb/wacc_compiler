@@ -34,11 +34,11 @@ typeCheckStat (Free expr pos)
       NoType     -> return ()
       _          -> tell ["freeing thing not on the heap"]
 
-typeCheckStat (Exit (IntLit _ _) pos)
-  = return ()
+typeCheckStat (Exit expr pos) = do
+  t <- typeCheckExpr expr
+  when (t /= BaseT BaseInt) (tell ["exit code is fucked mate"])
 
-typeCheckStat (Exit _ _)
-  = tell ["Exit passed non integer arg"]
+
 
 typeCheckStat (If cond s1 s2 pos) = do
   expr <- typeCheckExpr cond
@@ -47,8 +47,8 @@ typeCheckStat (If cond s1 s2 pos) = do
   typeCheckStat s2
 
 typeCheckStat (While cond stat pos) = do
-  expr <- typeCheckExpr cond
-  when (expr /= BaseT BaseBool) (tell ["While condition not valid"])
+  exprT <- typeCheckExpr cond
+  when (exprT /= BaseT BaseBool) (tell ["While condition not valid"])
   typeCheckStat stat
 
 typeCheckStat (Return expr pos)
