@@ -48,9 +48,10 @@ intLiteral :: Parser Char Expr
 intLiteral = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
+  pos <- getPosition
   case sign of
-    "-" -> return $ IntLit (-(read num))
-    _   -> return $ IntLit (read num)
+    "-" -> return $ IntLit (-(read num)) pos
+    _   -> return $ IntLit (read num) pos
 
 
 boolLiteral :: Parser Char Expr
