@@ -49,16 +49,17 @@ parseFunction = do
   tryParser (keyword "is") "Missing 'is' keyword"
   funcBody     <- tryParser parseFunctionBody "Invalid function body"
   tryParser (keyword "end") "Missing 'end' keyword"
-  return $ Func returnType name paramList funcBody
+  pos          <- getPosition
+  return $ Func returnType name paramList funcBody pos
 
 -- POST: Attempts to parse a list of parameters if there is one.
 parseParamList :: Parser Char ParamList
 parseParamList
-  = ParamList <$> sepby parseParam (punctuation ',')
+  = ParamList <$> sepby parseParam (punctuation ',') <*> getPosition
 
 -- PRE: None
 -- POST: Parses a parameter
 -- Example Usage: parse parseParam "intname" will return Param Int "name". Note whitespace is not accounted for here.
 parseParam :: Parser Char Param
 parseParam
-  = liftM2 Param parseType identifier
+  = liftM3 Param parseType identifier getPosition

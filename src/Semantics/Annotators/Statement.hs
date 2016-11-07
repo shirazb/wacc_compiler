@@ -14,72 +14,94 @@ import Semantics.Annotators.Util
 import Utilities.Def2
 
 annotateStat :: Stat -> LexicalScoper Stat
-annotateStat Skip
-  = return Skip
+annotateStat (Skip pos)
+  = return (Skip pos)
 
 -- Cannot use lift: Must annotate RHS first so new identifier is not in
 -- its symbol table, otherwise "int x = x + 3" would be valid, for example.
-annotateStat (Declaration t ident rhs) = do
+annotateStat (Declaration t ident rhs pos) = do
   newRHS   <- annotateRHS rhs
   newIdent <- annotateNewIdent ident (Info t Variable)
-  return $ Declaration t newIdent newRHS
+  return $ Declaration t newIdent newRHS pos
 
-annotateStat (Assignment lhs rhs)
-  = liftM2 Assignment (annotateLHS lhs) (annotateRHS rhs)
+annotateStat (Assignment lhs rhs pos)
+  = Assignment <$> (annotateLHS lhs) <*> (annotateRHS rhs) <*> return pos
 
-annotateStat (Read lhs)
-  = Read <$> annotateLHS lhs
-annotateStat (Free expr)
-  = Free <$> annotateExpr expr
-annotateStat (Return expr)
-  = Return <$> annotateExpr expr
-annotateStat (Exit expr)
-  = Exit <$> annotateExpr expr
-annotateStat (Print expr)
-  = Print <$> annotateExpr expr
-annotateStat (Println expr)
-  = Println <$> annotateExpr expr
+annotateStat (Read lhs pos)
+  = Read <$> annotateLHS lhs <*> return pos
+annotateStat (Free expr pos)
+  = Free <$> annotateExpr expr <*> return pos
+annotateStat (Return expr pos)
+  = Return <$> annotateExpr expr <*> return pos
+annotateStat (Exit expr pos)
+  = Exit <$> annotateExpr expr <*> return pos
+annotateStat (Print expr pos)
+  = Print <$> annotateExpr expr <*> return pos
+annotateStat (Println expr pos)
+  = Println <$> annotateExpr expr <*> return pos
 
-annotateStat (If cond thenStat elseStat)
-  = liftM3
+annotateStat (If cond thenStat elseStat pos)
+  = liftM4
       If
       (annotateExpr cond)
       (inChildScope (annotateStat thenStat))
       (inChildScope (annotateStat elseStat))
+      (return pos)
 
-annotateStat (While cond body)
-  = liftM2 While (annotateExpr cond) (inChildScope (annotateStat body))
+annotateStat (While cond body pos)
+  = liftM3
+      While
+      (annotateExpr cond)
+      (inChildScope (annotateStat body))
+      (return pos)
 
-annotateStat (Block s)
-  = inChildScopeAndWrap Block (annotateStat s)
+annotateStat (Block s pos)
+  = (inChildScopeAndWrap Block (annotateStat s)) <*> (return pos)
 
-annotateStat (Seq s1 s2)
-  = liftM2 Seq (annotateStat s1) (annotateStat s2)
+annotateStat (Seq s1 s2 pos)
+  = liftM3 Seq (annotateStat s1) (annotateStat s2) (return pos)
 
 -- Annotates an AssignLHS
 annotateLHS :: AssignLHS -> LexicalScoper AssignLHS
-annotateLHS (Var ident)
-  = Var <$> annotateIdent Variable ident
-annotateLHS (ArrayDeref (ArrayElem ident exprs))
+annotateLHS (Var ident pos)
+  = Var <$> annotateIdent Variable ident <*> (return pos)
+annotateLHS (ArrayDeref (ArrayElem ident exprs pos1) pos2)
   = ArrayDeref <$>
-      liftM2 ArrayElem (annotateIdent Variable ident) (annotateExprList exprs)
-annotateLHS (PairDeref (PairElem elemSelector expr))
-  = (PairDeref . PairElem elemSelector) <$> annotateExpr expr
+      liftM3
+        ArrayElem
+          (annotateIdent Variable ident)
+          (annotateExprList exprs)
+          (return pos1)
+      <*> (return pos2)
+annotateLHS (PairDeref (PairElem elemSelector expr pos1) pos2)
+  = liftM2 PairDeref (PairElem elemSelector <$> (annotateExpr expr)
+                                            <*> (return pos1))
+                                            (return pos2)
 
 -- Annotates an AssignRHS
 annotateRHS :: AssignRHS -> LexicalScoper AssignRHS
-annotateRHS (ExprAssign expr)
-  = ExprAssign <$> annotateExpr expr
+annotateRHS (ExprAssign expr pos)
+  = ExprAssign <$> annotateExpr expr <*> (return pos)
 
-annotateRHS (ArrayLitAssign es)
-  = ArrayLitAssign <$> annotateExprList es
+annotateRHS (ArrayLitAssign es pos)
+  = ArrayLitAssign <$> annotateExprList es <*> (return pos)
 
 -- fstExpr should not change state of sndExpr as exprs are side effect free
-annotateRHS (NewPairAssign fstExpr sndExpr)
-  = liftM2 NewPairAssign (annotateExpr fstExpr) (annotateExpr sndExpr)
+annotateRHS (NewPairAssign fstExpr sndExpr pos)
+  = liftM3
+      NewPairAssign
+      (annotateExpr fstExpr)
+      (annotateExpr sndExpr)
+      (return pos)
 
-annotateRHS (PairElemAssign (PairElem selector expr))
-  = (PairElemAssign . PairElem selector) <$> annotateExpr expr
+annotateRHS (PairElemAssign (PairElem selector expr pos1) pos2)
+  = liftM2 PairElemAssign (PairElem selector <$> (annotateExpr expr)
+                                             <*> (return pos1))
+                                             (return pos2)
 
-annotateRHS (FuncCallAssign f es)
-  = liftM2 FuncCallAssign (annotateIdent Function f) (annotateExprList es)
+annotateRHS (FuncCallAssign f es pos)
+  = liftM3
+      FuncCallAssign
+      (annotateIdent Function f)
+      (annotateExprList es)
+      (return pos)

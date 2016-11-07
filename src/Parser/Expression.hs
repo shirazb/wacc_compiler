@@ -88,8 +88,8 @@ exprIdent
 
 stringLiter :: Parser Char Expr
 stringLiter
-  = StringLit <$> quoted '\"'
-      (tryParser (many character) "Invalid char found in string")
+  = StringLit <$> quoted '\"' 
+    (tryParser (many character) "Invalid char found in string") <*> getPosition
 
 {-
 Complex combinators used to parse larger and more complex expressions.
@@ -108,13 +108,15 @@ parseUnaryAppLow = do
   op      <- foldr1 (<|>) (map (keyword . fst) unOpAssoc)
   let op' = fromJust $ lookup op unOpAssoc
   expr    <- tryParser parseExpr "Invalid argument to unary operator"
-  return $ UnaryApp op' expr
+  pos <- getPosition
+  return $ UnaryApp op' expr pos
 
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
   op   <- parseFromMap unOpAssocHigher
   expr <- tryParser parseExpr' "Invalid argument to unary operator"
-  return $ UnaryApp op expr
+  pos <- getPosition
+  return $ UnaryApp op expr pos
 
 {-
 A number of parsers used to parse valid binary expressions in the WACC
@@ -165,7 +167,8 @@ chainl1 p op
     rest x = (do
       f <- op
       y <- tryParser p "Invalid argument to binary expression"
-      rest $ BinaryApp f x y) <|> return x
+      pos <- getPosition
+      rest $ BinaryApp f x y pos) <|> return x
 
 chainr :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
 chainr p op
@@ -174,7 +177,8 @@ chainr p op
     rest x = (do
       f <- op
       xs <- chainr p op
-      rest $ BinaryApp f x xs
+      pos <- getPosition
+      rest $ BinaryApp f x xs pos
       ) <|> return x
 
 -- PRE: None
@@ -190,13 +194,13 @@ bracketedExpr
 -- ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser Char ArrayElem
 arrayElem
-  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr (punctuation ']'))
+  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr (punctuation ']')) <*> getPosition
 
 -- PRE: None
 -- POST: Wraps parsed array elements in appropriate data constructor.
 arrayElemExpr :: Parser Char Expr
 arrayElemExpr
-  = ExprArray <$> arrayElem
+  = ExprArray <$> arrayElem <*> getPosition
 
 -- PRE: None
 -- POST: Parses a list of expressions.

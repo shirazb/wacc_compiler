@@ -9,14 +9,14 @@ import Utilities.Declarations
 import qualified Data.Map as Map
 import Control.Monad.State.Strict
 
-s1 = Declaration (BaseT BaseInt) (Ident "x" (Info (BaseT BaseInt) Variable (Just (IntLit 1)) NoError)) (ExprAssign (IntLit 1))
-s2 = Declaration (BaseT BaseInt) (Ident "y" (Info (BaseT BaseInt) Variable (Just (IntLit 1)) NoError)) (ExprAssign (IntLit 1))
+s1 = Declaration (BaseT BaseInt) (Ident "x" (Info (BaseT BaseInt) Variable (Just (IntLit 1)) NoError)) (ExprAssign (IntLit 1)) (0,0)
+s2 = Declaration (BaseT BaseInt) (Ident "y" (Info (BaseT BaseInt) Variable (Just (IntLit 1)) NoError)) (ExprAssign (IntLit 1)) (0,0)
 st   = ST None (Map.fromList [(("x", Function), (Info (BaseT BaseInt)) Function Nothing NoError)])
 
 testDeclarationVarSameNameAsFunc
   = runState (annotateStat decl) st
   where
-      decl = Declaration (BaseT BaseInt) (Ident "x" (Info (BaseT BaseInt) Variable (Just (IntLit 1)) NoError)) (ExprAssign (IntLit 1))
+      decl = Declaration (BaseT BaseInt) (Ident "x" (Info (BaseT BaseInt) Variable (Just (IntLit 1)) NoError)) (ExprAssign (IntLit 1)) (0,0)
       st   = ST None (Map.fromList [(("x", Function), (Info (BaseT BaseInt)) Function Nothing NoError)])
 
 testSeq

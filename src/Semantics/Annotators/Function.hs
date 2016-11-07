@@ -13,7 +13,7 @@ import Semantics.Annotators.Util
 
 -- TODO: Refactor to make look nicer, try use Util.inChildScope(AndWrap)
 annotateFunc :: Func -> LexicalScoper Func
-annotateFunc (Func t ident paramList body) = do
+annotateFunc (Func t ident paramList body pos) = do
   globalST          <- get
   newIdent          <- annotateNewIdent ident (Info t Function)
 
@@ -32,12 +32,12 @@ annotateFunc (Func t ident paramList body) = do
   -- Exit function scope
   put newGlobalST
 
-  return $ Func t newIdent newParamList newBody
+  return $ Func t newIdent newParamList newBody pos
 
 annotateParamList :: ParamList -> LexicalScoper ParamList
-annotateParamList (ParamList ps)
-  = ParamList <$> mapM annotateParam ps
+annotateParamList (ParamList ps pos)
+  = ParamList <$> mapM annotateParam ps <*> (return pos)
 
 annotateParam :: Param -> LexicalScoper Param
-annotateParam (Param t ident)
-  = Param t <$> annotateNewIdent ident (Info t Variable)
+annotateParam (Param t ident pos)
+  = Param t <$> annotateNewIdent ident (Info t Variable) <*> (return pos)
