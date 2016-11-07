@@ -147,7 +147,9 @@ instance Eq Type where
   FuncT _ _ == PolyFunc  = True
   PolyPair  == PairT _ _ = True
   PairT _ _ == PolyPair  = True
-  PolyPair == PolyPair   = True
+  PolyPair  == PolyPair  = True
+  PairT _ _ == Pair      = True
+  Pair      == PairT _ _ = True 
   _ == _ = False
 
 data Expr
