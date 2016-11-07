@@ -50,8 +50,12 @@ parsePairType :: Parser Char Type
 parsePairType = trimWS $ do
   token "pair"
   tryParser (punctuation '(') "Missing opening parenthesis in pair-type"
-  t1 <- tryParser (parseNestedPairType <|> parseBaseType <|> parseArrayType) "Invalid first pair-type"
+  t1 <- tryParser parseInnerPairType "Invalid first pair-type"
   tryParser (punctuation ',') "Missing comma in pair-type declaration"
-  t2 <- tryParser (parseNestedPairType <|> parseBaseType <|> parseArrayType) "Invalid second pair-type"
+  t2 <- tryParser parseInnerPairType "Invalid second pair-type"
   tryParser (punctuation ')') "Missing closing parenthesis in pair-type"
   return $ PairT t1 t2
+
+parseInnerPairType :: Parser Char Type
+parseInnerPairType
+  = parseNestedPairType <|> parseArrayType <|> parseBaseType
