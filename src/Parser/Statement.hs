@@ -17,8 +17,6 @@ import Utilities.Declarations
 import Utilities.Definitions
 import Control.Monad.State
 
-import Debug.Trace
-
 -- POST: Parses all valid statements in the WACC language, it is factored out
 --       like this to prevent the parser going in to an infinite loop due to
 --       left recursion
@@ -55,16 +53,9 @@ parseRead = do
 
 parseBuiltInFunc :: String -> (Expr -> Position -> Stat) -> Parser Char Stat
 parseBuiltInFunc funcName func = do
-  state <- get
-  traceM $ "State before keyword call" ++ show state
-  pos1 <- getPosition
-  traceM $ "The position before keyword call is" ++ show pos1
   keyword funcName
   expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++ " function")
   pos <- getPosition
-  traceM $ "The position here is: " ++ show pos
-  state1 <- get
-  traceM $ "state after getting position" ++ show state1
   return $ func expr1 pos
 
 {-
