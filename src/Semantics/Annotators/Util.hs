@@ -37,7 +37,7 @@ nameAndContext (Ident name (Info _ context))
 nameAndContext ident
   = error $ assertNoNameAndContext ident
 
-setErrType :: ErrorType -> Ident -> Ident
+setErrType :: ScopeErrorType -> Ident -> Ident
 setErrType errType (Ident name _)
   = Ident name (ScopeError errType)
 

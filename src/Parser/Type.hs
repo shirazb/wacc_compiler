@@ -20,45 +20,38 @@ import Utilities.Definitions
 parseType :: Parser Char Type
 parseType
   =   parseArrayType
-  <|> PairT  <$>  parsePairType
-  <|> BaseT  <$> parseBaseType
+  <|> parsePairType
+  <|> parseBaseType
 
-parseBaseType :: Parser Char BaseType
+parseBaseType :: Parser Char Type
 parseBaseType = do
   baseTypeString <- foldr1 (<|>) (map (keyword . fst) baseTypes)
-  return $ fromJust (lookup baseTypeString baseTypes)
+  return $ BaseT (fromJust (lookup baseTypeString baseTypes))
 
-multiDimArray :: Parser Char (ArrayType -> Type)
+multiDimArray :: Parser Char Int
 multiDimArray
-  = token "[]" >> rest ArrayT
+  = token "[]" >> rest 1
   where
     rest x = (do
       token "[]"
-      rest (ArrayT . x)) <|> return x
+      rest (x + 1)) <|> return x
 
-parseArrayType :: Parser Char ArrayType
-parseArrayType
-  = do
-      t         <- (BaseT <$> parseBaseType) <|> (PairT <$> parsePairType)
-      dimension <- multiDimArray
-      return (dimension t)
+parseArrayType :: Parser Char Type
+parseArrayType = do
+  t         <-  parseBaseType <|> parsePairType
+  dimension <- multiDimArray
+  return $ ArrayT dimension t
 
-parsePairType :: Parser Char PairType
+parseNestedPairType :: Parser Char Type
+parseNestedPairType
+    = token "pair" >> return Pair
+
+parsePairType :: Parser Char Type
 parsePairType = trimWS $ do
   token "pair"
   tryParser (punctuation '(') "Missing opening parenthesis in pair-type"
-  t1 <- tryParser parsePairElemType "Invalid first pair-type"
+  t1 <- tryParser (parseNestedPairType <|> parseBaseType <|> parseArrayType) "Invalid first pair-type"
   tryParser (punctuation ',') "Missing comma in pair-type declaration"
-  t2 <- tryParser parsePairElemType "Invalid second pair-type"
+  t2 <- tryParser (parseNestedPairType <|> parseBaseType <|> parseArrayType) "Invalid second pair-type"
   tryParser (punctuation ')') "Missing closing parenthesis in pair-type"
-  return $ PairType t1 t2
-
-parseNestedPairType :: Parser Char PairElemType
-parseNestedPairType
-  = token "pair" >> return Pair
-
-parsePairElemType :: Parser Char PairElemType
-parsePairElemType
-  =   parseNestedPairType
-  <|> ArrayP <$> parseArrayType
-  <|> BaseP  <$> parseBaseType
+  return $ PairT t1 t2

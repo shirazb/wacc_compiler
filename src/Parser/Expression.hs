@@ -6,7 +6,11 @@ to build more complex parsers of expressions. Refer to BNF spec of WACC
 language to see exactly what an expression is in the WACC language.
 -}
 
-module Parser.Expression (parseExpr, parseExpr' , parseExprList, arrayElem, binaryExpr, chainr, parseBinaryOpLow) where
+module Parser.Expression (
+  parseExpr,
+  parseExprList,
+  arrayElem
+) where
 
 import Control.Applicative
 import Control.Monad
@@ -48,34 +52,48 @@ intLiteral = trimWS $ do
     "-" -> return $ IntLit (-(read num))
     _   -> return $ IntLit (read num)
 
+
 boolLiteral :: Parser Char Expr
-boolLiteral
-  = do
-      boolean <- keyword "true" <|> keyword "false"
-      if boolean == "true"
-        then return (BoolLit True)
-        else return (BoolLit False)
+boolLiteral = do
+  boolean <- keyword "true" <|> keyword "false"
+  pos     <- getPosition
+  if boolean == "true"
+    then return (BoolLit True pos)
+    else return (BoolLit False pos)
 
 quoted c p
   = bracket (char c) p (char c)
 
 charLiteral :: Parser Char Expr
-charLiteral
-  = CharLit <$> quoted '\''
+charLiteral = do
+  cLit <- quoted '\''
       (tryParser character "Invalid character found")
+  pos <- getPosition
+  return (CharLit cLit pos)
+--
+-- charLiteral
+--   = liftM2 CharLit (quoted '\''
+--     (tryParser character "Invalid character found")) getPosition
+--     -- CharLit <$> quoted '\''
+--     --   (tryParser character "Invalid character found") <*> getPosition
 
 pairLiteral :: Parser Char Expr
+-- pairLiteral =
+  -- do
+  -- keyword "null"
+  -- p <- getPosition
+  -- return $ PairLiteral p
 pairLiteral
-  = keyword "null" >> return PairLiteral
+  = keyword "null" >> fmap PairLiteral getPosition
 
 exprIdent :: Parser Char Expr
 exprIdent
-  = IdentE <$> identifier
+  = IdentE <$> identifier <*> getPosition
 
 stringLiter :: Parser Char Expr
 stringLiter
   = StringLit <$> quoted '\"'
-      (tryParser (many character) "Invalid char found in string")
+    (tryParser (many character) "Invalid char found in string") <*> getPosition
 
 {-
 Complex combinators used to parse larger and more complex expressions.
@@ -91,16 +109,18 @@ unaryExpr
 
 parseUnaryAppLow :: Parser Char Expr
 parseUnaryAppLow = do
-  op      <- foldr1 (<|>) (map (keyword . fst) unOpAssoc)
-  let op' = fromJust $ lookup op unOpAssoc
+  op      <- foldr1 (<|>) (map (keyword . fst) unOpPrec2)
+  let op' = fromJust $ lookup op unOpPrec2
   expr    <- tryParser parseExpr "Invalid argument to unary operator"
-  return $ UnaryApp op' expr
+  pos <- getPosition
+  return $ UnaryApp op' expr pos
 
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
-  op   <- parseFromMap unOpAssocHigher
+  op   <- parseFromMap unOpPrec1
   expr <- tryParser parseExpr' "Invalid argument to unary operator"
-  return $ UnaryApp op expr
+  pos <- getPosition
+  return $ UnaryApp op expr pos
 
 {-
 A number of parsers used to parse valid binary expressions in the WACC
@@ -112,29 +132,54 @@ precdence of binary operators.
 -- POST: Parses all valid binary expressions
 -- Example: parse  binaryExpr "1 + 2" will return
 -- BinaryApp Mul (IntLit 1) (IntLit 2)
-binaryExpr :: Parser Char Expr
+
+binaryExpr  :: Parser Char Expr
 binaryExpr
-  = highBinaryExpr `chainl1` parseBinaryOpLow
+  = prec5Binary `chainl1` parseBinOpPrec6
 
-highBinaryExpr :: Parser Char Expr
-highBinaryExpr
-  = higherBinaryExpr `chainl1` parseBinaryOpHigh
+prec5Binary :: Parser Char Expr
+prec5Binary
+  = prec4Binary `chainl1` parseBinOpPrec5
 
-higherBinaryExpr :: Parser Char Expr
-higherBinaryExpr
-  = parseExpr' `chainl1` parseBinaryOpHigher
+prec4Binary :: Parser Char Expr
+prec4Binary
+  = prec3Binary `chainl1` parseBinOpPrec4
 
-parseBinaryOpLow :: Parser Char BinOp
-parseBinaryOpLow
-  = parseFromMap lowBinOps
+prec3Binary :: Parser Char Expr
+prec3Binary
+  = prec2Binary `chainl1` parseBinOpPrec3
 
-parseBinaryOpHigh :: Parser Char BinOp
-parseBinaryOpHigh
-  = parseFromMap highBinOps
+prec2Binary :: Parser Char Expr
+prec2Binary
+  = prec1Binary `chainl1` parseBinOpPrec2
 
-parseBinaryOpHigher :: Parser Char BinOp
-parseBinaryOpHigher
-  = parseFromMap higherBinOps
+prec1Binary :: Parser Char Expr
+prec1Binary
+  = parseExpr' `chainl1` parseBinOpPrec1
+
+parseBinOpPrec1 :: Parser Char BinOp
+parseBinOpPrec1
+  = parseFromMap binOpPrec1
+
+parseBinOpPrec2 :: Parser Char BinOp
+parseBinOpPrec2
+  = parseFromMap binOpPrec2
+
+parseBinOpPrec3 :: Parser Char BinOp
+parseBinOpPrec3
+  = parseFromMap binOpPrec3
+
+parseBinOpPrec4 :: Parser Char BinOp
+parseBinOpPrec4
+  = parseFromMap binOpPrec4
+
+parseBinOpPrec5 :: Parser Char BinOp
+parseBinOpPrec5
+  = parseFromMap binOpPrec5
+
+parseBinOpPrec6 :: Parser Char BinOp
+parseBinOpPrec6
+  = parseFromMap binOpPrec6
 
 -- PRE: None
 -- POST: Returns a parser which parses a sequence of expressions seperated by
@@ -151,7 +196,8 @@ chainl1 p op
     rest x = (do
       f <- op
       y <- tryParser p "Invalid argument to binary expression"
-      rest $ BinaryApp f x y) <|> return x
+      pos <- getPosition
+      rest $ BinaryApp f x y pos) <|> return x
 
 chainr :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
 chainr p op
@@ -160,7 +206,8 @@ chainr p op
     rest x = (do
       f <- op
       xs <- chainr p op
-      rest $ BinaryApp f x xs
+      pos <- getPosition
+      rest $ BinaryApp f x xs pos
       ) <|> return x
 
 -- PRE: None
@@ -176,13 +223,13 @@ bracketedExpr
 -- ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser Char ArrayElem
 arrayElem
-  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr (punctuation ']'))
+  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr (punctuation ']')) <*> getPosition
 
 -- PRE: None
 -- POST: Wraps parsed array elements in appropriate data constructor.
 arrayElemExpr :: Parser Char Expr
 arrayElemExpr
-  = ExprArray <$> arrayElem
+  = ExprArray <$> arrayElem <*> getPosition
 
 -- PRE: None
 -- POST: Parses a list of expressions.

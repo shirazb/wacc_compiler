@@ -22,7 +22,7 @@ commentDelim
 -- POST: Removes single line comments.
 comments :: Parser Char ()
 comments
-  = void $ string commentDelim >> many (satisfy (/= '\n')) >>
+  =  void $ string commentDelim >> many (satisfy (/= '\n')) >>
       tryParser (char '\n') "No newline after comment"
 
 -- Post: Removes spaces incl \t,\n etc
@@ -66,7 +66,8 @@ keyword k = do
 
 -- POST: List of operators defined in the WACC language
 operators :: String
-operators = map (head . fst) (lowBinOps ++ highBinOps ++ higherBinOps)
+operators = map (head . fst) (binOpPrec1 ++ binOpPrec2 ++ binOpPrec3
+                               ++ binOpPrec4 ++ binOpPrec5 ++ binOpPrec6)
 
 -- POST: Returns True if the given input is either a seperator or an operator
 isPunctuation :: Char -> Bool
@@ -96,7 +97,7 @@ identifier :: Parser Char Ident
 identifier = trimWS $ do
   name <- ident
   guard (name `notElem` keywords)
-  return $ Ident name NoInfo 
+  return $ Ident name NoInfo
 
 -- PRE:  The given input string contains a value which is present in the map
 -- POST: It takes as input a map from strings to values of type a. It attempts
