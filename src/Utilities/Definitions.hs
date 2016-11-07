@@ -131,10 +131,10 @@ instance Eq Type where
   NoType == _             = True
   _      == NoType        = True
   PolyArray  == ArrayT _ _ = True
-  ArrayT _ _ == PolyArray = True
-  PolyArray == (BaseT BaseString) = True
-  (BaseT BaseString) == PolyArray   = True
-  (BaseT  BaseString) == ArrayT 1 (BaseT BaseChar) = True
+  ArrayT _ _ == PolyArray  = True
+  PolyArray == BaseT BaseString   = True
+  BaseT BaseString == PolyArray   = True
+  BaseT  BaseString == ArrayT 1 (BaseT BaseChar)  = True
   ArrayT 1 (BaseT BaseChar) == (BaseT BaseString) = True
   _ == PolyArray          = False
   PolyArray == _          = False

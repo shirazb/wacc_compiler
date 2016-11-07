@@ -177,8 +177,10 @@ typeCheckArrayElem arrElem@(ArrayElem ident indexes pos) = do
   -- if ident is an array, check it was not derefenced too many times
   if isValidArrayType identT
     then do
-      -- Check dim accomodates the number of derefences
-      let ArrayT dim innerT = identT
+      -- Pattern match on the array type
+      let ArrayT dim innerT = getArrayType identT
+
+        -- Check dim accomodates the number of derefences
       if numDerefs > dim
         -- too many derefences; tell error
         then do
@@ -206,6 +208,8 @@ constructType dim innerT
 -- Checks is an array type, and if so, that its inner type is a PairT or BaseT
 isValidArrayType :: Type -> Bool
 isValidArrayType (ArrayT _ (PairT _ _))
+  = True
+isValidArrayType (BaseT BaseString)
   = True
 isValidArrayType (ArrayT _ (BaseT _))
   = True
@@ -249,3 +253,11 @@ typeCheckPairElem pair@(PairElem selector expr pos) = do
       | otherwise -> do
           tell [typeMismatch PolyPair exprT pos pair]
           return NoType
+
+getArrayType :: Type -> Type
+getArrayType a@ArrayT{}
+  = a
+getArrayType s@(BaseT BaseString)
+  = ArrayT 1 (BaseT BaseChar)
+getArrayType _
+  = error "TypeChecker.Expression.getArrayType: calling on non-array type."

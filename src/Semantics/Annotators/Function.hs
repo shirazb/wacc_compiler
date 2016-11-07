@@ -22,8 +22,6 @@ annotateFunc :: Func -> LexicalScoper Func
 annotateFunc (Func t ident paramList body pos) = do
   globalST     <- get
 
-  traceM $ "globalST is " ++ show globalST
-
   -- Enter new function scope
   put (ST globalST Map.empty)
 
