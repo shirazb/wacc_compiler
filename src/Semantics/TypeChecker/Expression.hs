@@ -114,7 +114,7 @@ typeCheckExpr PairLiteral
 typeCheckExpr (IdentE (Ident _ (Info t _)))
   = return t
 typeCheckExpr (ExprArray ae@(ArrayElem i indexes))
-  = undefined
+  = typeCheckArrayElem ae
 typeCheckExpr (UnaryApp Not expr) = do
   t <- typeCheckExpr expr
   checkUnAppType (BaseT BaseBool) t (BaseT BaseBool)
@@ -146,7 +146,7 @@ typeCheckExpr (BinaryApp op@(RelOp _) expr expr') = do
     (NoType, _ ) -> return NoType --
     (_,  NoType) -> return NoType
     _             | t /= t' -> tell [""] >> return NoType
-                  | checkCharOrInt t || checkCharOrInt t' -> return (BaseT BaseBool)
+                  | checkCharOrInt t -> return (BaseT BaseBool)
                   | otherwise -> tell [""] >> return NoType
 typeCheckExpr (BinaryApp op@(EquOp _) expr expr') = do
   t <- typeCheckExpr expr
