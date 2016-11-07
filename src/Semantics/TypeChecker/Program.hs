@@ -1,5 +1,5 @@
 module Semantics.TypeChecker.Program (
-  typeCheckProgram
+  generateTypeErrorMessages 
 ) where
 
 import Control.Monad.Writer.Strict
@@ -12,3 +12,7 @@ typeCheckProgram :: Program -> TypeChecker ()
 typeCheckProgram (Program fs main) = do
   mapM_ typeCheckFunc fs
   typeCheckStat main
+
+generateTypeErrorMessages :: Program -> [String]
+generateTypeErrorMessages
+  = execWriter . typeCheckProgram

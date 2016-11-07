@@ -1,11 +1,18 @@
 module Semantics.ScopeChecker where
+
+import Semantics.ErrorMessages
 import Utilities.Definitions
-type ScopeError = (String, ScopeErrorType, Position)
 
 -- write a scope error message generator
 
-scopeErrorGen :: AST -> [ScopeError]
-scopeErrorGen (Program funcs main)
+scopeCheckProgram :: AST -> [String]
+scopeCheckProgram ast
+  = map mkScopeErrMsg scopeErrs
+  where
+    scopeErrs = scopeErrorAST ast
+
+scopeErrorAST :: AST -> [ScopeError]
+scopeErrorAST (Program funcs main)
   = concatMap scopeErrorFunc funcs ++ scopeErrorStat main
 
 scopeErrorFunc :: Func -> [ScopeError]

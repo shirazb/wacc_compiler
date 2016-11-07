@@ -164,7 +164,7 @@ parseLHS
 -- POST: Parses an expr (rhs)
 assignToExpr :: Parser Char AssignRHS
 assignToExpr
-  = ExprAssign <$> parseExpr <*> getPosition
+  = liftM2 ExprAssign parseExpr getPosition
 
 -- POST: Parses a pair elem which can be either a lhs or rhs.
 pairElemExpr :: Parser Char Expr

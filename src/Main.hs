@@ -15,6 +15,7 @@ import Semantics.Annotators.AST
 import Semantics.ScopeChecker
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
+import System.Exit
 
 validProgram = "begin int f(int f) is f = 2; return f end int g(int f) is f = 6; return f end int x = call f(2); int y = 3; if x == 3 then println x else println y fi; begin println y end; println x; println y end "
 notInScope = "begin x = 4 end "
@@ -37,25 +38,24 @@ scopeError = "begin int x = 3; y = 3 end"
 pair = "begin pair(int, int) p = newpair(1,1); int x = fst p end"
 
 
-main
-  = do
-      args        <- getArgs
-      let filename = head args
-      contents    <- readFile filename
 
-      -- putStrLn "------------------------------------------------"
-      -- putStrLn "           THE PROGRAM WE HAVE PARSED           "
-      -- putStrLn "------------------------------------------------"
-      -- case runParser parseProgram contents (0,0) of
-      --   Right (Just ((a,b), _)) -> print (annotateAST a)
-      --   Left err                -> print err
-      --   Right Nothing           -> print "Program Failure"
-      let (_, ast) = makeAST contents
-      errorCode    <- printErrMsgs ast
-      return ()
+main = do
+  args         <- getArgs
+  let filename = head args
+  contents     <- readFile filename
 
-printErrMsgs :: AST -> IO Int
-printErrMsgs ast
-  = case runWriter (typeCheckProgram ast) of
-      (ast ,[]) -> putStrLn "Type Checking passed" >> return 0
-      (_, errors) -> do { mapM_ putStrLn errors; return 200}
+  let ast      = runParser parseProgram contents (0,0)
+  a <- case ast of
+         Right (Just ((a,b),_))  -> return a
+         Left err                -> do {print err; exitWith (ExitFailure 100)}
+
+  let annotatedAST = annotateAST a
+  case scopeCheckProgram annotatedAST of
+    [] -> return ()
+    errors -> do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
+
+  case generateTypeErrorMessages annotatedAST of
+    [] -> return ()
+    errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
+
+  exitSuccess

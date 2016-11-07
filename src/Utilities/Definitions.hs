@@ -38,6 +38,7 @@ data Param     = Param Type Ident Position                   deriving (Eq, Show)
 data ArrayElem = ArrayElem Ident [Expr] Position             deriving (Eq, Show)
 data Ident     = Ident String Info                           deriving (Eq, Show)
 
+type ScopeError = (String, ScopeErrorType, Position)
 
 data ScopeErrorType
   = NoError

@@ -6,7 +6,11 @@ to build more complex parsers of expressions. Refer to BNF spec of WACC
 language to see exactly what an expression is in the WACC language.
 -}
 
-module Parser.Expression (parseExpr, parseExpr' , parseExprList, arrayElem, binaryExpr) where
+module Parser.Expression (
+  parseExpr,
+  parseExprList,
+  arrayElem
+) where
 
 import Control.Applicative
 import Control.Monad
