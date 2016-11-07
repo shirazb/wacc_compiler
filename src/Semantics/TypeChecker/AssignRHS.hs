@@ -5,7 +5,7 @@ module Semantics.TypeChecker.AssignRHS where
 import Control.Monad.Writer.Strict
 
 import Semantics.TypeChecker.Expression
-import ErrorMessages.Semantic
+import Semantics.ErrorMessages
 import Utilities.Definitions
 
 typeCheckRHS :: AssignRHS -> TypeChecker Type
@@ -15,7 +15,6 @@ typeCheckRHS (ExprAssign e _)
 typeCheckRHS (ArrayLitAssign es _)  = do
   ts <- mapM typeCheckExpr es
   typeCheckConcat ts
-
 
 typeCheckRHS (NewPairAssign e e' _) = do
   t  <- typeCheckExpr e
@@ -28,12 +27,12 @@ typeCheckRHS (NewPairAssign e e' _) = do
 typeCheckRHS (PairElemAssign p _)
   = typeCheckPairElem p
 
-typeCheckRHS (FuncCallAssign (Ident _ i) es _) = do
+typeCheckRHS (FuncCallAssign (Ident funcName i) es pos) = do
   ts <- mapM typeCheckExpr es
   let FuncT t ts' = typeInfo i
-  if | length ts /= length ts' -> tell ["Incorrect number of args func"] >> return NoType
+  if | length ts /= length ts' -> tell [typeMismatchList ts' ts pos funcName] >> return NoType
      | ts == ts'               -> return t
-     | otherwise               -> tell ["Expected: _ Actual: _"] >> return NoType
+     | otherwise               -> tell [typeMismatchList ts' ts pos funcName] >> return NoType
 
 typeCheckConcat :: [Type] -> TypeChecker Type
 typeCheckConcat ts
@@ -43,16 +42,6 @@ typeCheckConcat ts
 
 -- This function has to be recursive as you can only check for NoType in case statements
 checkNoType :: [Type] -> Bool
-checkNoType []             = True
-checkNoType (NoType : ts)  = False
-checkNoType (_ : ts)       = checkNoType ts
-
--- -- totally better version :)
--- typeCheckConcat :: [Type] -> TypeChecker Type
--- typeCheckConcat (NoType : ts)
---   = return NoType
--- typeCheckConcat [t]
---   return t
--- typeCheckConcat (t : t' : ts)
---   | t == t'   = typeCheckConcat (t' : ts)
---   | otherwise = return NoType
+checkNoType []            = True
+checkNoType (NoType : ts) = False
+checkNoType (_ : ts)      = checkNoType ts

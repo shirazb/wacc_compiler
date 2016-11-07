@@ -14,6 +14,7 @@ import Parser.Lexer
 import Parser.Combinators
 import Utilities.Declarations
 import Utilities.Definitions
+import Debug.Trace
 
 --POST: Parser of types for the WACC language, built up using the more basic
 --      parsers of types. Returns type wrapped in appropriate data constructor.
@@ -32,9 +33,9 @@ multiDimArray :: Parser Char Int
 multiDimArray
   = token "[]" >> rest 1
   where
-    rest x = do
+    rest x = (do
       token "[]"
-      rest (x + 1) <|> return x
+      rest (x + 1)) <|> return x
 
 parseArrayType :: Parser Char Type
 parseArrayType = do

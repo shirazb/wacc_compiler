@@ -22,7 +22,7 @@ commentDelim
 -- POST: Removes single line comments.
 comments :: Parser Char ()
 comments
-  = void $ string commentDelim >> many (satisfy (/= '\n')) >>
+  =  void $ string commentDelim >> many (satisfy (/= '\n')) >>
       tryParser (char '\n') "No newline after comment"
 
 -- Post: Removes spaces incl \t,\n etc

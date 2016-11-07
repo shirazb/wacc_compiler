@@ -56,6 +56,6 @@ main
 
 printErrMsgs :: AST -> IO Int
 printErrMsgs ast
-  = case runWriter  (typeCheckProgram ast) of
+  = case runWriter (typeCheckProgram ast) of
       (ast ,[]) -> putStrLn "Type Checking passed" >> return 0
-      (_, errors) -> do { mapM_ print errors; return 200}
+      (_, errors) -> do { mapM_ putStrLn errors; return 200}

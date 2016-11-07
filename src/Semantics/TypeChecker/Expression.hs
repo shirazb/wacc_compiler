@@ -7,7 +7,7 @@ import Prelude hiding (LT, EQ)
 import Control.Monad.Writer.Strict
 
 import Utilities.Definitions
-import ErrorMessages.Semantic
+import Semantics.ErrorMessages
 import Debug.Trace
 
 {- TEST CASES -}
@@ -74,16 +74,16 @@ import Debug.Trace
 
 {- Utility -}
 
-checkUnAppType :: Type -> Type -> Type -> TypeChecker Type
-checkUnAppType expectedT actualT opReturnT
+checkUnAppType :: Show a => Type -> Type -> Type -> Position -> a -> TypeChecker Type
+checkUnAppType expectedT actualT opReturnT pos a
   = if actualT /= expectedT
       then do {
-        tell [generateErrMsg expectedT actualT];
+        tell [typeMismatch expectedT actualT pos a];
         return NoType
       } else return opReturnT
 
-checkBinaryApp :: BinOp -> Type -> Type -> Type -> TypeChecker Type
-checkBinaryApp op opT arg1T arg2T
+checkBinaryApp :: BinOp -> Type -> Type -> Type -> Expr -> TypeChecker Type
+checkBinaryApp op opT arg1T arg2T expr
   = if arg1T /= arg2T
       then tell [""] >>
              return NoType;
@@ -96,7 +96,7 @@ checkBinaryApp op opT arg1T arg2T
                  NoType -> return NoType
                  _      -> eval
     eval     = if opT /= arg1T || opT /= arg2T
-                 then tell [""] >>
+                 then tell [typeMismatch opT arg1T (getPos expr) expr] >>
                         return NoType
                  else return arg1T
 
@@ -110,51 +110,50 @@ typeCheckExpr (CharLit _ _)
 typeCheckExpr (StringLit _ _)
   = return (BaseT BaseString)
 typeCheckExpr (PairLiteral _)
-  = return Pair
+  = return PolyPair
 typeCheckExpr (IdentE (Ident _ (Info t _)) _)
   = return t
 typeCheckExpr (ExprArray ae@(ArrayElem i indexes _) _)
   = typeCheckArrayElem ae
-typeCheckExpr (UnaryApp Not expr _) = do
-  t <- typeCheckExpr expr
-  checkUnAppType (BaseT BaseBool) t (BaseT BaseBool)
-typeCheckExpr (UnaryApp Neg expr _) = do
-  t <- typeCheckExpr expr
-  checkUnAppType (BaseT BaseInt) t (BaseT BaseInt)
-typeCheckExpr (UnaryApp Len expr _) = do
-  t <- typeCheckExpr expr
-  checkUnAppType PolyArray t (BaseT BaseInt)
-typeCheckExpr (UnaryApp Ord expr _) = do
-  t <- typeCheckExpr expr
-  checkUnAppType (BaseT BaseChar) t (BaseT BaseInt)
-typeCheckExpr (UnaryApp Chr expr _) = do
-  t <- typeCheckExpr expr
-  checkUnAppType (BaseT BaseInt) t (BaseT BaseChar)
-
-typeCheckExpr (BinaryApp op@(Arith _) expr expr' _) = do
+typeCheckExpr expr@(UnaryApp Not expr' pos) = do
+  t <- typeCheckExpr expr'
+  checkUnAppType (BaseT BaseBool) t (BaseT BaseBool) pos expr
+typeCheckExpr expr@(UnaryApp Neg expr' pos) = do
+  t <- typeCheckExpr expr'
+  checkUnAppType (BaseT BaseInt) t (BaseT BaseInt) pos expr
+typeCheckExpr expr@(UnaryApp Len expr' pos) = do
+  t <- typeCheckExpr expr'
+  checkUnAppType PolyArray t (BaseT BaseInt) pos expr
+typeCheckExpr expr@(UnaryApp Ord expr' pos) = do
+  t <- typeCheckExpr expr'
+  checkUnAppType (BaseT BaseChar) t (BaseT BaseInt) pos expr
+typeCheckExpr expr@(UnaryApp Chr expr' pos) = do
+  t <- typeCheckExpr expr'
+  checkUnAppType (BaseT BaseInt) t (BaseT BaseChar) pos expr
+typeCheckExpr binExpr@(BinaryApp op@(Arith _) expr expr' _) = do
   t  <- typeCheckExpr expr
   t' <- typeCheckExpr expr'
-  checkBinaryApp op (BaseT BaseInt) t t'
-typeCheckExpr (BinaryApp op@(Logic _) expr expr' _) = do
+  checkBinaryApp op (BaseT BaseInt) t t' binExpr
+typeCheckExpr binExpr@(BinaryApp op@(Logic _) expr expr' _) = do
   t  <- typeCheckExpr expr
   t' <- typeCheckExpr expr'
-  checkBinaryApp op (BaseT BaseBool) t t'
-typeCheckExpr (BinaryApp op@(RelOp _) expr expr' _) = do
+  checkBinaryApp op (BaseT BaseBool) t t' binExpr
+typeCheckExpr binExpr@(BinaryApp op@(RelOp _) expr expr' pos) = do
   t  <- typeCheckExpr expr
   t' <- typeCheckExpr expr'
   case (t, t') of
     (NoType, _ ) -> return NoType --
     (_,  NoType) -> return NoType
-    _             | t /= t' -> tell [""] >> return NoType
+    _             | t /= t' -> tell [typeMismatch t t' pos binExpr] >> return NoType
                   | checkCharOrInt t -> return (BaseT BaseBool)
-                  | otherwise -> tell [""] >> return NoType
-typeCheckExpr (BinaryApp op@(EquOp _) expr expr' _) = do
+                  | otherwise -> tell [typeMismatch RelationalT t pos binExpr] >> return NoType
+typeCheckExpr binExpr@(BinaryApp op@(EquOp _) expr expr' pos) = do
   t <- typeCheckExpr expr
   t' <- typeCheckExpr expr'
   case (t, t') of
     (NoType, _) -> return NoType
     (_, NoType) -> return NoType
-    _             | t /= t' -> tell ["Error (BinaryOPErr op (MismatchArgs t t'))"] >> return NoType
+    _             | t /= t' -> tell [typeMismatch t t' pos binExpr] >> return NoType
                   | otherwise -> return (BaseT BaseBool)
 
 
@@ -164,7 +163,7 @@ checkCharOrInt t
   = t == BaseT BaseChar || t == BaseT BaseInt
 
 typeCheckArrayElem :: ArrayElem -> TypeChecker Type
-typeCheckArrayElem (ArrayElem ident indexes _) = do
+typeCheckArrayElem arrElem@(ArrayElem ident indexes pos) = do
   -- get ident's type
   identT <- typeCheckIdent ident
 
@@ -174,7 +173,6 @@ typeCheckArrayElem (ArrayElem ident indexes _) = do
 
   -- minimum array dimension required
   let numDerefs = length indexes
-  let expectedType = ArrayT numDerefs PolyArray
 
   -- if ident is an array, check it was not derefenced too many times
   if isValidArrayType identT
@@ -184,7 +182,7 @@ typeCheckArrayElem (ArrayElem ident indexes _) = do
       if numDerefs > dim
         -- too many derefences; tell error
         then do
-          tell ["Error (Mismatch expectedType identT)"]
+          tell [dimensionMismatch numDerefs dim pos arrElem]
           return NoType
 
         -- return type of correct dimension
@@ -193,7 +191,7 @@ typeCheckArrayElem (ArrayElem ident indexes _) = do
 
     -- ident was not an array
     else do
-      tell ["Error (Mismatch PolyArray identT)"]
+      tell [typeMismatch PolyArray identT pos arrElem]
       return NoType
 
 
@@ -214,12 +212,6 @@ isValidArrayType (ArrayT _ (BaseT _))
 isValidArrayType _
   = False
 
-isValidPairType :: Type -> Bool
-isValidPairType t@FuncT{}
-  = False
-isValidPairType _
-  = True
-
 -- Returns the type of an ident
 typeCheckIdent :: Ident -> TypeChecker Type
 typeCheckIdent (Ident _ info)
@@ -230,17 +222,30 @@ typeCheckIsInt :: Expr -> TypeChecker ()
 typeCheckIsInt e = do
   eType <- typeCheckExpr e
   unless (eType == BaseT BaseInt)
-    (tell ["Error (Mismatch (BaseT BaseInt) eType)"])
+    (tell [typeMismatch (BaseT BaseInt) eType (getPos e) e])
+
+getPos :: Expr -> Position
+getPos e
+  = case e of
+      StringLit _     p -> p
+      CharLit _       p -> p
+      IntLit _        p -> p
+      BoolLit _       p -> p
+      PairLiteral     p -> p
+      IdentE _        p -> p
+      ExprArray _     p -> p
+      UnaryApp _ _    p -> p
+      BinaryApp _ _ _ p -> p
 
 typeCheckPairElem :: PairElem -> TypeChecker Type
-typeCheckPairElem (PairElem _ (PairLiteral _) _)
-  = tell ["Error NullPointerDeref"] >> return NoType
-typeCheckPairElem (PairElem selector expr _) = do
+typeCheckPairElem pair@(PairElem _ (PairLiteral _) pos)
+  = tell [nullPtrDeref pos pair] >> return NoType
+typeCheckPairElem pair@(PairElem selector expr pos) = do
   exprT <- typeCheckExpr expr
   if  | NoType       <- exprT  -> return NoType
       | PairT pt pt' <- exprT  -> case selector of
-        Fst  -> return pt
-        Snd  -> return pt'
+          Fst  -> return pt
+          Snd  -> return pt'
       | otherwise -> do
-        tell ["Error (Mismatch PolyPair exprT)"]
-        return NoType
+          tell [typeMismatch PolyPair exprT pos pair]
+          return NoType

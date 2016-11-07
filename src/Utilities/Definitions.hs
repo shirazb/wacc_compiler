@@ -121,6 +121,8 @@ data Type
   | PolyArray
   | PolyFunc
   | PolyPair
+  | RelationalT
+  | DataType
   deriving (Show)
 
 instance Eq Type where
@@ -145,7 +147,6 @@ instance Eq Type where
   PairT _ _ == PolyPair  = True
   PolyPair == PolyPair   = True
   _ == _ = False
-
 
 data Expr
   = StringLit String Position
@@ -173,7 +174,7 @@ data LogicalOp
   deriving (Eq, Show)
 
 data RelationalOp
-  =  LT
+  = LT
   | LTE
   | GTE
   | GT

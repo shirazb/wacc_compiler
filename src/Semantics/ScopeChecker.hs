@@ -2,6 +2,8 @@ module Semantics.ScopeChecker where
 import Utilities.Definitions
 type ScopeError = (String, ScopeErrorType, Position)
 
+-- write a scope error message generator
+
 scopeErrorGen :: AST -> [ScopeError]
 scopeErrorGen (Program funcs main)
   = concatMap scopeErrorFunc funcs ++ scopeErrorStat main

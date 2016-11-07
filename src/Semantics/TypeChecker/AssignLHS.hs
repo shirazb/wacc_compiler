@@ -7,14 +7,15 @@ module Semantics.TypeChecker.AssignLHS (
 import Debug.Trace
 
 import Control.Monad.Writer.Strict
+import Semantics.ErrorMessages
 import Semantics.TypeChecker.Expression
 import Utilities.Definitions
 
 typeCheckLHS :: AssignLHS -> TypeChecker Type
-typeCheckLHS (Var ident _) = do
+typeCheckLHS var@(Var ident pos) = do
   identT <- typeCheckIdent ident
   if identT == PolyFunc
-    then tell ["Error (DataTypeOnly identT)"] >> return NoType
+    then tell [typeMismatch DataType PolyFunc pos var] >> return NoType
     else return identT
 typeCheckLHS (ArrayDeref arrayElem _)
   = typeCheckArrayElem arrayElem

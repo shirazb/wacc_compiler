@@ -10,19 +10,20 @@ import Semantics.TypeChecker.AssignLHS
 import Semantics.TypeChecker.AssignRHS
 import Semantics.TypeChecker.Expression
 import Utilities.Definitions
+import Semantics.ErrorMessages
 
 typeCheckStat :: Stat -> TypeChecker ()
 typeCheckStat (Skip _)
   = return ()
 
-typeCheckStat (Declaration t ident rhs pos) = do
+typeCheckStat stat@(Declaration t ident rhs pos) = do
   typeRHS <- typeCheckRHS rhs
-  when (typeRHS /= t) (tell ["mismatch"])
+  when (typeRHS /= t) (tell [typeMismatch t typeRHS pos stat])
 
-typeCheckStat (Assignment lhs rhs pos) = do
+typeCheckStat stat@(Assignment lhs rhs pos) = do
   typeLHS <- typeCheckLHS lhs
   typeRHS <- typeCheckRHS rhs
-  when (typeLHS /= typeRHS) (tell ["Type mismatch"])
+  when (typeLHS /= typeRHS) (tell [typeMismatch typeLHS typeRHS pos stat])
 
 typeCheckStat (Read lhs pos)
   = void $ typeCheckLHS lhs
@@ -34,21 +35,21 @@ typeCheckStat (Free expr pos)
       NoType     -> return ()
       _          -> tell ["freeing thing not on the heap"]
 
-typeCheckStat (Exit expr pos) = do
+typeCheckStat exitStat@(Exit expr pos) = do
   t <- typeCheckExpr expr
-  when (t /= BaseT BaseInt) (tell ["exit code is fucked mate"])
+  when (t /= BaseT BaseInt) (tell [typeMismatch (BaseT BaseInt) t pos exitStat])
 
 
 
 typeCheckStat (If cond s1 s2 pos) = do
-  expr <- typeCheckExpr cond
-  when (expr /= BaseT BaseBool) (tell ["If condition not valid"])
+  exprT <- typeCheckExpr cond
+  when (exprT /= BaseT BaseBool) (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
   typeCheckStat s1
   typeCheckStat s2
 
 typeCheckStat (While cond stat pos) = do
   exprT <- typeCheckExpr cond
-  when (exprT /= BaseT BaseBool) (tell ["While condition not valid"])
+  when (exprT /= BaseT BaseBool) (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
   typeCheckStat stat
 
 typeCheckStat (Return expr pos)
