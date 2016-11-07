@@ -19,5 +19,6 @@ annotateAST (Program fs main)
   where
     (newAST, _) = runState annotateProgram (ST None Map.empty)
     annotateProgram = do
+      mapM_ addFuncDeclToST fs
       newFs <- mapM annotateFunc fs
       inChildScopeAndWrap (Program newFs) (annotateStat main)

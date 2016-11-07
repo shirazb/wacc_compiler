@@ -7,6 +7,7 @@ import Control.Monad.Writer.Strict
 import Semantics.TypeChecker.Expression
 import Semantics.ErrorMessages
 import Utilities.Definitions
+import Debug.Trace
 
 typeCheckRHS :: AssignRHS -> TypeChecker Type
 typeCheckRHS (ExprAssign e _)
