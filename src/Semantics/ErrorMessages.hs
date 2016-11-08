@@ -50,5 +50,5 @@ mkScopeErrMsg (name, scopeErr, pos)
     (case scopeErr of
       Duplicate  -> "Redeclaration of identifier \'" ++ name ++ "\'."
       NotInScope -> "Identifier \'" ++ name ++ "\' not in scope."
-      NoError    -> error "Assertion Failed: found NoError in ident said to have a scope error.") ++
-    "Position: " ++ show pos
+      NoError    -> error "Assertion Failed: found NoError in ident said " ++ 
+                      "to have a scope error. ") ++ "Position: " ++ show pos

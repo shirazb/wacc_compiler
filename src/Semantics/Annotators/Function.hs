@@ -5,12 +5,12 @@ module Semantics.Annotators.Function (
 
 import Control.Monad.State.Strict
 import qualified Data.Map as Map
-import Debug.Trace
+
 import Semantics.ErrorMsgs
-import Utilities.Definitions
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
+import Utilities.Definitions
 
 addFuncDeclToST :: Func -> LexicalScoper Ident
 addFuncDeclToST (Func t ident paramList body pos) = do
@@ -21,7 +21,6 @@ addFuncDeclToST (Func t ident paramList body pos) = do
 annotateFunc :: Func -> LexicalScoper Func
 annotateFunc (Func t ident paramList body pos) = do
   globalST     <- get
-
 
   -- Enter new function scope
   put (ST globalST Map.empty)

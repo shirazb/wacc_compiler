@@ -83,12 +83,6 @@ punctuation :: Char -> Parser Char Char
 punctuation
   = trimWS . char
 
--- -- POST: A parser for identifiers used to parse identifers in the wacc
--- --       language, removes trailing whitespace
--- identifiers :: Parser Char String
--- identifiers
---   = identifier >>= token
-
 ident :: Parser Char String
 ident
   = liftM2 (:) (char '_' <|> letter) (many (alphanum <|> char '_'))

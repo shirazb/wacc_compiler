@@ -6,9 +6,6 @@ print the internal represenation in a more human readable format to aid
 debugging.
 -}
 
--- TODO: WE SHOULD HAVE DIFFERENT DEFINITIONS FILES FOR DIFFERENT
---       COMPILATION STAGES
-
 module Utilities.Definitions where
 
 import qualified Prelude
@@ -31,12 +28,12 @@ type TypeChecker a = Writer [ErrorMsg] a
 -- errrr, someone come up with a better name pls...
 type LexicalScoper a = State SymbolTable a
 
-data Program   = Program [Func] Stat                         deriving (Eq, Show)
-data Func      = Func Type Ident ParamList Stat Position     deriving (Eq, Show)
-data ParamList = ParamList [Param] Position                  deriving (Eq, Show)
-data Param     = Param Type Ident Position                   deriving (Eq, Show)
-data ArrayElem = ArrayElem Ident [Expr] Position             deriving (Eq, Show)
-data Ident     = Ident String Info                           deriving (Eq, Show)
+data Program   = Program [Func] Stat                     deriving (Eq, Show)
+data Func      = Func Type Ident ParamList Stat Position deriving (Eq, Show)
+data ParamList = ParamList [Param] Position              deriving (Eq, Show)
+data Param     = Param Type Ident Position               deriving (Eq, Show)
+data ArrayElem = ArrayElem Ident [Expr] Position         deriving (Eq, Show)
+data Ident     = Ident String Info                       deriving (Eq, Show)
 
 type ScopeError = (String, ScopeErrorType, Position)
 

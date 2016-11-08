@@ -2,10 +2,11 @@ module Semantics.TypeChecker.Function (
   typeCheckFunc
 ) where
 
-import Semantics.TypeChecker.Statement
-import Utilities.Definitions
-import Semantics.TypeChecker.Expression
 import Control.Monad.Writer.Strict
+
+import Semantics.TypeChecker.Statement
+import Semantics.TypeChecker.Expression
+import Utilities.Definitions
 
 typeCheckFunc :: Func -> TypeChecker ()
 typeCheckFunc (Func (FuncT rT plT) name params body pos)

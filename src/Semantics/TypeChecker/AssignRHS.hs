@@ -7,7 +7,6 @@ import Control.Monad.Writer.Strict
 import Semantics.TypeChecker.Expression
 import Semantics.ErrorMessages
 import Utilities.Definitions
-import Debug.Trace
 
 typeCheckRHS :: AssignRHS -> TypeChecker Type
 typeCheckRHS (ExprAssign e _)
@@ -31,9 +30,11 @@ typeCheckRHS (PairElemAssign p _)
 typeCheckRHS (FuncCallAssign (Ident funcName i) es pos) = do
   ts <- mapM typeCheckExpr es
   let FuncT t ts' = typeInfo i
-  if | length ts /= length ts' -> tell [typeMismatchList ts' ts pos funcName] >> return NoType
+  if | length ts /= length ts' -> tell [typeMismatchList ts' ts pos funcName] 
+                                    >> return NoType
      | ts == ts'               -> return t
-     | otherwise               -> tell [typeMismatchList ts' ts pos funcName] >> return NoType
+     | otherwise               -> tell [typeMismatchList ts' ts pos funcName] 
+                                    >> return NoType
 
 typeCheckConcat :: [Type] -> TypeChecker Type
 typeCheckConcat ts
@@ -41,7 +42,8 @@ typeCheckConcat ts
   | and (zipWith (==) ts (tail ts))  = return (head ts)
   | otherwise                        = return NoType
 
--- This function has to be recursive as you can only check for NoType in case statements
+-- This function has to be recursive as you can only check for NoType in case 
+-- statements
 checkNoType :: [Type] -> Bool
 checkNoType []            = True
 checkNoType (NoType : ts) = False

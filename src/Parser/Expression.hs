@@ -25,12 +25,12 @@ import Utilities.Declarations
 import Utilities.Definitions
 
 -- PRE:  None
--- POST: Parses all valid expressions in the WACC language, it is factored out like
--- this to prevent the parser going in to an infinite loop due to left recursion.
+-- POST: Parses all valid expressions in the WACC language, it is factored out 
+--       like this to prevent the parser going in to an infinite loop due to 
+--       left recursion.
 parseExpr :: Parser Char Expr
 parseExpr
   = binaryExpr <|> parseExpr'
-
 
 parseExpr' :: Parser Char Expr
 parseExpr'
@@ -76,19 +76,8 @@ charLiteral = do
       (tryParser character "Invalid character found")
   pos <- getPosition
   return (CharLit cLit pos)
---
--- charLiteral
---   = liftM2 CharLit (quoted '\''
---     (tryParser character "Invalid character found")) getPosition
---     -- CharLit <$> quoted '\''
---     --   (tryParser character "Invalid character found") <*> getPosition
 
 pairLiteral :: Parser Char Expr
--- pairLiteral =
-  -- do
-  -- keyword "null"
-  -- p <- getPosition
-  -- return $ PairLiteral p
 pairLiteral
   = keyword "null" >> fmap PairLiteral getPosition
 
@@ -134,11 +123,9 @@ language. The design of the parser combinators take in to acccount the
 precdence of binary operators.
 -}
 
--- PRE: None
--- POST: Parses all valid binary expressions
--- Example: parse  binaryExpr "1 + 2" will return
--- BinaryApp Mul (IntLit 1) (IntLit 2)
-
+-- POST:    Parses all valid binary expressions
+-- EXAMPLE: parse  binaryExpr "1 + 2" will return
+--          BinaryApp Mul (IntLit 1) (IntLit 2)
 binaryExpr  :: Parser Char Expr
 binaryExpr
   = prec5Binary `chainl1` parseBinOpPrec6
@@ -187,14 +174,13 @@ parseBinOpPrec6 :: Parser Char BinOp
 parseBinOpPrec6
   = parseFromMap binOpPrec6
 
--- PRE: None
--- POST: Returns a parser which parses a sequence of expressions seperated by
--- a meaningful seperator, for example, the operator (+). The parser returns
--- the expression wrapped up in the appropriate data constructors. Assume
--- existence of parser which returns the Add data constructor as its result,
--- call it parseAdd.
--- Example: parse (chainl1 intLiteral parseAdd) "1 + 2 + 3" will return
--- Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
+-- POST:    Returns a parser which parses a sequence of expressions seperated 
+--          by a meaningful seperator, for example, the operator (+). The 
+--          parser returns the expression wrapped up in the appropriate data 
+--          constructors. Assume existence of parser which returns the Add data 
+--          constructor as its result, call it parseAdd.
+-- EXAMPLE: parse (chainl1 intLiteral parseAdd) "1 + 2 + 3" will return
+--          Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
 chainl1 :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
 chainl1 p op
   = trimWS $ p >>= rest
@@ -216,29 +202,29 @@ chainr p op
       rest $ BinaryApp f x xs pos
       ) <|> return x
 
--- PRE: None
 -- POST: Parser of bracketed expressions. Parser removes whitespace and throws
--- away brackets.
+--       away brackets.
 bracketedExpr :: Parser Char Expr
 bracketedExpr
-  = bracket (punctuation '(') (tryParser parseExpr "Invalid Expression in brackets") (tryParser (punctuation ')') "Missing closing parenthesis to bracketed expression")
+  = bracket (punctuation '(') (tryParser parseExpr 
+      "Invalid Expression in brackets") (tryParser (punctuation ')') 
+      "Missing closing parenthesis to bracketed expression")
 
--- PRE: None
--- POST: Parses references to array elements.
--- Example: parse arrayElem "abc[1][2]" will return
--- ArrayElem "abc" [IntLit 1, IntLit 2]
+-- POST:    Parses references to array elements.
+-- EXAMPLE: parse arrayElem "abc[1][2]" will return
+--          ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser Char ArrayElem
 arrayElem
-  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr (punctuation ']')) <*> getPosition
+  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr 
+      (punctuation ']')) <*> getPosition
 
--- PRE: None
 -- POST: Wraps parsed array elements in appropriate data constructor.
 arrayElemExpr :: Parser Char Expr
 arrayElemExpr
   = ExprArray <$> arrayElem <*> getPosition
 
--- PRE: None
 -- POST: Parses a list of expressions.
 parseExprList :: Char -> Char -> Parser Char [Expr]
 parseExprList open close
-  = bracket (punctuation open) (sepby parseExpr (punctuation ',')) (punctuation close)
+  = bracket (punctuation open) (sepby parseExpr (punctuation ',')) 
+      (punctuation close)
