@@ -18,7 +18,6 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Except
 import Data.Maybe
-
 import Parser.Lexer
 import Parser.Combinators
 import Utilities.Declarations
@@ -47,17 +46,18 @@ parseExpr'
 {- BASIC COMBINATORS: -}
 -- Used to parse atomic expressions
 
+
 intLiteral :: Parser Char Expr
-intLiteral = trimWS $ do
+intLiteral = tryParser intLit "Syntax Error: Int overflow"
+
+intLit :: Parser Char Expr
+intLit = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
   pos  <- getPosition
   let n = if sign == "-" then negate (read num) else read num
-  if | n > 2147483647  -> throwError ("Syntax Error: Int overflow", 
-                             updateRowPosition pos)
-     | n < -2147483648 -> throwError ("Syntax Error: Int underflow", 
-                             updateRowPosition pos)
-     | otherwise       -> return $ IntLit n pos
+  guard (n > 2147483647 || n < -2147483648 )
+  return $ IntLit n pos
 
 boolLiteral :: Parser Char Expr
 boolLiteral = do

@@ -38,11 +38,16 @@ parseStatAndCheckExecPathEnds (While _ s1 _)
  = parseStatAndCheckExecPathEnds s1
 parseStatAndCheckExecPathEnds (Block s1 _)
  = parseStatAndCheckExecPathEnds s1
+parseStatAndCheckExecPathEnds (Seq (Return{}) _ _) = do
+   pos <- getPosition
+   throwError ("Unreachable statement after return", pos)
 parseStatAndCheckExecPathEnds (Seq s1 s2 _)
  = parseStatAndCheckExecPathEnds s2
+
 parseStatAndCheckExecPathEnds _ = do
   pos <- getPosition
   throwError ("Mising return or exit statement in function body ending at: ", pos)
+
 
 -- POST: Parses a function defintion.
 parseFunction :: Parser Char Func
