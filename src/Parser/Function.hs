@@ -38,9 +38,9 @@ parseStatAndCheckExecPathEnds (While _ s1 _)
  = parseStatAndCheckExecPathEnds s1
 parseStatAndCheckExecPathEnds (Block s1 _)
  = parseStatAndCheckExecPathEnds s1
--- parseStatAndCheckExecPathEnds (Seq (Return{}) _ _) = do
---    pos <- getPosition
---    throwError ("Unreachable statement after return", pos)
+parseStatAndCheckExecPathEnds (Seq (Return{}) _ _) = do
+   pos <- getPosition
+   throwError ("Unreachable statement after return", pos)
 parseStatAndCheckExecPathEnds (Seq s1 s2 _)
  = parseStatAndCheckExecPathEnds s2
 
