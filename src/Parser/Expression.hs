@@ -24,8 +24,8 @@ import Utilities.Declarations
 import Utilities.Definitions
 
 -- PRE:  None
--- POST: Parses all valid expressions in the WACC language, it is factored out 
---       like this to prevent the parser going in to an infinite loop due to 
+-- POST: Parses all valid expressions in the WACC language, it is factored out
+--       like this to prevent the parser going in to an infinite loop due to
 --       left recursion.
 parseExpr :: Parser Char Expr
 parseExpr
@@ -56,7 +56,7 @@ intLit = trimWS $ do
   num  <- some digit
   pos  <- getPosition
   let n = if sign == "-" then negate (read num) else read num
-  guard (n > 2147483647 || n < -2147483648 )
+  guard (n < 2147483647 || n > -2147483648 )
   return $ IntLit n pos
 
 boolLiteral :: Parser Char Expr
@@ -174,10 +174,10 @@ parseBinOpPrec6 :: Parser Char BinOp
 parseBinOpPrec6
   = parseFromMap binOpPrec6
 
--- POST:    Returns a parser which parses a sequence of expressions seperated 
---          by a meaningful seperator, for example, the operator (+). The 
---          parser returns the expression wrapped up in the appropriate data 
---          constructors. Assume existence of parser which returns the Add data 
+-- POST:    Returns a parser which parses a sequence of expressions seperated
+--          by a meaningful seperator, for example, the operator (+). The
+--          parser returns the expression wrapped up in the appropriate data
+--          constructors. Assume existence of parser which returns the Add data
 --          constructor as its result, call it parseAdd.
 -- EXAMPLE: parse (chainl1 intLiteral parseAdd) "1 + 2 + 3" will return
 --          Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
@@ -206,8 +206,8 @@ chainr p op
 --       away brackets.
 bracketedExpr :: Parser Char Expr
 bracketedExpr
-  = bracket (punctuation '(') (tryParser parseExpr 
-      "Invalid Expression in brackets") (tryParser (punctuation ')') 
+  = bracket (punctuation '(') (tryParser parseExpr
+      "Invalid Expression in brackets") (tryParser (punctuation ')')
       "Missing closing parenthesis to bracketed expression")
 
 -- POST:    Parses references to array elements.
@@ -215,7 +215,7 @@ bracketedExpr
 --          ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser Char ArrayElem
 arrayElem
-  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr 
+  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr
       (punctuation ']')) <*> getPosition
 
 -- POST: Wraps parsed array elements in appropriate data constructor.
@@ -226,5 +226,5 @@ arrayElemExpr
 -- POST: Parses a list of expressions.
 parseExprList :: Char -> Char -> Parser Char [Expr]
 parseExprList open close
-  = bracket (punctuation open) (sepby parseExpr (punctuation ',')) 
+  = bracket (punctuation open) (sepby parseExpr (punctuation ','))
       (punctuation close)
