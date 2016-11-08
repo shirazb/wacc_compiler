@@ -12,15 +12,16 @@ import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
 
-addFuncDeclToST :: Func -> LexicalScoper ()
-addFuncDeclToST (Func t ident paramList body pos)
-  = void $ annotateNewIdent ident (Info t Function)
+addFuncDeclToST :: Func -> LexicalScoper Ident
+addFuncDeclToST (Func t ident paramList body pos) = do
+  annotateNewIdent ident (Info t Function)
 
 -- PRE: Ident already annotated
 -- TODO: Refactor to make look nicer, try use Util.inChildScope(AndWrap)
 annotateFunc :: Func -> LexicalScoper Func
 annotateFunc (Func t ident paramList body pos) = do
   globalST     <- get
+
 
   -- Enter new function scope
   put (ST globalST Map.empty)
