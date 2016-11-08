@@ -6,6 +6,8 @@ to build more complex parsers of expressions. Refer to BNF spec of WACC
 language to see exactly what an expression is in the WACC language.
 -}
 
+{-# LANGUAGE MultiWayIf #-}
+
 module Parser.Expression (
   parseExpr,
   parseExprList,
@@ -14,6 +16,7 @@ module Parser.Expression (
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Except
 import Data.Maybe
 
 import Parser.Lexer
@@ -48,10 +51,15 @@ intLiteral :: Parser Char Expr
 intLiteral = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
-  pos <- getPosition
-  case sign of
-    "-" -> return $ IntLit (-(read num)) pos
-    _   -> return $ IntLit (read num) pos
+  pos  <- getPosition
+  let n = read num
+  if | n > 2147483647  -> throwError ("Syntax Error: Int overflow", 
+                             updateRowPosition pos)
+     | n < -2147483648 -> throwError ("Syntax Error: Int underflow", 
+                             updateRowPosition pos)
+     | otherwise -> case sign of
+                      "-" -> return $ IntLit (-n) pos
+                      _   -> return $ IntLit n pos
 
 
 boolLiteral :: Parser Char Expr

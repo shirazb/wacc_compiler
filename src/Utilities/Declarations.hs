@@ -26,7 +26,6 @@ import Control.Monad.State       (MonadState (..), StateT (..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.List                 (nub)
--- import Utilities.Def2    (Err, Position)
 
 newtype Parser t a
   = Parser { parse :: StateT [t] (StateT Position (MaybeT (Either Err))) a }
