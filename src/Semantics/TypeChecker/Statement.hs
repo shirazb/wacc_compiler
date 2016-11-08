@@ -25,8 +25,15 @@ typeCheckStat stat@(Assignment lhs rhs pos) = do
   typeRHS <- typeCheckRHS rhs
   when (typeLHS /= typeRHS) (tell [typeMismatch typeLHS typeRHS pos stat])
 
-typeCheckStat (Read lhs pos)
-  = void $ typeCheckLHS lhs
+
+-- read has to only be a program variable?
+-- array elem or pair element
+-- the types here are wrong
+typeCheckStat (Read lhs pos) = do
+  t <- typeCheckLHS lhs
+  when (not (checkCharOrInt t)) (tell ["Read function called with incorrect types"])
+  return ()
+
 
 typeCheckStat (Free expr pos)
   = typeCheckExpr expr >>= \case
@@ -38,8 +45,6 @@ typeCheckStat (Free expr pos)
 typeCheckStat exitStat@(Exit expr pos) = do
   t <- typeCheckExpr expr
   when (t /= BaseT BaseInt) (tell [typeMismatch (BaseT BaseInt) t pos exitStat])
-
-
 
 typeCheckStat (If cond s1 s2 pos) = do
   exprT <- typeCheckExpr cond
