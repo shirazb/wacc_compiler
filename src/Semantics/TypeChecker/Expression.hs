@@ -11,7 +11,7 @@ import Semantics.ErrorMessages
 
 {- Utility -}
 
-checkUnAppType :: Show a => Type -> Type -> Type -> Position -> a 
+checkUnAppType :: Show a => Type -> Type -> Type -> Position -> a
                               -> TypeChecker Type
 checkUnAppType expectedT actualT opReturnT pos a
   = if actualT /= expectedT
@@ -82,10 +82,10 @@ typeCheckExpr binExpr@(BinaryApp op@(RelOp _) expr expr' pos) = do
   case (t, t') of
     (NoType, _ ) -> return NoType --
     (_,  NoType) -> return NoType
-    _             | t /= t' -> tell [typeMismatch t t' pos binExpr] 
+    _             | t /= t' -> tell [typeMismatch t t' pos binExpr]
                                  >> return NoType
                   | checkCharOrInt t -> return (BaseT BaseBool)
-                  | otherwise -> tell [typeMismatch RelationalT t pos binExpr] 
+                  | otherwise -> tell [typeMismatch RelationalT t pos binExpr]
                                    >> return NoType
 typeCheckExpr binExpr@(BinaryApp op@(EquOp _) expr expr' pos) = do
   t <- typeCheckExpr expr
@@ -93,7 +93,7 @@ typeCheckExpr binExpr@(BinaryApp op@(EquOp _) expr expr' pos) = do
   case (t, t') of
     (NoType, _) -> return NoType
     (_, NoType) -> return NoType
-    _             | t /= t' -> tell [typeMismatch t t' pos binExpr] 
+    _             | t /= t' -> tell [typeMismatch t t' pos binExpr]
                                  >> return NoType
                   | otherwise -> return (BaseT BaseBool)
 
@@ -142,8 +142,8 @@ typeCheckArrayElem arrElem@(ArrayElem ident indexes pos) = do
 -- 0-dimensional arrays are returned just as a type, not wrapped in an ArrayT
 constructType :: Int -> Type -> Type
 constructType dim innerT
-  | dim < 0    = error "Assertion failed in Semantics.TypeChecker.AssignLHS." ++
-                        " ConstructType: negative dimension given."
+  | dim < 0    = error ("Assertion failed in Semantics.TypeChecker.AssignLHS." ++
+                        " ConstructType: negative dimension given.")
   | dim == 0   = innerT
   | otherwise  = ArrayT dim innerT
 
