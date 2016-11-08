@@ -51,13 +51,13 @@ parseExpr'
 -- intLiteral = tryParser intLit "Syntax Error: Int overflow"
 
 intLiteral :: Parser Char Expr
-intLit = trimWS $ do
+intLiteral = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
   pos  <- getPosition
   let n = if sign == "-" then negate (read num) else read num
   if (n > 2147483647 || n < -2147483648 )
-    then throwError ("Syntax: Int Overflow", updatePosition pos)
+    then throwError ("Syntax: Int Overflow", updateRowPosition pos)
     else return $ IntLit n pos
 
 
