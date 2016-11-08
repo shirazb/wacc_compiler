@@ -22,7 +22,7 @@ import Parser.Lexer
 import Parser.Combinators
 import Utilities.Declarations
 import Utilities.Definitions
-
+-- import Control.Monad.Except
 -- PRE:  None
 -- POST: Parses all valid expressions in the WACC language, it is factored out
 --       like this to prevent the parser going in to an infinite loop due to
@@ -47,17 +47,19 @@ parseExpr'
 -- Used to parse atomic expressions
 
 
-intLiteral :: Parser Char Expr
-intLiteral = tryParser intLit "Syntax Error: Int overflow"
+-- intLiteral :: Parser Char Expr
+-- intLiteral = tryParser intLit "Syntax Error: Int overflow"
 
-intLit :: Parser Char Expr
+intLiteral :: Parser Char Expr
 intLit = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
   pos  <- getPosition
   let n = if sign == "-" then negate (read num) else read num
-  guard (n < 2147483647 || n > -2147483648 )
-  return $ IntLit n pos
+  if (n > 2147483647 || n < -2147483648 )
+    then throwError ("Syntax: Int Overflow", updatePosition pos)
+    else return $ IntLit n pos
+
 
 boolLiteral :: Parser Char Expr
 boolLiteral = do
