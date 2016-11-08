@@ -26,13 +26,12 @@ parseProgram
           (tryParser parseStatement "Invalid or missing program body")
 
 endingParse :: Parser Char String
-endingParse
-  = do
-      tryParser (string "end") "Unexpected Symbol"
-      junk
-      unusedInputString <- get
-      pos               <- getPosition
-      if null unusedInputString
-        then return "Valid Program"
-        else throwError
-               ("Syntax Error: Invalid Program", updateRowPosition pos)
+endingParse = do
+  tryParser (string "end") "Unexpected Symbol"
+  junk
+  unusedInputString <- get
+  pos               <- getPosition
+  if null unusedInputString
+    then return "Valid Program"
+    else throwError
+           ("Syntax Error: Invalid Program", updateRowPosition pos)

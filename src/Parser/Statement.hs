@@ -39,9 +39,11 @@ parseStatement'
   <|> parseBlock
   <|> parseSkip
 
-{-The following two parsers parse the built in functions of the WACC language.
-  We have a generic parser for all built in funcs except Read. This is
-  because the argument of read differs from the other built in functions -}
+{-
+The following two parsers parse the built in functions of the WACC language.
+We have a generic parser for all built in funcs except Read. This is
+because the argument of read differs from the other built in functions 
+-}
 
 parseRead :: Parser Char Stat
 parseRead = do
@@ -54,12 +56,14 @@ parseRead = do
 parseBuiltInFunc :: String -> (Expr -> Position -> Stat) -> Parser Char Stat
 parseBuiltInFunc funcName func = do
   keyword funcName
-  expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++ " function")
+  expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++ 
+             " function")
   pos <- getPosition
   return $ func expr1 pos
 
 {-
-Parsers for all the synctactic structures in the WACC language that make up a statement.
+Parsers for all the synctactic structures in the WACC language that make up a 
+statement.
 -}
 
 -- POST: Parses a conditional

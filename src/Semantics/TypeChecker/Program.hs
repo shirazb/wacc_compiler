@@ -8,9 +8,6 @@ import Semantics.TypeChecker.Function
 import Semantics.TypeChecker.Statement
 import Utilities.Definitions
 
--- checking for return in main
--- isnt really a type checker problem
--- but yeh ???
 typeCheckProgram :: Program -> TypeChecker ()
 typeCheckProgram (Program fs main) = do
   when (checkForReturnInMain main) (tell ["return in main"])

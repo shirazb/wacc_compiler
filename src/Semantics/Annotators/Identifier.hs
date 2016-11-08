@@ -5,11 +5,10 @@ module Semantics.Annotators.Identifier (
 
 import qualified Data.Map as Map
 import Control.Monad.State.Strict
-import Debug.Trace
 
 import Semantics.Annotators.Util
-import Utilities.Definitions
 import Semantics.ErrorMsgs
+import Utilities.Definitions
 
 -- PRE: info contains NoError
 annotateNewIdent :: Ident -> Info -> LexicalScoper Ident

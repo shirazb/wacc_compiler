@@ -9,8 +9,8 @@ import Control.Monad.Writer.Strict
 import Semantics.TypeChecker.AssignLHS
 import Semantics.TypeChecker.AssignRHS
 import Semantics.TypeChecker.Expression
-import Utilities.Definitions
 import Semantics.ErrorMessages
+import Utilities.Definitions
 
 typeCheckStat :: Stat -> TypeChecker ()
 typeCheckStat (Skip _)
@@ -31,7 +31,8 @@ typeCheckStat stat@(Assignment lhs rhs pos) = do
 -- the types here are wrong
 typeCheckStat (Read lhs pos) = do
   t <- typeCheckLHS lhs
-  when (not (checkCharOrInt t)) (tell ["Read function called with incorrect types"])
+  when (not (checkCharOrInt t)) (tell ["Read function called with" ++ 
+    " incorrect types"])
   return ()
 
 
@@ -48,13 +49,15 @@ typeCheckStat exitStat@(Exit expr pos) = do
 
 typeCheckStat (If cond s1 s2 pos) = do
   exprT <- typeCheckExpr cond
-  when (exprT /= BaseT BaseBool) (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
+  when (exprT /= BaseT BaseBool) 
+    (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
   typeCheckStat s1
   typeCheckStat s2
 
 typeCheckStat (While cond stat pos) = do
   exprT <- typeCheckExpr cond
-  when (exprT /= BaseT BaseBool) (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
+  when (exprT /= BaseT BaseBool) 
+    (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
   typeCheckStat stat
 
 typeCheckStat (Return expr pos)

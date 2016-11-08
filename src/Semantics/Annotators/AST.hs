@@ -12,8 +12,6 @@ import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
 import Semantics.ErrorMsgs
 import Utilities.Definitions
-import Debug.Trace
-
 
 annotateAST :: AST -> AST
 annotateAST (Program fs main)
@@ -25,7 +23,6 @@ annotateAST (Program fs main)
       let newFs = zipWith (replaceIdent) idents fs
       newFs' <- mapM annotateFunc newFs
       inChildScopeAndWrap (Program newFs') (annotateStat main)
-
 
 replaceIdent :: Ident -> Func -> Func
 replaceIdent i (Func t _ pl st pos)

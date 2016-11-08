@@ -46,7 +46,8 @@ parseStatAndCheckExecPathEnds (Seq s1 s2 _)
 
 parseStatAndCheckExecPathEnds _ = do
   pos <- getPosition
-  throwError ("Mising return or exit statement in function body ending at: ", pos)
+  throwError ("Mising return or exit statement in function body ending at: ", 
+    pos)
 
 
 -- POST: Parses a function defintion.
@@ -54,7 +55,8 @@ parseFunction :: Parser Char Func
 parseFunction = do
   returnType   <- parseType
   name         <- identifier
-  paramList    <- bracket (punctuation '(') parseParamList (tryParser (punctuation ')') "Invalid parameter list")
+  paramList    <- bracket (punctuation '(') parseParamList (tryParser 
+                    (punctuation ')') "Invalid parameter list")
   tryParser (keyword "is") "Missing 'is' keyword"
   funcBody     <- tryParser parseFunctionBody "Invalid function body"
   tryParser (keyword "end") "Missing 'end' keyword"
@@ -76,9 +78,10 @@ parseParamList :: Parser Char ParamList
 parseParamList
   = ParamList <$> sepby parseParam (punctuation ',') <*> getPosition
 
--- PRE: None
--- POST: Parses a parameter
--- Example Usage: parse parseParam "intname" will return Param Int "name". Note whitespace is not accounted for here.
+-- POST:    Parses a parameter
+-- EXAMPLE: parse parseParam "intname" will return 
+--          Param Int "name" 
+--          Note whitespace is not accounted for here.
 parseParam :: Parser Char Param
 parseParam
   = liftM3 Param parseType identifier getPosition
