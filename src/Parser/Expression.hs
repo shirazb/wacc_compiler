@@ -35,6 +35,7 @@ parseExpr
 parseExpr' :: Parser Char Expr
 parseExpr'
   =   arrayElemExpr
+  <|> intLiteral
   <|> unaryExpr
   <|> bracketedExpr
   <|> charLiteral
@@ -42,7 +43,6 @@ parseExpr'
   <|> stringLiter
   <|> exprIdent
   <|> pairLiteral
-  <|> intLiteral
 
 {- BASIC COMBINATORS: -}
 -- Used to parse atomic expressions
@@ -52,15 +52,12 @@ intLiteral = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
   pos  <- getPosition
-  let n = read num
+  let n = if sign == "-" then negate (read num) else read num
   if | n > 2147483647  -> throwError ("Syntax Error: Int overflow", 
                              updateRowPosition pos)
      | n < -2147483648 -> throwError ("Syntax Error: Int underflow", 
                              updateRowPosition pos)
-     | otherwise -> case sign of
-                      "-" -> return $ IntLit (-n) pos
-                      _   -> return $ IntLit n pos
-
+     | otherwise       -> return $ IntLit n pos
 
 boolLiteral :: Parser Char Expr
 boolLiteral = do
