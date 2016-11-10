@@ -229,6 +229,12 @@ unOpPrec1, unOpPrec2 :: [(String, UnOp)]
 unOpPrec1 = [("!", Not), ("-", Neg)]
 unOpPrec2 = [("len", Len), ("ord", Ord), ("chr", Chr)]
 
+{- Escape Chars -}
+escapeCharList = [('b','\b'), ('n','\n'), ('f','\f'),
+                  ('r','\r'), ('t','\t'), ('\\','\\'),
+                  ('\"','\"'), ('\'','\''), ('0', '\0')]
+
+
 {-
 The following utility functions and show instances are used to print the AST
 in a clear and readable format.

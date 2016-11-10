@@ -61,8 +61,6 @@ updateRowPosition :: Position -> Position
 updateRowPosition (ln, c)
   = (ln + 1, c)
 
-
-
 {- GENERIC PREDICATE COMBINATORS: -}
 
 -- POST: Consumes the first character if the input string is non-empty, fails
@@ -154,14 +152,10 @@ escapeChar :: Parser Char Char
 escapeChar
   = do
       char '\\'
-      tryParser (check (\c -> c `elem` map fst escapeCharAssoc))
+      tryParser (check (`elem` map fst escapeCharList))
                        "Invalid Escape Char"
       escaped_char <- item
-      return $ fromJust $ lookup escaped_char escapeCharAssoc
-      where
-        escapeCharAssoc = [('b','\b'), ('n','\n'), ('f','\f'),
-                          ('r','\r'), ('t','\t'), ('\\','\\'),
-                          ('\"','\"'), ('\'','\''), ('0', '\0')]
+      return $ fromJust $ lookup escaped_char escapeCharList
 
 {- PARSERS FOR SEQUENCES: -}
 
