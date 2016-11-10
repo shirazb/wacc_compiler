@@ -18,6 +18,7 @@ import Control.Applicative ((<*>), (<|>), some, many, liftA2, liftA3)
 import Control.Monad.Except (throwError)
 import Data.Maybe (fromJust)
 import Parser.Lexer
+import Parser.Identifier
 import Parser.Combinators
 import Utilities.Definitions
 

@@ -3,6 +3,7 @@ module Parser.Function  where
 import Control.Monad
 import Control.Monad.Except
 
+import Parser.Identifier
 import Parser.Lexer
 import Parser.Statement
 import Parser.Type

@@ -10,6 +10,7 @@ import Control.Monad
 import Control.Applicative
 import Data.Maybe
 
+import Parser.Identifier
 import Parser.Lexer
 import Parser.Combinators
 import Utilities.Definitions

@@ -87,16 +87,6 @@ punctuation :: Char -> Parser Char Char
 punctuation
   = trimWS . char
 
-ident :: Parser Char String
-ident
-  = liftM2 (:) (char '_' <|> letter) (many (alphanum <|> char '_'))
-
-identifier :: Parser Char Ident
-identifier = trimWS $ do
-  name  <- ident
-  guard (name `notElem` keywords)
-  return $ Ident name NoInfo
-
 -- PRE:  The given input string contains a value which is present in the map
 -- POST: It takes as input a map from strings to values of type a. It attempts
 --       to parse one of the strings in the map and if it succeeds it will

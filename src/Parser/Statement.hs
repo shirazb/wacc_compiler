@@ -6,10 +6,11 @@ exactly what a statement is in the WACC language.
 
 module Parser.Statement (parseStatement) where
 
-import Control.Applicative ((<|>), (<$>))
+import Control.Applicative ((<|>), (<$>), liftA3)
 import Control.Monad.State (liftM2)
 
 import Parser.Expression
+import Parser.Identifier
 import Parser.Lexer
 import Parser.Type
 import Parser.Combinators
