@@ -10,11 +10,10 @@
 
 module Parser.Combinators where
 
-import Control.Applicative
-import Control.Monad
-import Control.Monad.Except
-import Data.Maybe
-import Data.List                 (nub)
+import Control.Applicative       (Alternative (..))
+import Control.Monad             (MonadPlus (..), guard)
+import Control.Monad.Except      (MonadError (..))
+import Data.Maybe                (fromJust)
 import Control.Monad.State       (MonadState (..), StateT (..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
@@ -39,11 +38,11 @@ runParser p inputString
 
 {- Position Utility Functions -}
 
-getPosition :: Parser Char Position
+getPosition :: Parser a Position
 getPosition
   = Parser $ lift get
 
-putPosition :: Position -> Parser Char ()
+putPosition :: Position -> Parser a ()
 putPosition
   = Parser . lift . put
 
@@ -77,8 +76,7 @@ item
 failParser :: MonadPlus m => m a
 failParser = mzero
 
--- POST: Attempts to parse input string using the given Parser.
---       If it fails then it reports an error and terminates execution
+-- POST: Generates error and terminates execution if parser fails.
 require :: Parser Char a -> String -> Parser Char a
 require parser errorMessage = do
   p <- getPosition
@@ -91,14 +89,13 @@ satisfy p
   = item >>= \char -> if p char then return char else failParser
 
 -- POST: Does nothing if a single character satisfies the predicate, fails
---       otherwise
-check :: (Char -> Bool) -> Parser Char ()
-check predicate
-  = do
-    inputString <- get
-    case inputString of
-      inp@(x:xs) -> do {guard (predicate x); put inp;}
-      _          -> failParser
+--       otherwise. No input string is consumed.
+check :: (a -> Bool) -> Parser a ()
+check predicate = do
+  inputString <- get
+  case inputString of
+    inp@(x:xs) -> do {guard (predicate x); put inp;}
+    _          -> failParser
 
 {- BASIC ATOMIC COMBINATORS: -}
 
@@ -139,13 +136,12 @@ character
 
 -- POST: Parses single escape character.
 escapeChar :: Parser Char Char
-escapeChar
-  = do
-      char '\\'
-      require (check (`elem` map fst escapeCharList))
-                       "Invalid Escape Character"
-      escaped_char <- item
-      return $ fromJust $ lookup escaped_char escapeCharList
+escapeChar = do
+  char '\\'
+  require (check (`elem` map fst escapeCharList))
+                   "Invalid Escape Character"
+  escaped_char <- item
+  return $ fromJust $ lookup escaped_char escapeCharList
 
 {- PARSERS FOR SEQUENCES: -}
 
@@ -168,20 +164,18 @@ sepby p sep
 -- POST: Parses one or more occurences of p seperated by sep. Returns
 --       parsed items as a list.
 sepby' :: Parser Char a -> Parser Char b -> Parser Char [a]
-sepby' p sep
-  = do
-      x  <- p
-      xs <- many (sep >> p)
-      return (x : xs)
+sepby' p sep = do
+  x  <- p
+  xs <- many (sep >> p)
+  return (x : xs)
 
 -- POST:    Parses one occurence of p, removing opening and closing
 --          delimiters. Expects no whitespace. Returns result of parsing p.
 -- EXAMPLE: Remove brackets and parse the contents inside:
 --          bracketNoWS (char '(') intLiteral (char ')') "(1)" will return 1.
 bracketNoWS :: Parser Char a -> Parser Char b -> Parser Char c -> Parser Char b
-bracketNoWS open p close
-  = do
-      open
-      x <- p
-      close
-      return x
+bracketNoWS open p close = do
+  open
+  x <- p
+  close
+  return x
