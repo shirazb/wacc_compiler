@@ -6,8 +6,8 @@ keywords and identifiers.
 
 module Parser.Lexer where
 
-import Control.Applicative
-import Control.Monad
+import Control.Applicative (many, some, (<|>))
+import Control.Monad       (void)
 import Data.Char           (isSpace)
 import Data.Maybe          (fromJust)
 

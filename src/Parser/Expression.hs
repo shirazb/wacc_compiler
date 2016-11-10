@@ -87,9 +87,9 @@ stringLiter
       getPosition
 
 {-
-Complex combinators used to parse larger and more complex expressions.
-They are built using the basic combinators defined above and a few
-generic combinators defined in the BasicCombinators module.
+  Complex combinators used to parse larger and more complex expressions.
+  They are built using the basic combinators defined above and a few
+  generic combinators defined in the BasicCombinators module.
 -}
 
 -- PRE: None
@@ -114,9 +114,9 @@ parseUnaryAppHigh = do
   return $ UnaryApp op expr pos
 
 {-
-A number of parsers used to parse valid binary expressions in the WACC
-language. The design of the parser combinators take in to acccount the
-precdence of binary operators.
+  A number of parsers used to parse valid binary expressions in the WACC
+  language. The design of the parser combinators take in to acccount the
+  precdence of binary operators.
 -}
 
 -- POST:    Parses all valid binary expressions
