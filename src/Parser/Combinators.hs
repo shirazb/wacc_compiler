@@ -6,6 +6,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE MultiWayIf                 #-}
 
 module Parser.Combinators where
 
@@ -71,7 +72,7 @@ parseChar
     state <- get
     case state of
       (x:xs) -> do {put xs; return x}
-      []     -> mzero
+      []     -> failParser
 
 -- POST: Consumes the first character if the input string is non-empty, fails
 --       otherwise (denoted by Nothing). Updates position appropriately.
@@ -81,6 +82,11 @@ item
     c <- parseChar
     updatePosition (updateParserPosition c)
     return c
+
+-- POST: A parser which always fails
+failParser :: MonadPlus m => m a
+failParser = mzero
+
 -- POST: Attempts to parse input string using the given Parser.
 --       If it fails then it reports an error and terminates execution
 tryParser :: Parser Char a -> String -> Parser Char a
@@ -92,7 +98,7 @@ tryParser parser errorMessage = do
 --       otherwise (denoted by Nothing)
 satisfy  :: (Char -> Bool) -> Parser Char Char
 satisfy p
-  = item >>= \x -> if p x then return x else mzero
+  = item >>= \char -> if p char then return char else failParser
 
 -- POST: Does nothing if a single character satisfies the predicate, fails
 --       otherwise
@@ -102,7 +108,7 @@ check predicate
     inputString <- get
     case inputString of
       inp@(x:xs) -> do {guard (predicate x); put inp;}
-      _          -> mzero
+      _          -> failParser
 
 {- BASIC ATOMIC COMBINATORS: -}
 

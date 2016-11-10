@@ -97,8 +97,6 @@ typeCheckExpr binExpr@(BinaryApp op@(EquOp _) expr expr' pos) = do
                                  >> return NoType
                   | otherwise -> return (BaseT BaseBool)
 
-
-
 checkCharOrInt :: Type -> Bool
 checkCharOrInt t
   = t == BaseT BaseChar || t == BaseT BaseInt
