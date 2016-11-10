@@ -31,7 +31,7 @@ typeCheckStat stat@(Assignment lhs rhs pos) = do
 -- the types here are wrong
 typeCheckStat (Read lhs pos) = do
   t <- typeCheckLHS lhs
-  when (not (checkCharOrInt t)) (tell ["Read function called with" ++ 
+  when (not (checkCharOrInt t)) (tell ["Read function called with" ++
     " incorrect types"])
   return ()
 
@@ -49,14 +49,14 @@ typeCheckStat exitStat@(Exit expr pos) = do
 
 typeCheckStat (If cond s1 s2 pos) = do
   exprT <- typeCheckExpr cond
-  when (exprT /= BaseT BaseBool) 
+  when (exprT /= BaseT BaseBool)
     (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
   typeCheckStat s1
   typeCheckStat s2
 
 typeCheckStat (While cond stat pos) = do
   exprT <- typeCheckExpr cond
-  when (exprT /= BaseT BaseBool) 
+  when (exprT /= BaseT BaseBool)
     (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
   typeCheckStat stat
 
