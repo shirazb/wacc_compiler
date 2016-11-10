@@ -1,12 +1,9 @@
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE NoMonomorphismRestriction  #-}
-{-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE TypeFamilies               #-}
+{-
+  Basic parser combinator definitions which are used to 
+  build larger and more complex parsers.
+-}
+
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE MultiWayIf                 #-}
 
 module Parser.Combinators where
 
