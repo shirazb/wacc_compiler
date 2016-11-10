@@ -20,13 +20,16 @@ commentDelim
 
 -- POST: Removes single line comments.
 comments :: Parser Char ()
-comments
-  =  void $ string commentDelim >> many (satisfy (/= '\n')) >>
-      require (char '\n') "No newline after comment"
+comments = do
+    string commentDelim
+    many (satisfy (/= '\n'))
+    require (char '\n') "Comment not terminated."
+    return ()
 
 -- Post: Removes spaces incl \t,\n etc
 spaces :: Parser Char ()
-spaces = void $ some (satisfy isSpace)
+spaces
+  = void $ some (satisfy isSpace)
 
 -- POST: Removes whitespace or comments.
 junk :: Parser Char ()
@@ -40,11 +43,10 @@ leadingWS p
   = junk >> p
 
 trailingWS :: Parser Char b -> Parser Char b
-trailingWS p
-  = do
-      parsedValue <- p
-      junk
-      return parsedValue
+trailingWS p = do
+  parsedValue <- p
+  junk
+  return parsedValue
 
 trimWS :: Parser Char b -> Parser Char b
 trimWS
@@ -65,16 +67,19 @@ keyword k = do
 
 -- POST: List of operators defined in the WACC language
 operators :: String
-operators = map (head . fst) (binOpPrec1 ++ binOpPrec2 ++ binOpPrec3
-                               ++ binOpPrec4 ++ binOpPrec5 ++ binOpPrec6)
+operators
+  = map (head . fst) (binOpPrec1 ++ binOpPrec2 ++ binOpPrec3 ++
+                      binOpPrec4 ++ binOpPrec5 ++ binOpPrec6)
 
 -- POST: Returns True if the given input is either a seperator or an operator
 isPunctuation :: Char -> Bool
-isPunctuation =  flip elem ([';', ',', ']', '[', ')', '('] ++ operators)
+isPunctuation
+  =  flip elem ([';', ',', ']', '[', ')', '('] ++ operators)
 
 -- POST: Returns True if you are at the start of a comment
 isComment :: Char -> Bool
-isComment = (==) '#'
+isComment
+  = (==) '#'
 
 -- POST: Parser for the given input char, it also removes whitespace around
 --       the char
@@ -88,7 +93,7 @@ ident
 
 identifier :: Parser Char Ident
 identifier = trimWS $ do
-  name <- ident
+  name  <- ident
   guard (name `notElem` keywords)
   return $ Ident name NoInfo
 
@@ -99,7 +104,7 @@ identifier = trimWS $ do
 --       function. It removes trailing WS.
 parseFromMap :: (Show a) => [(String, a)] -> Parser Char a
 parseFromMap assoclist = do
-  value <- foldr1 (<|>) (map (token . fst) assoclist)
+  value  <- foldr1 (<|>) (map (token . fst) assoclist)
   return $ fromJust (lookup value assoclist)
 
 -- POST: Similar to bracketNoWS defined in basic combinators, however it takes
