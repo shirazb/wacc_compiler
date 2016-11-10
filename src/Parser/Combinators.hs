@@ -206,9 +206,3 @@ bracketNoWS open p close
       x <- p
       close
       return x
-
--- POST: Parses zero or more occurences of letters and returns the result as
---       a string
-word :: Parser Char String
-word
-  = many letter
