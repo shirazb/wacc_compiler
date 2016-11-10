@@ -1,3 +1,6 @@
+{-
+  Parses WACC identifiers.
+-}
 module Parser.Identifier (identifier) where
 
 import Control.Applicative  (Alternative (..))

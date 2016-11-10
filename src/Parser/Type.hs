@@ -1,7 +1,7 @@
 {-
-This module defines a number of combinators which are used to parse the types
-in the wacc language. Refer to the BNF spec of the wacc language for all the
-types.
+  This module defines a number of combinators which are used to parse the types
+  in the wacc language. Refer to the BNF spec of the wacc language for all the
+  types.
 -}
 
 module Parser.Type (parseType) where

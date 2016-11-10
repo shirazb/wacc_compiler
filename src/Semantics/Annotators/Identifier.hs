@@ -1,3 +1,7 @@
+{-
+  Annotates identifiers with type information.
+-}
+
 module Semantics.Annotators.Identifier (
   annotateIdent,
   annotateNewIdent
@@ -10,7 +14,9 @@ import Semantics.Annotators.Util
 import Semantics.ErrorMsgs
 import Utilities.Definitions
 
--- PRE: info contains NoError
+-- PRE: info is NoInfo
+-- POST: If the identifier is not a duplicate, adds it to the current ST.
+--       Otherwise, marks it as a duplicate.
 annotateNewIdent :: Ident -> Info -> LexicalScoper Ident
 annotateNewIdent (Ident name NoInfo) info = do
   st            <- get
@@ -22,6 +28,9 @@ annotateNewIdent (Ident name NoInfo) info = do
 annotateNewIdent (Ident name info) info'
   = error $ assertReannotatingNewIdent name info info'
 
+-- PRE:  Info is NoInfo
+-- POST: If the identifier is in scope, retrieves its type information.
+--       Otherwise, marks it as not in scope.
 annotateIdent :: Context -> Ident -> LexicalScoper Ident
 annotateIdent ctext ident@(Ident name NoInfo) = do
   st <- get
