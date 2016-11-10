@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 module Parser.Program (parseProgram) where
 
 import Control.Applicative
@@ -30,7 +31,5 @@ endingParse = do
   junk
   unusedInputString <- get
   pos               <- getPosition
-  if null unusedInputString
-    then return "Valid Program"
-    else throwError
-           ("Syntax Error: Invalid Program", updateRowPosition pos)
+  if | null unusedInputString -> return "Valid Program"
+     | otherwise -> throwError ("Syntax Error: Invalid Program", updateRowPosition pos)

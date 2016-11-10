@@ -44,14 +44,13 @@ parseExpr'
 
 {- BASIC COMBINATORS: -}
 -- Used to parse atomic expressions
-
 intLiteral :: Parser Char Expr
 intLiteral = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
   pos  <- getPosition
   let n = if sign == "-" then negate (read num) else read num
-  if | (n > 2147483647 || n < -2147483648 ) ->
+  if | (n > maxInt|| n < minInt) ->
           throwError ("Syntax: Int Overflow", updateRowPosition pos)
      | otherwise -> return $ IntLit n pos
 
