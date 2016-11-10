@@ -55,7 +55,7 @@ parseRead = do
 parseBuiltInFunc :: String -> (Expr -> Position -> Stat) -> Parser Char Stat
 parseBuiltInFunc funcName func = do
   keyword funcName
-  expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++
+  expr1 <- require parseExpr ("Invalid arguments to " ++ funcName ++
              " function")
   pos <- getPosition
   return $ func expr1 pos
@@ -69,12 +69,12 @@ statement.
 parseIfStat :: Parser Char Stat
 parseIfStat = do
   keyword "if"
-  cond <- tryParser parseExpr "Invalid expression for if condition"
-  tryParser (keyword "then") "Missing 'then' keyword"
-  thenStat <- tryParser parseStatement "Invalid statement for then branch"
-  tryParser (keyword "else") "Missing 'else' keyword"
-  elseStat <- tryParser parseStatement "Invalid statement for else branch"
-  tryParser (keyword "fi") "Missing 'fi' keyword"
+  cond <- require parseExpr "Invalid expression for if condition"
+  require (keyword "then") "Missing 'then' keyword"
+  thenStat <- require parseStatement "Invalid statement for then branch"
+  require (keyword "else") "Missing 'else' keyword"
+  elseStat <- require parseStatement "Invalid statement for else branch"
+  require (keyword "fi") "Missing 'fi' keyword"
   pos <- getPosition
   return $ If cond thenStat elseStat pos
 
@@ -82,10 +82,10 @@ parseIfStat = do
 parseWhileStat :: Parser Char Stat
 parseWhileStat = do
   keyword "while"
-  cond      <- tryParser parseExpr "Invalid expression in while condition"
-  tryParser (keyword "do") "Missing 'do' keyword"
-  loopBody  <- tryParser parseStatement "Invalid statement for while condition"
-  tryParser (keyword "done") "Missing 'done' keyword"
+  cond      <- require parseExpr "Invalid expression in while condition"
+  require (keyword "do") "Missing 'do' keyword"
+  loopBody  <- require parseStatement "Invalid statement for while condition"
+  require (keyword "done") "Missing 'done' keyword"
   pos <- getPosition
   return $ While cond loopBody pos
 
@@ -93,8 +93,8 @@ parseWhileStat = do
 parseBlock :: Parser Char Stat
 parseBlock = Block <$> (do
   keyword "begin"
-  s <- tryParser parseStatement "Invalid statement in block"
-  tryParser (keyword "end") "Missing 'end' keyword in block"
+  s <- require parseStatement "Invalid statement in block"
+  require (keyword "end") "Missing 'end' keyword in block"
   return s) <*> getPosition
 
 -- POST: Parses a sequence of statements seperated by semi-colons.
@@ -103,7 +103,7 @@ parseSeq = parseStatement' >>= rest
   where
     rest s = (do
       punctuation ';'
-      s' <-  tryParser parseStatement "Invalid statement in sequence"
+      s' <-  require parseStatement "Invalid statement in sequence"
       pos <- getPosition
       rest $ Seq s s' pos) <|> return s
 
@@ -118,7 +118,7 @@ parseDeclaration = do
   varType    <- parseType
   ident      <- identifier
   punctuation '='
-  assignRHS  <- tryParser parseRHS "Invalid RHS in declaration"
+  assignRHS  <- require parseRHS "Invalid RHS in declaration"
   pos <- getPosition
   return $ Declaration varType ident assignRHS pos
 
@@ -126,9 +126,9 @@ parseDeclaration = do
 parseAssignment :: Parser Char Stat
 parseAssignment = do
   lhs <- parseLHS
-  tryParser (punctuation '=')
+  require (punctuation '=')
       "Missing equal sign in assignment. Did you misspell or forget a keyword?"
-  rhs <- tryParser parseRHS "Invalid RHS in assignment"
+  rhs <- require parseRHS "Invalid RHS in assignment"
   pos <- getPosition
   return $ Assignment lhs rhs pos
 
@@ -163,7 +163,7 @@ assignToExpr
 -- POST: Parses a pair elem which can be either a lhs or rhs.
 pairElemExpr :: Parser Char Expr
 pairElemExpr
-  = tryParser parseExpr "Invalid Expr for pairElem"
+  = require parseExpr "Invalid Expr for pairElem"
 
 pairFst :: Parser Char PairElemSelector
 pairFst = do
@@ -189,8 +189,8 @@ assignToPairElem
 assignToFuncCall :: Parser Char AssignRHS
 assignToFuncCall = do
   keyword "call"
-  name     <- tryParser identifier "Invalid Function Name"
-  arglist  <- tryParser (parseExprList '(' ')') "Invalid parameter list"
+  name     <- require identifier "Invalid Function Name"
+  arglist  <- require (parseExprList '(' ')') "Invalid parameter list"
   pos      <- getPosition
   return $ FuncCallAssign name arglist pos
 
@@ -199,7 +199,7 @@ assignToArrayLit :: Parser Char AssignRHS
 assignToArrayLit = do
   punctuation '['
   exprList <- sepby parseExpr (punctuation ',')
-  tryParser (punctuation ']') "No closing bracket in array literal"
+  require (punctuation ']') "No closing bracket in array literal"
   pos <- getPosition
   return $ ArrayLitAssign exprList pos
 
@@ -207,10 +207,10 @@ assignToArrayLit = do
 assignToNewPair :: Parser Char AssignRHS
 assignToNewPair = do
   token "newpair"
-  tryParser (punctuation '(') "Missing opening parenthesis for newpair"
-  expr1 <- tryParser parseExpr "Invalid Expr for first expression in newpair"
-  tryParser (punctuation ',') "No comma in new pair declaration"
-  expr2 <- tryParser parseExpr "Invalid Expr for second expression in newpair"
-  tryParser (punctuation ')') "Missing closing parenthesis for newpair"
+  require (punctuation '(') "Missing opening parenthesis for newpair"
+  expr1 <- require parseExpr "Invalid Expr for first expression in newpair"
+  require (punctuation ',') "No comma in new pair declaration"
+  expr2 <- require parseExpr "Invalid Expr for second expression in newpair"
+  require (punctuation ')') "Missing closing parenthesis for newpair"
   pos <- getPosition
   return $ NewPairAssign expr1 expr2 pos

@@ -17,17 +17,17 @@ import Semantics.Annotators.AST
 parseProgram :: Parser Char Program
 parseProgram
   = bracket
-      (tryParser (keyword "begin") "Invalid Program start")
+      (require (keyword "begin") "Invalid Program start")
       parseProgram'
       endingParse
   where
     parseProgram'
       = liftM2 Program (many parseFunction)
-          (tryParser parseStatement "Invalid or missing program body")
+          (require parseStatement "Invalid or missing program body")
 
 endingParse :: Parser Char String
 endingParse = do
-  tryParser (string "end") "Unexpected Symbol"
+  require (string "end") "Unexpected Symbol"
   junk
   unusedInputString <- get
   pos               <- getPosition

@@ -32,11 +32,10 @@ newtype Parser t a
            , MonadError Err
            , MonadPlus
            )
-
-runParser :: Parser t a -> [t] -> Position ->
-              Either Err (Maybe((a,[t]), Position))
-runParser p inputString initialPos
- = runMaybeT $ runStateT (runStateT (parse p) inputString) initialPos
+-- POST: Executes a parser over a given input stream.
+runParser :: Parser t a -> [t] -> Either Err (Maybe((a,[t]), Position))
+runParser p inputString
+ = runMaybeT $ runStateT (runStateT (parse p) inputString) (0, 0)
 
 {- Position Utility Functions -}
 
@@ -80,8 +79,8 @@ failParser = mzero
 
 -- POST: Attempts to parse input string using the given Parser.
 --       If it fails then it reports an error and terminates execution
-tryParser :: Parser Char a -> String -> Parser Char a
-tryParser parser errorMessage = do
+require :: Parser Char a -> String -> Parser Char a
+require parser errorMessage = do
   p <- getPosition
   parser <|> throwError ("Syntax Error: " ++ errorMessage, updateRowPosition p)
 
@@ -143,7 +142,7 @@ escapeChar :: Parser Char Char
 escapeChar
   = do
       char '\\'
-      tryParser (check (`elem` map fst escapeCharList))
+      require (check (`elem` map fst escapeCharList))
                        "Invalid Escape Character"
       escaped_char <- item
       return $ fromJust $ lookup escaped_char escapeCharList

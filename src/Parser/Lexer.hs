@@ -22,7 +22,7 @@ commentDelim
 comments :: Parser Char ()
 comments
   =  void $ string commentDelim >> many (satisfy (/= '\n')) >>
-      tryParser (char '\n') "No newline after comment"
+      require (char '\n') "No newline after comment"
 
 -- Post: Removes spaces incl \t,\n etc
 spaces :: Parser Char ()

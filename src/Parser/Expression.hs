@@ -68,7 +68,7 @@ quoted c parser
 charLiteral :: Parser Char Expr
 charLiteral = do
   cLit <- quoted '\''
-      (tryParser character "Invalid character found")
+      (require character "Invalid character found")
   pos <- getPosition
   return (CharLit cLit pos)
 
@@ -83,7 +83,7 @@ exprIdent
 stringLiter :: Parser Char Expr
 stringLiter
   = StringLit <$> quoted '\"'
-    (tryParser (many character) "Invalid char found in string") <*> getPosition
+    (require (many character) "Invalid char found in string") <*> getPosition
 
 {-
 Complex combinators used to parse larger and more complex expressions.
@@ -101,14 +101,14 @@ parseUnaryAppLow :: Parser Char Expr
 parseUnaryAppLow = do
   op      <- foldr1 (<|>) (map (keyword . fst) unOpPrec2)
   let op' = fromJust $ lookup op unOpPrec2
-  expr    <- tryParser parseExpr "Invalid argument to unary operator"
+  expr    <- require parseExpr "Invalid argument to unary operator"
   pos     <- getPosition
   return $ UnaryApp op' expr pos
 
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
   op   <- parseFromMap unOpPrec1
-  expr <- tryParser parseExpr "Invalid argument to unary operator"
+  expr <- require parseExpr "Invalid argument to unary operator"
   pos  <- getPosition
   return $ UnaryApp op expr pos
 
@@ -182,7 +182,7 @@ chainl1 p op
   where
     rest x = (do
       f <- op
-      y <- tryParser p "Invalid argument to binary expression"
+      y <- require p "Invalid argument to binary expression"
       pos <- getPosition
       rest $ BinaryApp f x y pos) <|> return x
 
@@ -201,8 +201,8 @@ chainr p op
 --       away brackets.
 bracketedExpr :: Parser Char Expr
 bracketedExpr
-  = bracket (punctuation '(') (tryParser parseExpr
-      "Invalid Expression in brackets") (tryParser (punctuation ')')
+  = bracket (punctuation '(') (require parseExpr
+      "Invalid Expression in brackets") (require (punctuation ')')
       "Missing closing parenthesis to bracketed expression")
 
 -- POST:    Parses references to array elements.

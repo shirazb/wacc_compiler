@@ -53,11 +53,11 @@ parseFunction :: Parser Char Func
 parseFunction = do
   returnType   <- parseType
   name         <- identifier
-  paramList    <- bracket (punctuation '(') parseParamList (tryParser
+  paramList    <- bracket (punctuation '(') parseParamList (require
                     (punctuation ')') "Invalid parameter list")
-  tryParser (keyword "is") "Missing 'is' keyword"
-  funcBody     <- tryParser parseFunctionBody "Invalid function body"
-  tryParser (keyword "end") "Missing 'end' keyword"
+  require (keyword "is") "Missing 'is' keyword"
+  funcBody     <- require parseFunctionBody "Invalid function body"
+  require (keyword "end") "Missing 'end' keyword"
   pos          <- getPosition
   let paramTypes = map getTypeOfParam (getListOfParams paramList)
   let functionType = FuncT returnType paramTypes

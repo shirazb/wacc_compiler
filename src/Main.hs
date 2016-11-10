@@ -22,7 +22,7 @@ main = do
   let filename = head args
   contents     <- readFile filename
 
-  let ast      = runParser parseProgram contents (0,0)
+  let ast      = runParser parseProgram contents
   a <- case ast of
          Right (Just ((a,b),_))  -> return a
          Left err                -> do {print err; exitWith (ExitFailure 100)}
