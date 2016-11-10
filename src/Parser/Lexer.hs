@@ -1,13 +1,13 @@
 {-
-This module defines a number of combinators to handle lexical issues, such as
-removing whitespace and comments. It also handles distinguishing between
-keywords and identifiers.
+  This module defines a number of combinators to handle lexical issues, such as
+  removing whitespace and comments. It also handles distinguishing between
+  keywords and identifiers.
 -}
 
 module Parser.Lexer where
 
-import Control.Applicative
-import Control.Monad
+import Control.Applicative (many, some, (<|>))
+import Control.Monad       (void)
 import Data.Char           (isSpace)
 import Data.Maybe          (fromJust)
 
