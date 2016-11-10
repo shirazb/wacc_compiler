@@ -1,5 +1,5 @@
 {-
-  Annotates identifiers with type information.
+  Annotates identifiers with type information, or marks them as scope errors.
 -}
 
 module Semantics.Annotators.Identifier (
@@ -37,5 +37,5 @@ annotateIdent ctext ident@(Ident name NoInfo) = do
   return $ case lookUpIdent (name, ctext) st of
     Nothing   -> setErrType NotInScope ident
     Just info -> setInfo info ident
-annotateIdent _ _
-  = error "make a proper error message -- annotateIdent"
+annotateIdent ctext (Ident name info)
+  = error $ assertReannotatingIdent ctext name info
