@@ -1,23 +1,26 @@
+{-
+  Annotates function identifiers and variables within the body of functions.
+-}
 module Semantics.Annotators.Function (
   annotateFunc,
   addFuncDeclToST
 ) where
 
-import Control.Monad.State.Strict
+import Control.Monad.State.Strict (get, put)
 import qualified Data.Map as Map
 
-import Semantics.ErrorMsgs
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
+import Semantics.ErrorMsgs
 import Utilities.Definitions
 
 addFuncDeclToST :: Func -> LexicalScoper Ident
-addFuncDeclToST (Func t ident paramList body pos) = do
-  annotateNewIdent ident (Info t Function)
+addFuncDeclToST (Func t ident paramList body pos)
+  = annotateNewIdent ident (Info t Function)
 
--- PRE: Ident already annotated
--- TODO: Refactor to make look nicer, try use Util.inChildScope(AndWrap)
+-- PRE: Function name ident already annotated
+-- POST: Annotates all the identifiers within the function body.
 annotateFunc :: Func -> LexicalScoper Func
 annotateFunc (Func t ident paramList body pos) = do
   globalST     <- get
@@ -25,7 +28,7 @@ annotateFunc (Func t ident paramList body pos) = do
   -- Enter new function scope
   put (ST globalST Map.empty)
 
-  -- Annotate the function
+  -- Annotate the function body
   newParamList <- annotateParamList paramList
   newBody      <- annotateStat body
 

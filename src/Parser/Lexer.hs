@@ -1,7 +1,7 @@
 {-
-This module defines a number of combinators to handle lexical issues, such as
-removing whitespace and comments. It also handles distinguishing between
-keywords and identifiers.
+  This module defines a number of combinators to handle lexical issues, such as
+  removing whitespace and comments. It also handles distinguishing between
+  keywords and identifiers.
 -}
 
 module Parser.Lexer where

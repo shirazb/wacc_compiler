@@ -1,7 +1,7 @@
 {-
-This module defines a number of parser combinators used to parse statements in
-the WACC language. Refer to the BNF specification of the WACC language to see
-exactly what a statement is in the WACC language.
+  This module defines a number of parser combinators used to parse statements in
+  the WACC language. Refer to the BNF specification of the WACC language to see
+  exactly what a statement is in the WACC language.
 -}
 
 module Parser.Statement (parseStatement) where
@@ -9,11 +9,11 @@ module Parser.Statement (parseStatement) where
 import Control.Applicative ((<|>), (<$>), liftA3)
 import Control.Monad.State (liftM2)
 
+import Parser.Combinators
 import Parser.Expression
 import Parser.Identifier
 import Parser.Lexer
 import Parser.Type
-import Parser.Combinators
 import Utilities.Definitions
 
 
