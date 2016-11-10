@@ -1,9 +1,11 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoMonomorphismRestriction  #-}
 {-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE DeriveFunctor              #-}
 
 module Parser.Combinators where
 
@@ -16,21 +18,77 @@ import Control.Monad.State       (MonadState (..), StateT (..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 
-import Utilities.Declarations
+import Utilities.Definitions
 
-{- parser -}
+{- Parser type declarations -}
+newtype Parser t a
+  = Parser { parse :: StateT [t] (StateT Position (MaybeT (Either Err))) a }
+  deriving ( Monad
+           , Applicative
+           , Functor
+           , MonadState [t]
+           , Alternative
+           , MonadError Err
+           , MonadPlus
+           )
+
+runParser :: Parser t a -> [t] -> Position ->
+              Either Err (Maybe((a,[t]), Position))
+runParser p inputString initialPos
+ = runMaybeT $ runStateT (runStateT (parse p) inputString) initialPos
+
+{- Position Utility Functions -}
+
+getPosition :: Parser Char Position
+getPosition
+  = Parser $ lift get
+
+putPosition :: Position -> Parser Char ()
+putPosition
+  = Parser . lift . put
+
+updatePosition :: (Position -> Position) -> Parser Char ()
+updatePosition f
+  = getPosition >>= (putPosition . f)
+
+updateParserPosition :: Char -> Position -> Position
+updateParserPosition '\n' (ln, c)
+  = (ln + 1, 1)
+updateParserPosition _ (ln, c)
+  = (ln, c + 1)
+
+updateRowPosition :: Position -> Position
+updateRowPosition (ln, c)
+  = (ln + 1, c)
+
 
 
 {- GENERIC PREDICATE COMBINATORS: -}
 
 -- POST: Consumes the first character if the input string is non-empty, fails
---       otherwise (denoted by Nothing)
+--       otherwise (denoted by Nothing).
+parseChar :: (MonadState [t] m, MonadPlus m) => m t
+parseChar
+  = do
+    state <- get
+    case state of
+      (x:xs) -> do {put xs; return x}
+      []     -> mzero
+
+-- POST: Consumes the first character if the input string is non-empty, fails
+--       otherwise (denoted by Nothing). Updates position appropriately.
 item :: Parser Char Char
 item
   = do
     c <- parseChar
     updatePosition (updateParserPosition c)
     return c
+-- POST: Attempts to parse input string using the given Parser.
+--       If it fails then it reports an error and terminates execution
+tryParser :: Parser Char a -> String -> Parser Char a
+tryParser parser errorMessage = do
+  p <- getPosition
+  parser <|> throwError ("Syntax Error: " ++ errorMessage, updateRowPosition p)
 
 -- POST: Consumes a single character if it satisfies the predicate, fails
 --       otherwise (denoted by Nothing)
