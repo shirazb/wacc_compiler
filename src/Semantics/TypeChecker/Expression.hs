@@ -10,7 +10,9 @@ import Utilities.Definitions
 import Semantics.ErrorMessages
 
 {- Utility -}
-
+-- POST: Checks if the argument provided to the Unary operator
+-- is of the correct type. Logs an error message if they are not, otherwise
+-- it returns the return type of the unary operator.
 checkUnAppType :: Show a => Type -> Type -> Type -> Position -> a
                               -> TypeChecker Type
 checkUnAppType expectedT actualT opReturnT pos a
@@ -23,7 +25,7 @@ checkUnAppType expectedT actualT opReturnT pos a
 checkBinaryApp :: BinOp -> Type -> Type -> Type -> Expr -> TypeChecker Type
 checkBinaryApp op opT arg1T arg2T expr
   = if arg1T /= arg2T
-      then tell [""] >>
+      then tell [typeMismatch arg1T arg2T (getPos expr) expr] >>
              return NoType;
       else evalArg
   where
