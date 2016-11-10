@@ -55,8 +55,8 @@ updatePosition :: (Position -> Position) -> Parser Char ()
 updatePosition f
   = getPosition >>= (putPosition . f)
 
-basicItem :: (MonadState [t] m, MonadPlus m) => m t
-basicItem
+parseChar :: (MonadState [t] m, MonadPlus m) => m t
+parseChar
   = do
     state <- get
     case state of
@@ -72,10 +72,6 @@ updateParserPosition _ (ln, c)
 updateRowPosition :: Position -> Position
 updateRowPosition (ln, c)
   = (ln + 1, c)
-
-errorReporterParser :: (MonadError e m, Alternative m) => m a -> e -> m a
-errorReporterParser p err
-  = p <|> throwError err
 
 tryParser :: Parser Char a -> String -> Parser Char a
 tryParser parser errorMessage = do

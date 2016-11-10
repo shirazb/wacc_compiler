@@ -18,6 +18,9 @@ import Control.Monad.Trans.Maybe (MaybeT (..))
 
 import Utilities.Declarations
 
+{- parser -}
+
+
 {- GENERIC PREDICATE COMBINATORS: -}
 
 -- POST: Consumes the first character if the input string is non-empty, fails
@@ -25,7 +28,7 @@ import Utilities.Declarations
 item :: Parser Char Char
 item
   = do
-    c <- basicItem
+    c <- parseChar
     updatePosition (updateParserPosition c)
     return c
 
