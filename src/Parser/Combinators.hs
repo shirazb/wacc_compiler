@@ -48,9 +48,9 @@ putPosition :: Position -> Parser Char ()
 putPosition
   = Parser . lift . put
 
-updatePosition :: (Position -> Position) -> Parser Char ()
-updatePosition f
-  = getPosition >>= (putPosition . f)
+updatePosition :: Char -> Parser Char ()
+updatePosition c
+  = getPosition >>= (putPosition . updateParserPosition c)
 
 updateParserPosition :: Char -> Position -> Position
 updateParserPosition '\n' (ln, c)
@@ -65,23 +65,14 @@ updateRowPosition (ln, c)
 {- GENERIC PREDICATE COMBINATORS: -}
 
 -- POST: Consumes the first character if the input string is non-empty, fails
---       otherwise (denoted by Nothing).
-parseChar :: (MonadState [t] m, MonadPlus m) => m t
-parseChar
-  = do
-    state <- get
-    case state of
-      (x:xs) -> do {put xs; return x}
-      []     -> failParser
-
--- POST: Consumes the first character if the input string is non-empty, fails
 --       otherwise (denoted by Nothing). Updates position appropriately.
 item :: Parser Char Char
 item
   = do
-    c <- parseChar
-    updatePosition (updateParserPosition c)
-    return c
+    state <- get
+    case state of
+      (c:cs) -> do {put cs; updatePosition c; return c}
+      []     -> failParser
 
 -- POST: A parser which always fails
 failParser :: MonadPlus m => m a
@@ -112,80 +103,71 @@ check predicate
 
 {- BASIC ATOMIC COMBINATORS: -}
 
--- POST: Calls 'satisfy' with a predicate for a specific character
+-- POST: Parses a single specific character.
 char  :: Char -> Parser Char Char
 char c
   = satisfy (c ==)
 
--- POST: Calls 'satisfy' with a predicate to determine if it's an element of
---       the list
-oneOf  :: String -> Parser Char Char
-oneOf s
-  = satisfy (`elem` s)
-
--- POST: Calls 'satisfy' with a predicate for single digits
+-- POST: Parses single digit.
 digit :: Parser Char Char
 digit
   = satisfy (\x -> '0' <= x && x <= '9')
 
--- POST: Calls 'satisfy' with predicate for lower-case letters
+-- POST: Parses single lower-case letter.
 lower :: Parser Char Char
 lower
   = satisfy (\x -> 'a' <= x && x <= 'z')
 
--- POST: Calls 'satisfy' with predicate for upper-case letters
+-- POST: Parses single upper-case letter.
 upper :: Parser Char Char
 upper
   = satisfy (\x -> 'A' <= x && x <= 'Z')
 
--- POST: Parser for letters
+-- POST: Parses single letter.
 letter :: Parser Char Char
 letter
   = lower <|> upper
 
--- POST: Parser for alpha-numeric characters
+-- POST: Parses single alpha-numeric character.
 alphanum :: Parser Char Char
 alphanum
   = letter <|> digit
 
--- POST: Parser for all characters including escape chararacters
+-- POST: Parses any single character, including escape characters.
 character :: Parser Char Char
 character
   = satisfy ( `notElem` ['\\', '\"', '\'']) <|> escapeChar
 
--- POST: Parser for escape characters
+-- POST: Parses single escape character.
 escapeChar :: Parser Char Char
 escapeChar
   = do
       char '\\'
       tryParser (check (`elem` map fst escapeCharList))
-                       "Invalid Escape Char"
+                       "Invalid Escape Character"
       escaped_char <- item
       return $ fromJust $ lookup escaped_char escapeCharList
 
 {- PARSERS FOR SEQUENCES: -}
 
--- POST: Returns the input string if the given string is parsed successfully,
---       fails otherwise
+-- POST: Parses either whole string or fails.
 string :: String -> Parser Char String
 string []
   = return []
-string (x:xs)
-  = do
-      char x
-      string xs
-      return (x : xs)
+string (x:xs) = do
+  char x
+  string xs
+  return (x : xs)
 
 -- POST:    Parses zero or more occurences of p seperated by sep. Returns
---          parsed items as a list
--- EXAMPLE: It can be used to parse an inputstring of the form "1,2,3" where
---          the seperators have no special meaning
+--          parsed items as a list.
+-- EXAMPLE: sepby intLiteral char x "1,2,3" returns [1, 2, 3].
 sepby :: Parser Char a -> Parser Char b -> Parser Char [a]
 sepby p sep
   = sepby' p sep <|> return []
 
--- POST: Similar to sepby but it parses one or more occurences. It will fail
---       if there is not at least one occurence of p
+-- POST: Parses one or more occurences of p seperated by sep. Returns
+--       parsed items as a list.
 sepby' :: Parser Char a -> Parser Char b -> Parser Char [a]
 sepby' p sep
   = do
@@ -193,12 +175,10 @@ sepby' p sep
       xs <- many (sep >> p)
       return (x : xs)
 
--- POST:    It will parse one occurence of p, but first remove an opening
---          delimiter and then after parsing p it will remove a closing
---          delimiter. Returns the result of parsing p
--- EXAMPLE: It can be used to remove brackets and parse the contents inside.
---          parse (char '(') intLiteral (char ')') "(1)" will return
---          IntLiteral 1. It does not take in to account any white space
+-- POST:    Parses one occurence of p, removing opening and closing
+--          delimiters. Expects no whitespace. Returns result of parsing p.
+-- EXAMPLE: Remove brackets and parse the contents inside:
+--          bracketNoWS (char '(') intLiteral (char ')') "(1)" will return 1.
 bracketNoWS :: Parser Char a -> Parser Char b -> Parser Char c -> Parser Char b
 bracketNoWS open p close
   = do
