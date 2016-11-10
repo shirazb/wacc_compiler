@@ -5,6 +5,8 @@ module Parser.Function  where
 
 import Control.Monad ( liftM3 )
 import Control.Monad.Except ( throwError )
+
+import Parser.Identifier ( identifier )
 import Parser.Lexer
 import Parser.Statement ( parseStatement )
 import Parser.Type ( parseType )
@@ -41,7 +43,6 @@ checkExecutionPath _ = do
   pos <- getPosition
   throwError ("Mising return or exit statement in function body ending at: ",
     pos)
-
 
 -- POST: Parses a function defintion.
 parseFunction :: Parser Char Func
