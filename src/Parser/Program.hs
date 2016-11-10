@@ -10,7 +10,6 @@ import Parser.Function
 import Parser.Lexer
 import Parser.Statement
 import Parser.Combinators
-import Utilities.Declarations
 import Utilities.Definitions
 import Semantics.Annotators.AST
 

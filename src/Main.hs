@@ -15,7 +15,7 @@ import Semantics.Annotators.AST
 import Semantics.ScopeChecker
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
-import Utilities.Declarations (runParser)
+import Parser.Combinators
 
 main = do
   args         <- getArgs

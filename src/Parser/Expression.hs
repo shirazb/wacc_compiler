@@ -20,7 +20,6 @@ import Control.Monad.Except
 import Data.Maybe
 import Parser.Lexer
 import Parser.Combinators
-import Utilities.Declarations
 import Utilities.Definitions
 -- import Control.Monad.Except
 -- PRE:  None

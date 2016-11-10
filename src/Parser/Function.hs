@@ -14,7 +14,6 @@ import Parser.Lexer
 import Parser.Statement
 import Parser.Type
 import Parser.Combinators
-import Utilities.Declarations
 import Utilities.Definitions
 
 parseFunctionBody :: Parser Char Stat

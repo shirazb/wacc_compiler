@@ -12,7 +12,6 @@ import Data.Char           (isSpace)
 import Data.Maybe          (fromJust)
 
 import Parser.Combinators
-import Utilities.Declarations
 import Utilities.Definitions
 
 commentDelim :: String

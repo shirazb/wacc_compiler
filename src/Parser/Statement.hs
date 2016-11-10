@@ -13,7 +13,6 @@ import Parser.Expression
 import Parser.Lexer
 import Parser.Type
 import Parser.Combinators
-import Utilities.Declarations
 import Utilities.Definitions
 import Control.Monad.State
 
@@ -42,7 +41,7 @@ parseStatement'
 {-
 The following two parsers parse the built in functions of the WACC language.
 We have a generic parser for all built in funcs except Read. This is
-because the argument of read differs from the other built in functions 
+because the argument of read differs from the other built in functions
 -}
 
 parseRead :: Parser Char Stat
@@ -56,13 +55,13 @@ parseRead = do
 parseBuiltInFunc :: String -> (Expr -> Position -> Stat) -> Parser Char Stat
 parseBuiltInFunc funcName func = do
   keyword funcName
-  expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++ 
+  expr1 <- tryParser parseExpr ("Invalid arguments to " ++ funcName ++
              " function")
   pos <- getPosition
   return $ func expr1 pos
 
 {-
-Parsers for all the synctactic structures in the WACC language that make up a 
+Parsers for all the synctactic structures in the WACC language that make up a
 statement.
 -}
 

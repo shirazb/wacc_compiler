@@ -22,7 +22,7 @@ executable WACC-HASKELL
                        Semantics.Annotators.AST, Semantics.Annotators.Expression,
                        Semantics.Annotators.Function, Semantics.Annotators.Identifier,
                        Semantics.Annotators.Statement, Semantics.Annotators.Util,
-                       Semantics.ErrorMsgs, Utilities.Declarations, Utilities.Definitions
+                       Semantics.ErrorMsgs, Utilities.Definitions
   other-extensions:    FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, NoMonomorphismRestriction, UndecidableInstances, TypeFamilies, DeriveFunctor, GeneralizedNewtypeDeriving
   build-depends:       base >=4.8 && <4.10, mtl >=2.2 && <2.3, transformers >=0.4 && <0.6, containers >=0.4 && <0.6
   hs-source-dirs:      src, app, src/Semantics/Annotators, src/Semantics, src/Parser, src/Utilities
