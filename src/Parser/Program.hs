@@ -1,12 +1,9 @@
-{-# LANGUAGE MultiWayIf #-}
 module Parser.Program (parseProgram) where
 
-import Control.Applicative
-import Control.Monad
+import Control.Applicative  (many, liftA2)
 import Control.Monad.State  (MonadState (..), StateT (..))
-import Control.Monad.Except
+import Control.Monad.Except (throwError)
 
-import Parser.Expression
 import Parser.Function
 import Parser.Lexer
 import Parser.Statement
@@ -14,6 +11,7 @@ import Parser.Combinators
 import Utilities.Definitions
 import Semantics.Annotators.AST
 
+-- Parses a WACC program.
 parseProgram :: Parser Char Program
 parseProgram
   = bracket
@@ -22,14 +20,17 @@ parseProgram
       endingParse
   where
     parseProgram'
-      = liftM2 Program (many parseFunction)
+      = liftA2 Program
+          (many parseFunction)
           (require parseStatement "Invalid or missing program body")
 
+-- Parses the end token of a WACC program and ensures there is nothing after.
 endingParse :: Parser Char String
 endingParse = do
   require (string "end") "Unexpected Symbol"
   junk
   unusedInputString <- get
   pos               <- getPosition
-  if | null unusedInputString -> return "Valid Program"
-     | otherwise -> throwError ("Syntax Error: Invalid Program", updateRowPosition pos)
+  if null unusedInputString
+    then return "Valid Program"
+    else throwError ("Syntax Error: Unexpected Symbol", updateRowPosition pos)
