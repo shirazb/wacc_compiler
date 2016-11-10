@@ -1,10 +1,3 @@
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE NoMonomorphismRestriction  #-}
-{-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE TypeFamilies               #-}
-
 module Parser.Function  where
 
 import Control.Monad
@@ -19,34 +12,33 @@ import Utilities.Definitions
 parseFunctionBody :: Parser Char Stat
 parseFunctionBody = do
   funcBody  <- parseStatement
-  parseStatAndCheckExecPathEnds funcBody
+  checkExecPathEnds funcBody
   return funcBody
 
 {-
   Should check patterns (Seq (Return _) _) and (Seq (Exit _) _), throwing an
   error; unreachable statements are not permitted.
 -}
-parseStatAndCheckExecPathEnds :: Stat -> Parser Char Stat
-parseStatAndCheckExecPathEnds s@Return{}
+checkExecPathEnds :: Stat -> Parser Char Stat
+checkExecPathEnds s@Return{}
  = return s
-parseStatAndCheckExecPathEnds s@Exit{}
+checkExecPathEnds s@Exit{}
  = return s
-parseStatAndCheckExecPathEnds (If _ s1 s2 _)
- = parseStatAndCheckExecPathEnds s1 >> parseStatAndCheckExecPathEnds s2
-parseStatAndCheckExecPathEnds (While _ s1 _)
- = parseStatAndCheckExecPathEnds s1
-parseStatAndCheckExecPathEnds (Block s1 _)
- = parseStatAndCheckExecPathEnds s1
-parseStatAndCheckExecPathEnds (Seq Return{} _ _) = do
+checkExecPathEnds (If _ s1 s2 _)
+ = checkExecPathEnds s1 >> checkExecPathEnds s2
+checkExecPathEnds (While _ s1 _)
+ = checkExecPathEnds s1
+checkExecPathEnds (Block s1 _)
+ = checkExecPathEnds s1
+checkExecPathEnds (Seq Return{} _ _) = do
    pos <- getPosition
    throwError ("Unreachable statement after return", pos)
-parseStatAndCheckExecPathEnds (Seq s1 s2 _)
- = parseStatAndCheckExecPathEnds s2
-parseStatAndCheckExecPathEnds _ = do
+checkExecPathEnds (Seq s1 s2 _)
+ = checkExecPathEnds s2
+checkExecPathEnds _ = do
   pos <- getPosition
   throwError ("Mising return or exit statement in function body ending at: ",
     pos)
-
 
 -- POST: Parses a function defintion.
 parseFunction :: Parser Char Func
@@ -68,7 +60,8 @@ getTypeOfParam (Param t _ _)
   = t
 
 getListOfParams :: ParamList -> [Param]
-getListOfParams (ParamList list _) = list
+getListOfParams (ParamList list _)
+  = list
 
 -- POST: Attempts to parse a list of parameters if there is one.
 parseParamList :: Parser Char ParamList
