@@ -1,10 +1,14 @@
+{-
+   This module defines a function which type checks all left hand sides
+   in the WACC language.
+-}
 {-# LANGUAGE MultiWayIf #-}
 
 module Semantics.TypeChecker.AssignLHS (
   typeCheckLHS
 ) where
 
-import Control.Monad.Writer.Strict
+import Control.Monad.Writer.Strict (tell)
 
 import Semantics.ErrorMessages
 import Semantics.TypeChecker.Expression
