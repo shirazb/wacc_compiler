@@ -21,7 +21,7 @@ import Utilities.Declarations
 {- GENERIC PREDICATE COMBINATORS: -}
 
 -- POST: Consumes the first character if the input string is non-empty, fails
---       otherwise (denoted by empty string)
+--       otherwise (denoted by Nothing)
 item :: Parser Char Char
 item
   = do

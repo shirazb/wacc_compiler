@@ -80,5 +80,4 @@ errorReporterParser p err
 tryParser :: Parser Char a -> String -> Parser Char a
 tryParser parser errorMessage = do
   p <- getPosition
-  errorReporterParser parser
-      ("Syntax Error: " ++ errorMessage, updateRowPosition p)
+  parser <|> throwError ("Syntax Error: " ++ errorMessage, updateRowPosition p)
