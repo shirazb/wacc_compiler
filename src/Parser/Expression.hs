@@ -45,31 +45,26 @@ parseExpr'
 {- BASIC COMBINATORS: -}
 -- Used to parse atomic expressions
 
-
--- intLiteral :: Parser Char Expr
--- intLiteral = tryParser intLit "Syntax Error: Int overflow"
-
 intLiteral :: Parser Char Expr
 intLiteral = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
   pos  <- getPosition
   let n = if sign == "-" then negate (read num) else read num
-  if (n > 2147483647 || n < -2147483648 )
-    then throwError ("Syntax: Int Overflow", updateRowPosition pos)
-    else return $ IntLit n pos
-
+  if | (n > 2147483647 || n < -2147483648 ) ->
+          throwError ("Syntax: Int Overflow", updateRowPosition pos)
+     | otherwise -> return $ IntLit n pos
 
 boolLiteral :: Parser Char Expr
 boolLiteral = do
   boolean <- keyword "true" <|> keyword "false"
   pos     <- getPosition
-  if boolean == "true"
-    then return (BoolLit True pos)
-    else return (BoolLit False pos)
+  if | boolean == "true" -> return (BoolLit True pos)
+     | otherwise -> return (BoolLit False pos)
 
-quoted c p
-  = bracket (char c) p (char c)
+quoted :: Char -> Parser Char b -> Parser Char b
+quoted c parser
+  = bracket (char c) parser (char c)
 
 charLiteral :: Parser Char Expr
 charLiteral = do
@@ -108,14 +103,14 @@ parseUnaryAppLow = do
   op      <- foldr1 (<|>) (map (keyword . fst) unOpPrec2)
   let op' = fromJust $ lookup op unOpPrec2
   expr    <- tryParser parseExpr "Invalid argument to unary operator"
-  pos <- getPosition
+  pos     <- getPosition
   return $ UnaryApp op' expr pos
 
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
   op   <- parseFromMap unOpPrec1
-  expr <- tryParser parseExpr' "Invalid argument to unary operator"
-  pos <- getPosition
+  expr <- tryParser parseExpr "Invalid argument to unary operator"
+  pos  <- getPosition
   return $ UnaryApp op expr pos
 
 {-
