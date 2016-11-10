@@ -14,18 +14,16 @@ module Parser.Expression (
   arrayElem
 ) where
 
-import Control.Applicative
-import Control.Monad
-import Control.Monad.Except
-import Data.Maybe
+import Control.Applicative ((<*>), (<|>), some, many, liftA2, liftA3)
+import Control.Monad.Except (throwError)
+import Data.Maybe (fromJust)
 import Parser.Lexer
 import Parser.Combinators
 import Utilities.Definitions
--- import Control.Monad.Except
--- PRE:  None
--- POST: Parses all valid expressions in the WACC language, it is factored out
---       like this to prevent the parser going in to an infinite loop due to
---       left recursion.
+
+-- NB:   parseExpr avoids left recursion in binary expressions by separating
+--       binary expression parser from the other forms of expression parsers.
+-- POST: Parses valid expressions, generates an error upon failing.
 parseExpr :: Parser Char Expr
 parseExpr
   = binaryExpr <|> parseExpr'
@@ -42,15 +40,16 @@ parseExpr'
   <|> exprIdent
   <|> pairLiteral
 
-{- BASIC COMBINATORS: -}
--- Used to parse atomic expressions
+{- LITERAL COMBINATORS: -}
+
+-- can be optionally signed.
 intLiteral :: Parser Char Expr
 intLiteral = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
   pos  <- getPosition
   let n = if sign == "-" then negate (read num) else read num
-  if | (n > maxInt|| n < minInt) ->
+  if | (n > maxInt || n < minInt) ->
           throwError ("Syntax: Int Overflow", updateRowPosition pos)
      | otherwise -> return $ IntLit n pos
 
@@ -74,16 +73,17 @@ charLiteral = do
 
 pairLiteral :: Parser Char Expr
 pairLiteral
-  = keyword "null" >> fmap PairLiteral getPosition
+  = keyword "null" >> PairLiteral <$> getPosition
 
 exprIdent :: Parser Char Expr
 exprIdent
-  = IdentE <$> identifier <*> getPosition
+  = liftA2 IdentE identifier getPosition
 
 stringLiter :: Parser Char Expr
 stringLiter
-  = StringLit <$> quoted '\"'
-    (require (many character) "Invalid char found in string") <*> getPosition
+  = liftA2 StringLit
+      (quoted '\"' (require (many character) "Invalid char found in string"))
+      getPosition
 
 {-
 Complex combinators used to parse larger and more complex expressions.
@@ -178,12 +178,12 @@ parseBinOpPrec6
 --          Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
 chainl1 :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
 chainl1 p op
-  = trimWS $ p >>= rest
+  = trimWS (p >>= rest)
   where
     rest x = (do
-      f <- op
-      y <- require p "Invalid argument to binary expression"
-      pos <- getPosition
+      f    <- op
+      y    <- require p "Invalid argument to binary expression"
+      pos  <- getPosition
       rest $ BinaryApp f x y pos) <|> return x
 
 chainr :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
@@ -201,25 +201,36 @@ chainr p op
 --       away brackets.
 bracketedExpr :: Parser Char Expr
 bracketedExpr
-  = bracket (punctuation '(') (require parseExpr
-      "Invalid Expression in brackets") (require (punctuation ')')
-      "Missing closing parenthesis to bracketed expression")
+  = bracket
+      (punctuation '(')
+      (require parseExpr "Invalid Expression in brackets")
+      (require (punctuation ')')
+          "Missing closing parenthesis to bracketed expression")
 
 -- POST:    Parses references to array elements.
 -- EXAMPLE: parse arrayElem "abc[1][2]" will return
 --          ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser Char ArrayElem
 arrayElem
-  = ArrayElem <$> identifier <*> some (bracket (punctuation '[') parseExpr
-      (punctuation ']')) <*> getPosition
+  = liftA3 ArrayElem
+      identifier
+      arrayIndexes
+      getPosition
+
+-- POST: Parses the array indexers e.g. [1][2]
+arrayIndexes :: Parser Char [Expr]
+arrayIndexes
+  = some (bracket (punctuation '[') parseExpr (punctuation ']'))
 
 -- POST: Wraps parsed array elements in appropriate data constructor.
 arrayElemExpr :: Parser Char Expr
 arrayElemExpr
-  = ExprArray <$> arrayElem <*> getPosition
+  = liftA2 ExprArray arrayElem getPosition
 
 -- POST: Parses a list of expressions.
 parseExprList :: Char -> Char -> Parser Char [Expr]
 parseExprList open close
-  = bracket (punctuation open) (sepby parseExpr (punctuation ','))
+  = bracket
+      (punctuation open)
+      (sepby parseExpr (punctuation ','))
       (punctuation close)
