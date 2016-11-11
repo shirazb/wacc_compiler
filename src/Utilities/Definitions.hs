@@ -25,7 +25,6 @@ type Err       = (String, Position)
 type ErrorMsg      = String
 type TypeChecker a = Writer [ErrorMsg] a
 
--- errrr, someone come up with a better name pls...
 type LexicalScoper a = State SymbolTable a
 
 data Program   = Program [Func] Stat                     deriving (Eq, Show)
