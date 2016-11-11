@@ -31,7 +31,7 @@ newtype Parser t a
 -- POST: Executes a parser over a given input stream.
 runParser :: Parser t a -> [t] -> Either Err (Maybe((a,[t]), Position))
 runParser p inputString
- = runMaybeT $ runStateT (runStateT (parse p) inputString) (0, 0)
+ = runMaybeT $ runStateT (runStateT (parse p) inputString) (1, 1)
 
 {- Position Utility Functions -}
 
