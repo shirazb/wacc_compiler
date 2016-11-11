@@ -18,21 +18,20 @@ typeCheckStat (Skip _)
 
 typeCheckStat stat@(Declaration t ident rhs pos) = do
   typeRHS <- typeCheckRHS rhs
-  when (typeRHS /= t) (tell [typeMismatch t typeRHS pos stat])
+  when (typeRHS /= t) (tell [typeMismatch t typeRHS (getPosAssignRHS rhs) stat])
 
 typeCheckStat stat@(Assignment lhs rhs pos) = do
   typeLHS <- typeCheckLHS lhs
   typeRHS <- typeCheckRHS rhs
   when (typeLHS /= typeRHS) (tell [typeMismatch typeLHS typeRHS pos stat])
 
-
 -- read has to only be a program variable?
 -- array elem or pair element
 -- the types here are wrong
 typeCheckStat (Read lhs pos) = do
   t <- typeCheckLHS lhs
-  when (not (checkCharOrInt t)) (tell ["Read function called with" ++
-    " incorrect types"])
+  unless (checkCharOrInt t)
+      (tell ["Read function called with incorrect types"])
   return ()
 
 
