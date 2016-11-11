@@ -20,6 +20,7 @@ arrayDimMM   = "Array dimension mismatch"
 derefNullPtr = "Dereferencing a null pointer"
 numOfArgs    = "Incorrect number of arguments"
 freeNonHeap  = "Freeing non heap allocated object"
+returnMain   = "Cannot return from the top-level statement of the program"
 
 -- POST: Outputs a type mismatch error message
 typeMismatch :: Show a => Type -> Type -> Position -> a -> ErrorMsg
@@ -55,8 +56,21 @@ typeMismatchList expT actT pos expr'
     act  ++ show actT  ++ "\n" ++
     expr ++ show expr' ++ "\n"
 
+-- POST: Outputs an error message if freeing a non-heap allocated object
+freeNonHeapObject :: Position -> ErrorMsg
+freeNonHeapObject pos
+  = err  ++ freeNonHeap ++ "\n" ++                                               
+    loc  ++ show pos    ++ "\n" ++                                               
+
+-- POST: Outputs an error message if returning from the top-level statement of 
+--       the program
+returnInMain :: Position -> ErrorMsg
+returnInMain pos
+  = err  ++ returnMain  ++ "\n" ++
+    loc  ++ show pos    ++ "\n" ++                                              
+
 -- POST: Outputs a scope error message
-mkScopeErrMsg :: ScopeError -> String
+mkScopeErrMsg :: ScopeError -> ErrorMsg 
 mkScopeErrMsg (name, scopeErr, pos)
   = err ++ show scopeErr ++
     (case scopeErr of
@@ -66,18 +80,18 @@ mkScopeErrMsg (name, scopeErr, pos)
                       "to have a scope error. ") ++ "Position: " ++ show pos
 
 -- POST: Prepends a string with an assertion 
-assertionFailed :: String -> String
+assertionFailed :: String -> ErrorMsg 
 assertionFailed                                                                 
   = (++) "Assertion Failed: " 
 
 -- POST: Prepends a strubg with "Error"
-errorMsg :: String -> String
+errorMsg :: String -> ErrorMsg 
 errorMsg                                                                        
   = (++) "Error: "
 
 -- POST: Assertion thrown when two symbol tables that are being concatenated
 --       do not point to the same enclosing scope
-assertSameParentScope :: String
+assertSameParentScope :: ErrorMsg 
 assertSameParentScope                                                           
   = assertionFailed $ "In Semantics.SymbolTable.concatSymTab: " 
     ++ "Attempting to concatenate two symbol tables with different parents" 
@@ -85,21 +99,22 @@ assertSameParentScope
 
 -- POST: Assertion thrown when annotating an identifier that has already been
 --       annotated is used in a declaration
-assertReannotatingNewIdent :: (Show a1, Show a) => String -> a -> a1 -> String
+assertReannotatingNewIdent :: (Show a1, Show a) => String -> a -> a1 
+                                -> ErrorMsg 
 assertReannotatingNewIdent name currInfo newInfo                                
   = assertionFailed $ "In Semantics.Annotators.Identifier.annotateNewIdent: "   
     ++ "Attempting to reannotate identifier " ++ name ++ " that has info "        
     ++ show currInfo ++ " with " ++ show newInfo ++ "." 
 
 -- POST: Assertion thrown when reannotating an already declared identifier
-assertReannotatingIdent :: (Show a1, Show a) => a -> String -> a1 -> String
+assertReannotatingIdent :: (Show a1, Show a) => a -> String -> a1 -> ErrorMsg 
 assertReannotatingIdent ctxt name info                                          
   = assertionFailed $ "In Semantics.Annotators.Identifier.annotateIdent: "      
     ++ "Attempting to reannotate identifier " ++ name ++ "(" ++ show ctxt ++ ")"  
     ++ " that has info " ++ show info ++ "."
 
 -- POST: Assertion thrown when an identifier has no name or context
-assertNoNameAndContext :: Show a => a -> String
+assertNoNameAndContext :: Show a => a -> ErrorMsg 
 assertNoNameAndContext ident                                                    
   = assertionFailed $ "In Semantics.Annotators.Util.nameAndContext: "           
     ++ "Attempting to get name and context of identifier " ++ show ident

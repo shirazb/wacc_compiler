@@ -38,7 +38,7 @@ typeCheckStat (Free expr pos)
       ArrayT _ _ -> return ()
       PairT _ _  -> return ()
       NoType     -> return ()
-      _          -> tell ["freeing thing not on the heap"]
+      _          -> tell [freeNonHeapObject pos]
 
 typeCheckStat exitStat@(Exit expr pos) = do
   t <- typeCheckExpr expr

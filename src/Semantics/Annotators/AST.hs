@@ -1,4 +1,5 @@
-{-
+{- This module traverses through and annotates the AST.
+
   These annotators descend the AST performing lexical scoping whilst
   simultaneously adding type information to each identifier encountered. This
   is so that, during type checking, the type of an identifier encountered
@@ -34,23 +35,22 @@
 
   Whenever an identifer is used (not declared), we perform the same lookup
   to check if an identifer is already in scope. If it is, we add the retrieved
-  type info to the identifier in the AST. Otherwise, we mark
-  it as not in scope.
--}
+  type info to the identifier in the AST. Otherwise, we mark it as not in 
+  scope. -}
 
-module Semantics.Annotators.AST (
-  annotateAST
-) where
+module Semantics.Annotators.AST (annotateAST) where
 
 import Control.Monad.State.Strict (runState)
 import qualified Data.Map as Map
 
+{- LOCAL IMPORTS -}
 import Semantics.Annotators.Function
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
 import Semantics.ErrorMessages
 import Utilities.Definitions
 
+-- POST: Traverses the AST and annotates it
 annotateAST :: AST -> AST
 annotateAST (Program fs main)
   = newAST
@@ -62,6 +62,7 @@ annotateAST (Program fs main)
       newFs' <- mapM annotateFunc newFs
       inChildScopeAndWrap (Program newFs') (annotateStat main)
 
+-- POST: Replaces the identifier of the function
 replaceIdent :: Ident -> Func -> Func
 replaceIdent i (Func t _ pl st pos)
   = Func t i pl st pos

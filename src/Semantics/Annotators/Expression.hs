@@ -1,6 +1,4 @@
-{-
-  Annotates all the identifers found within expressions.
--}
+{- This module annotates all the identifers found within expressions -}
 
 module Semantics.Annotators.Expression (
   annotateExpr,
@@ -9,12 +7,14 @@ module Semantics.Annotators.Expression (
 
 import qualified Data.Map as Map
 
+{- LOCAL IMPORTS -}
 import Semantics.Annotators.Identifier
 import Semantics.ErrorMessages 
 import Utilities.Definitions
 
-
+-- POST: Annotates expressions
 annotateExpr :: Expr -> LexicalScoper Expr
+
 annotateExpr (IdentE ident pos) = do
   newIdent <- annotateIdent Variable ident
   return $ IdentE newIdent pos
@@ -36,6 +36,7 @@ annotateExpr (BinaryApp binOp e1 e2 pos) = do
 annotateExpr literal
   = return literal
 
+-- POST: Annotates a list of expressions
 annotateExprList :: [Expr] -> LexicalScoper [Expr]
 annotateExprList
   = mapM annotateExpr

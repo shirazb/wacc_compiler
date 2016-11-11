@@ -1,6 +1,5 @@
-{-
-  Annotates identifiers with type information, or marks them as scope errors.
--}
+{- This module annotates identifiers with type information, or marks them as 
+scope errors -}
 
 module Semantics.Annotators.Identifier (
   annotateIdent,
@@ -10,13 +9,14 @@ module Semantics.Annotators.Identifier (
 import qualified Data.Map as Map
 import Control.Monad.State.Strict
 
+{- LOCAL IMPORTS -}
 import Semantics.Annotators.Util
 import Semantics.ErrorMessages
 import Utilities.Definitions
 
--- PRE: info is NoInfo
+-- PRE:  info parameter is NoInfo
 -- POST: If the identifier is not a duplicate, adds it to the current ST.
---       Otherwise, marks it as a duplicate.
+--       Otherwise, marks it as a duplicate
 annotateNewIdent :: Ident -> Info -> LexicalScoper Ident
 annotateNewIdent (Ident name NoInfo) info = do
   st            <- get

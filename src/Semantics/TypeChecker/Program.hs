@@ -12,8 +12,7 @@ import Utilities.Definitions
 -- POST: Type checks the program
 typeCheckProgram :: Program -> TypeChecker ()
 typeCheckProgram (Program fs main) = do
-  when (checkForReturnInMain main) (tell ["Semantic Error: Return is " ++ 
-                                          "not allowed in main"])
+  when (checkForReturnInMain main) (tell [returnInMain pos])
   mapM_ typeCheckFunc fs
   typeCheckStat main
 
