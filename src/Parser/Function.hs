@@ -7,11 +7,11 @@ import Control.Monad ( liftM3 )
 import Control.Monad.Except ( throwError )
 
 import Parser.Combinators ( Parser, getPosition, require, sepby )
-import Utilities.Definitions
 import Parser.Identifier ( identifier )
 import Parser.Lexer
 import Parser.Statement ( parseStatement )
 import Parser.Type ( parseType )
+import Utilities.Definitions
 
 -- POST: Parses a function defintion.
 parseFunction :: Parser Char Func
