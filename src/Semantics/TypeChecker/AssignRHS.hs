@@ -63,8 +63,8 @@ checkNoType (_ : ts)
   = checkNoType ts
 
 -- Gets the position of an AssignRHS
-getPosAssignRHS :: AssignRHS -> Position
-getPosAssignRHS rhs
+getPosRHS :: AssignRHS -> Position
+getPosRHS rhs
   = case rhs of
       ExprAssign _ p        -> p
       ArrayLitAssign _ p    -> p
