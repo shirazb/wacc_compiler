@@ -197,9 +197,9 @@ chainr p op
   = p >>= rest
   where
     rest x = (do
+      pos <- getPosition
       f <- op
       xs <- chainr p op
-      pos <- getPosition
       rest $ BinaryApp f x xs pos
       ) <|> return x
 

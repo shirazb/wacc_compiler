@@ -151,10 +151,9 @@ parseRHS
 -- POST: Parses all valid left hand sides in WACC.
 parseLHS :: Parser Char AssignLHS
 parseLHS
-  =   liftM2 ArrayDeref arrayElem getPosition
-  <|> liftM2 PairDeref pairElem getPosition
-  <|> liftM2 Var identifier getPosition
-
+  =   do {pos <- getPosition; element <- arrayElem; return $ ArrayDeref element pos}
+  <|> do {pos <- getPosition; pairE <- pairElem; return $ PairDeref pairE pos}
+  <|> do {pos <- getPosition; ident <- identifier; return $ Var ident pos}
 
 {-
   Parsers used in the definitions of parseLHS & parseRHS, they parse
@@ -163,8 +162,10 @@ parseLHS
 
 -- POST: Parses an expression (RHS).
 assignToExpr :: Parser Char AssignRHS
-assignToExpr
-  = liftM2 ExprAssign parseExpr getPosition
+assignToExpr = do
+  pos <- getPosition
+  expr <- parseExpr
+  return $ ExprAssign expr pos
 
 -- POST: Parses a newpair declaration (RHS).
 assignToNewPair :: Parser Char AssignRHS
@@ -203,8 +204,11 @@ assignToArrayLit = do
 
 -- POST: Parses pair elements in which can appear in both lhs & rhs.
 pairElem :: Parser Char PairElem
-pairElem
-  = liftA3 PairElem (pairFst <|> pairSnd) pairElemExpr getPosition
+pairElem = do
+  pos <- getPosition
+  selector <- pairFst <|> pairSnd
+  expr <- pairElemExpr
+  return $ PairElem selector expr pos
 
 -- POST: Parses a pair elem expression.
 pairElemExpr :: Parser Char Expr
