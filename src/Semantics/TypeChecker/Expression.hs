@@ -28,15 +28,15 @@ checkUnAppType expectedT actualT opReturnT pos a
 checkBinaryApp :: BinOp -> Type -> Type -> Type -> Expr -> TypeChecker Type
 checkBinaryApp op opT arg1T arg2T expr
   = if arg1T /= arg2T
-      then tell [typeMismatch arg1T arg2T (getPos expr) expr] >>
+      then tell [typeMismatch arg1T arg2T (getPosExpr expr) expr] >>
              return NoType;
       else evalArg
   where
     evalArg = case (arg1T, arg2T) of
                   (NoType, _) -> return NoType
                   (_, NoType) -> return NoType
-                  _            -> if | opT /= arg1T -> tell [typeMismatch opT arg1T (getPos expr) expr] >> return NoType
-                                     | opT /= arg2T -> tell [typeMismatch opT arg2T (getPos expr) expr] >> return NoType
+                  _            -> if | opT /= arg1T -> tell [typeMismatch opT arg1T (getPosExpr expr) expr] >> return NoType
+                                     | opT /= arg2T -> tell [typeMismatch opT arg2T (getPosExpr expr) expr] >> return NoType
                                      | otherwise -> return arg1T
 
 
@@ -181,11 +181,11 @@ typeCheckIsInt :: Expr -> TypeChecker ()
 typeCheckIsInt e = do
   eType <- typeCheckExpr e
   unless (eType == BaseT BaseInt)
-    (tell [typeMismatch (BaseT BaseInt) eType (getPos e) e])
+    (tell [typeMismatch (BaseT BaseInt) eType (getPosExpr e) e])
 
 -- POST: Returns the positon of the given expression in the source file
-getPos :: Expr -> Position
-getPos e
+getPosExpr :: Expr -> Position
+getPosExpr e
   = case e of
       StringLit _     p -> p
       CharLit _       p -> p

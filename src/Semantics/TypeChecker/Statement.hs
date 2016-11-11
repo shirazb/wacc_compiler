@@ -18,12 +18,12 @@ typeCheckStat (Skip _)
 
 typeCheckStat stat@(Declaration t ident rhs pos) = do
   typeRHS <- typeCheckRHS rhs
-  when (typeRHS /= t) (tell [typeMismatch t typeRHS (getPosAssignRHS rhs) stat])
+  when (typeRHS /= t) (tell [typeMismatch t typeRHS (getPosRHS rhs) stat])
 
 typeCheckStat stat@(Assignment lhs rhs pos) = do
   typeLHS <- typeCheckLHS lhs
   typeRHS <- typeCheckRHS rhs
-  when (typeLHS /= typeRHS) (tell [typeMismatch typeLHS typeRHS pos stat])
+  when (typeLHS /= typeRHS) (tell [typeMismatch typeLHS typeRHS (getPosRHS rhs) stat])
 
 -- read has to only be a program variable?
 -- array elem or pair element
@@ -49,14 +49,14 @@ typeCheckStat exitStat@(Exit expr pos) = do
 typeCheckStat (If cond s1 s2 pos) = do
   exprT <- typeCheckExpr cond
   when (exprT /= BaseT BaseBool)
-    (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
+    (tell [typeMismatch (BaseT BaseBool) exprT (getPosExpr cond) cond])
   typeCheckStat s1
   typeCheckStat s2
 
 typeCheckStat (While cond stat pos) = do
   exprT <- typeCheckExpr cond
   when (exprT /= BaseT BaseBool)
-    (tell [typeMismatch (BaseT BaseBool) exprT pos cond])
+    (tell [typeMismatch (BaseT BaseBool) exprT (getPosExpr cond) cond])
   typeCheckStat stat
 
 typeCheckStat (Return expr pos)
