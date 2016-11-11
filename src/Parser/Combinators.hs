@@ -1,5 +1,5 @@
 {-
-  Basic parser combinator definitions which are used to 
+  Basic parser combinator definitions which are used to
   build larger and more complex parsers.
 -}
 
@@ -31,7 +31,7 @@ newtype Parser t a
 -- POST: Executes a parser over a given input stream.
 runParser :: Parser t a -> [t] -> Either Err (Maybe((a,[t]), Position))
 runParser p inputString
- = runMaybeT $ runStateT (runStateT (parse p) inputString) (0, 0)
+ = runMaybeT $ runStateT (runStateT (parse p) inputString) (1, 1)
 
 {- Position Utility Functions -}
 
@@ -62,12 +62,11 @@ updateRowPosition (ln, c)
 -- POST: Consumes the first character if the input string is non-empty, fails
 --       otherwise (denoted by Nothing). Updates position appropriately.
 item :: Parser Char Char
-item
-  = do
-    state <- get
-    case state of
-      (c:cs) -> do {put cs; updatePosition c; return c}
-      []     -> failParser
+item = do
+  state <- get
+  case state of
+    (c:cs) -> do {put cs; updatePosition c; return c;}
+    []     -> failParser
 
 -- POST: A parser which always fails
 failParser :: MonadPlus m => m a
@@ -91,8 +90,8 @@ check :: (a -> Bool) -> Parser a ()
 check predicate = do
   inputString <- get
   case inputString of
-    inp@(x:xs) -> do {guard (predicate x); put inp;}
-    _          -> failParser
+    inp@(x:xs) -> do { guard (predicate x); put inp; }
+    []         -> failParser
 
 {- BASIC ATOMIC COMBINATORS: -}
 
@@ -135,10 +134,9 @@ character
 escapeChar :: Parser Char Char
 escapeChar = do
   char '\\'
-  require (check (`elem` map fst escapeCharList))
-                   "Invalid Escape Character"
+  require (check (`elem` map fst escapeCharList)) "Invalid Escape Character"
   escaped_char <- item
-  return $ fromJust $ lookup escaped_char escapeCharList
+  return $ fromJust (lookup escaped_char escapeCharList)
 
 {- PARSERS FOR SEQUENCES: -}
 

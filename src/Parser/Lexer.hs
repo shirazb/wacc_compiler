@@ -1,7 +1,7 @@
 {-
-This module defines a number of combinators to handle lexical issues, such as
-removing whitespace and comments. It also handles distinguishing between
-keywords and identifiers.
+  This module defines a number of combinators to handle lexical issues, such as
+  removing whitespace and comments. It also handles distinguishing between
+  keywords and identifiers.
 -}
 
 module Parser.Lexer where
@@ -23,7 +23,7 @@ comments :: Parser Char ()
 comments = do
     string commentDelim
     many (satisfy (/= '\n'))
-    require (char '\n') "Comment not terminated."
+    require (char '\n') "Comment not terminated with newline."
     return ()
 
 -- Post: Removes spaces incl \t,\n etc
@@ -102,7 +102,6 @@ parseFromMap assoclist = do
 bracket :: Parser Char a -> Parser Char b -> Parser Char c  -> Parser Char b
 bracket open p close
   = trimWS $ bracketNoWS open p close
-
 
 -- List of keywords defined in the wacc language
 keywords = ["while", "if", "fi", "else", "null", "pair", "is", "begin", "skip",
