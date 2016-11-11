@@ -46,9 +46,10 @@ typeMismatchList expT actT pos expr'
 
 mkScopeErrMsg :: ScopeError -> String
 mkScopeErrMsg (name, scopeErr, pos)
-  = err ++ show scopeErr ++
+  = err ++
     (case scopeErr of
-      Duplicate  -> "Redeclaration of identifier \'" ++ name ++ "\'."
+      Duplicate  -> "Redeclaration of identifier \'" ++ name
       NotInScope -> "Identifier \'" ++ name ++ "\' not in scope."
-      NoError    -> error "Assertion Failed: found NoError in ident said " ++ 
-                      "to have a scope error. ") ++ "Position: " ++ show pos
+      NoError    -> error "Assertion Failed: found NoError in ident said " ++
+                      "to have a scope error. ") ++
+                      "\n         Position: " ++ show pos

@@ -36,13 +36,13 @@ typeCheckRHS (PairElemAssign p _)
 
 -- Type checks function calls: checks the ident is a function and that the
 -- parameter list is of the correct type.
-typeCheckRHS (FuncCallAssign (Ident funcName i) es pos) = do
+typeCheckRHS expr@(FuncCallAssign (Ident funcName i) es pos) = do
   ts <- mapM typeCheckExpr es
   let FuncT t ts' = typeInfo i
-  if | length ts /= length ts' -> tell [typeMismatchList ts' ts pos funcName]
+  if | length ts /= length ts' -> tell [typeMismatchList ts' ts pos expr]
                                     >> return NoType
      | ts == ts'               -> return t
-     | otherwise               -> tell [typeMismatchList ts' ts pos funcName]
+     | otherwise               -> tell [typeMismatchList ts' ts pos expr]
                                   >> return NoType
 
 -- Given a list of types, checks each are the same.

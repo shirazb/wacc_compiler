@@ -35,10 +35,9 @@ checkBinaryApp op opT arg1T arg2T expr
     evalArg = case (arg1T, arg2T) of
                   (NoType, _) -> return NoType
                   (_, NoType) -> return NoType
-                  _           -> if opT /= arg1T || opT /= arg2T
-                                   then tell [typeMismatch opT arg1T (getPos expr) expr] >>
-                                        return NoType
-                                   else return arg1T
+                  _            -> if | opT /= arg1T -> tell [typeMismatch opT arg1T (getPos expr) expr] >> return NoType
+                                     | opT /= arg2T -> tell [typeMismatch opT arg2T (getPos expr) expr] >> return NoType
+                                     | otherwise -> return arg1T
 
 
 -- POST: Type checks expressions, returns either a type which is the

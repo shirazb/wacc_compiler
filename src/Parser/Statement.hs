@@ -46,6 +46,7 @@ Parsers for statements in the WACC language.
 -- POST: Parses an if statement.
 parseIfStat :: Parser Char Stat
 parseIfStat = do
+  pos <- getPosition
   keyword "if"
   cond <- require parseExpr "Invalid expression in if condition"
   require (keyword "then") "Missing 'then' keyword"
@@ -53,27 +54,26 @@ parseIfStat = do
   require (keyword "else") "Missing 'else' keyword"
   elseStat <- require parseStatement "Invalid statement in 'else' branch"
   require (keyword "fi") "Missing 'fi' keyword"
-  pos <- getPosition
   return $ If cond thenStat elseStat pos
 
 -- POST: Parses a while loop.
 parseWhileStat :: Parser Char Stat
 parseWhileStat = do
+  pos <- getPosition
   keyword "while"
   cond      <- require parseExpr "Invalid expression in while condition"
   require (keyword "do") "Missing 'do' keyword"
   loopBody  <- require parseStatement "Invalid statement in while body"
   require (keyword "done") "Missing 'done' keyword"
-  pos <- getPosition
   return $ While cond loopBody pos
 
 -- POST: Parses a new block of statements.
 parseBlock :: Parser Char Stat
 parseBlock = do
+  pos <- getPosition
   keyword "begin"
   stat <- require parseStatement "Invalid statement in block"
   require (keyword "end") "Missing 'end' keyword in block"
-  pos <- getPosition
   return $ Block stat pos
 
 
@@ -82,9 +82,9 @@ parseSeq :: Parser Char Stat
 parseSeq = parseStatement' >>= rest
   where
     rest stat = (do
+      pos   <-  getPosition
       punctuation ';'
       stat' <-  require parseStatement "Invalid statement in sequence"
-      pos   <- getPosition
       rest $ Seq stat stat' pos) <|> return stat
 
 -- POST: Parses the skip keyword.
@@ -95,21 +95,21 @@ parseSkip
 -- POST: Parses a declaration of the form type name = rhs.
 parseDeclaration :: Parser Char Stat
 parseDeclaration = do
+  pos        <- getPosition
   varType    <- parseType
   ident      <- identifier
   punctuation '='
   assignRHS  <- require parseRHS "Invalid RHS in declaration"
-  pos <- getPosition
   return $ Declaration varType ident assignRHS pos
 
 -- POST: Parses an assignment of the form lhs = rhs.
 parseAssignment :: Parser Char Stat
 parseAssignment = do
+  pos <- getPosition
   lhs <- parseLHS
   require (punctuation '=')
       "Missing equal sign in assignment. Did you misspell or forget a keyword?"
   rhs <- require parseRHS "Invalid RHS in assignment"
-  pos <- getPosition
   return $ Assignment lhs rhs pos
 
 
@@ -121,18 +121,18 @@ parseAssignment = do
 
 parseRead :: Parser Char Stat
 parseRead = do
+  pos <- getPosition
   keyword "read"
   lhs <- parseLHS
-  pos <- getPosition
   return $ Read lhs pos
 
 
 parseBuiltInFunc :: String -> (Expr -> Position -> Stat) -> Parser Char Stat
 parseBuiltInFunc funcName func = do
+  pos <- getPosition
   keyword funcName
   expr1 <- require parseExpr ("Invalid arguments to " ++ funcName ++
              " function")
-  pos <- getPosition
   return $ func expr1 pos
 
 {-
@@ -169,31 +169,31 @@ assignToExpr
 -- POST: Parses a newpair declaration (RHS).
 assignToNewPair :: Parser Char AssignRHS
 assignToNewPair = do
+  pos <- getPosition
   token "newpair"
   require (punctuation '(') "Missing opening parenthesis for newpair"
   expr1 <- require parseExpr "Invalid expression in first expression in newpair"
   require (punctuation ',') "Expecting comma in new pair declaration"
   expr2 <- require parseExpr "Invalid expression in second expression in newpair"
   require (punctuation ')') "Missing closing parenthesis for newpair"
-  pos <- getPosition
   return $ NewPairAssign expr1 expr2 pos
 
 -- POST: Parses functions calls (RHS).
 assignToFuncCall :: Parser Char AssignRHS
 assignToFuncCall = do
+  pos      <- getPosition
   keyword "call"
   name     <- require identifier "Invalid Function Name"
   arglist  <- require (parseExprList '(' ')') "Invalid parameter list"
-  pos      <- getPosition
   return $ FuncCallAssign name arglist pos
 
 -- POST: Parses array literals (RHS).
 assignToArrayLit :: Parser Char AssignRHS
 assignToArrayLit = do
+  pos <- getPosition
   punctuation '['
   exprList <- sepby parseExpr (punctuation ',')
   require (punctuation ']') "No closing bracket in array literal"
-  pos <- getPosition
   return $ ArrayLitAssign exprList pos
 
 
@@ -224,5 +224,7 @@ pairSnd = do
 -- POST: Wraps the result of parsing a pairElem in the appropriate data
 --       constructor
 assignToPairElem :: Parser Char AssignRHS
-assignToPairElem
-  = PairElemAssign <$> pairElem <*> getPosition
+assignToPairElem = do
+  pos <- getPosition
+  pairE <- pairElem
+  return $ PairElemAssign pairE pos

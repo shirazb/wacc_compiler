@@ -47,9 +47,9 @@ parseExpr'
 -- can be optionally signed.
 intLiteral :: Parser Char Expr
 intLiteral = trimWS $ do
+  pos  <- getPosition
   sign <- string "-" <|> string "+" <|> return []
   num  <- some digit
-  pos  <- getPosition
   let n = if sign == "-" then negate (read num) else read num
   if | (n > maxInt || n < minInt) ->
           throwError ("Syntax: Int Overflow", updateRowPosition pos)
@@ -57,8 +57,8 @@ intLiteral = trimWS $ do
 
 boolLiteral :: Parser Char Expr
 boolLiteral = do
-  boolean <- keyword "true" <|> keyword "false"
   pos     <- getPosition
+  boolean <- keyword "true" <|> keyword "false"
   if | boolean == "true" -> return (BoolLit True pos)
      | otherwise -> return (BoolLit False pos)
 
@@ -68,24 +68,28 @@ quoted c parser
 
 charLiteral :: Parser Char Expr
 charLiteral = do
+  pos  <- getPosition
   cLit <- quoted '\''
       (require character "Invalid character found")
-  pos <- getPosition
   return (CharLit cLit pos)
 
 pairLiteral :: Parser Char Expr
-pairLiteral
-  = keyword "null" >> PairLiteral <$> getPosition
+pairLiteral = do
+  pos <- getPosition
+  keyword "null"
+  return $ PairLiteral pos
 
 exprIdent :: Parser Char Expr
-exprIdent
-  = liftA2 IdentE identifier getPosition
+exprIdent = do
+  pos <- getPosition
+  ident <- identifier
+  return $ IdentE ident pos
 
 stringLiter :: Parser Char Expr
-stringLiter
-  = liftA2 StringLit
-      (quoted '\"' (require (many character) "Invalid char found in string"))
-      getPosition
+stringLiter = do
+  pos <- getPosition
+  string <- quoted '\"' (require (many character) "Invalid char found in string")
+  return $ StringLit string pos
 
 {-
   Complex combinators used to parse larger and more complex expressions.
@@ -101,17 +105,17 @@ unaryExpr
 
 parseUnaryAppLow :: Parser Char Expr
 parseUnaryAppLow = do
+  pos     <- getPosition
   op      <- foldr1 (<|>) (map (keyword . fst) unOpPrec2)
   let op' = fromJust $ lookup op unOpPrec2
   expr    <- require parseExpr "Invalid argument to unary operator"
-  pos     <- getPosition
   return $ UnaryApp op' expr pos
 
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
+  pos  <- getPosition
   op   <- parseFromMap unOpPrec1
   expr <- require parseExpr "Invalid argument to unary operator"
-  pos  <- getPosition
   return $ UnaryApp op expr pos
 
 {-
@@ -183,9 +187,9 @@ chainl1 p op
   = trimWS (p >>= rest)
   where
     rest x = (do
+      pos  <- getPosition
       f    <- op
       y    <- require p "Invalid argument to binary expression"
-      pos  <- getPosition
       rest $ BinaryApp f x y pos) <|> return x
 
 chainr :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr

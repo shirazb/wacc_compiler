@@ -16,9 +16,9 @@ typeCheckFunc (Func (FuncT rT plT) name params body pos)
 checkFunctionReturn :: Stat -> Type -> TypeChecker ()
 checkFunctionReturn (Skip _) expT
   = return ()
-checkFunctionReturn (Return expr _) expT = do
+checkFunctionReturn ret@(Return expr _) expT = do
   t <- typeCheckExpr expr
-  when (t /= expT) (tell [typeMismatch expT t (getPos expr) expr])
+  when (t /= expT) (tell [typeMismatch expT t (getPos expr) ret])
   return ()
 checkFunctionReturn (If _ s1 s2 _) expT = do
   checkFunctionReturn s1 expT

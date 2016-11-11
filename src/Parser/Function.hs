@@ -1,4 +1,4 @@
-{- 
+{-
   Parser combinators for functions definitions.
 -}
 module Parser.Function  where
@@ -16,6 +16,7 @@ import Utilities.Definitions
 -- POST: Parses a function defintion.
 parseFunction :: Parser Char Func
 parseFunction = do
+  pos          <- getPosition
   returnType   <- parseType
   name         <- identifier
   paramList    <- bracket (punctuation '(') parseParamList (require
@@ -23,7 +24,6 @@ parseFunction = do
   require (keyword "is") "Missing 'is' keyword"
   funcBody     <- parseFunctionBody
   require (keyword "end") "Missing 'end' keyword"
-  pos          <- getPosition
   let parameterTypes = map parameterType (parameters paramList)
   let functionType = FuncT returnType parameterTypes
   return $ Func functionType name paramList funcBody pos
@@ -60,7 +60,7 @@ checkExecutionPath (Seq s1 s2 _)
  = checkExecutionPath s2
 checkExecutionPath _ = do
   pos <- getPosition
-  throwError 
+  throwError
     ("Syntax Error: Mising return or exit statement in function body ending at: ",
     pos)
 
