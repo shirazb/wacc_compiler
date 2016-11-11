@@ -58,54 +58,58 @@ annotateStat (While cond body pos) = do
   newBody <- inChildScope $ annotateStat body
   return $ While newCond newBody pos
 
-annotateStat (Block s pos) =
-  newStat <- (annotateStat s)
-  return $ inChildScope (Block newStat pos)
+
+annotateStat (Block s pos) = do
+  newStat <- inChildScope (annotateStat s)
+  return $ Block newStat pos
+
+
+{-
+annotateStat (Block s pos)
+  = (inChildScopeAndWrap Block (annotateStat s)) <*> (return pos)
+-}
 
 annotateStat (Seq s1 s2 pos) = do
-  liftM3 Seq (annotateStat s1) (annotateStat s2) (return pos)
+  newStat1 <- annotateStat s1
+  newStat2 <- annotateStat s2
+  return $ Seq newStat1 newStat2 pos
 
--- Annotates an AssignLHS
 annotateLHS :: AssignLHS -> LexicalScoper AssignLHS
-annotateLHS (Var ident pos)
-  = Var <$> annotateIdent Variable ident <*> return pos
-annotateLHS (ArrayDeref (ArrayElem ident exprs pos1) pos2)
-  = ArrayDeref <$>
-      liftM3
-        ArrayElem
-          (annotateIdent Variable ident)
-          (annotateExprList exprs)
-          (return pos1)
-      <*> (return pos2)
-annotateLHS (PairDeref (PairElem elemSelector expr pos1) pos2)
-  = liftM2 PairDeref (PairElem elemSelector <$> (annotateExpr expr)
-                                            <*> (return pos1))
-                                            (return pos2)
+annotateLHS (Var ident pos) = do
+  newIdent <- annotateIdent Variable ident
+  return $ Var newIdent pos
 
--- Annotates an AssignRHS
+annotateLHS (ArrayDeref (ArrayElem ident exprs pos1) pos2) = do
+  newIdent <- annotateIdent Variable ident
+  newExprs <- annotateExprList exprs
+  return $ ArrayDeref (ArrayElem newIdent newExprs pos1) pos2
+
+annotateLHS (PairDeref (PairElem elemSelector expr pos1) pos2) = do
+  newExpr <- annotateExpr expr
+  return $ PairDeref (PairElem elemSelector newExpr  pos1) pos2
+
 annotateRHS :: AssignRHS -> LexicalScoper AssignRHS
-annotateRHS (ExprAssign expr pos)
-  = ExprAssign <$> annotateExpr expr <*> (return pos)
+annotateRHS (ExprAssign expr pos) = do
+  newExpr <- annotateExpr expr
+  return $ ExprAssign newExpr pos
 
-annotateRHS (ArrayLitAssign es pos)
-  = ArrayLitAssign <$> annotateExprList es <*> (return pos)
+annotateRHS (ArrayLitAssign exprList pos) = do
+  newExprList <- annotateExprList exprList
+  return $ ArrayLitAssign newExprList pos
 
--- fstExpr should not change state of sndExpr as exprs are side effect free
-annotateRHS (NewPairAssign fstExpr sndExpr pos)
-  = liftM3
-      NewPairAssign
-      (annotateExpr fstExpr)
-      (annotateExpr sndExpr)
-      (return pos)
+---- fstExpr should not change state of sndExpr as exprs are side effect free
+-- NOTE: Expressions have no side effects, so can be annotated simultaneously,
+--       that is, evaluated given the same symbol table.
+annotateRHS (NewPairAssign fstExpr sndExpr pos) = do
+  newFstExpr <- annotateExpr fstExpr
+  newSndExpr <- annotateExpr sndExpr
+  return $ NewPairAssign newFstExpr newSndExpr pos
 
-annotateRHS (PairElemAssign (PairElem selector expr pos1) pos2)
-  = liftM2 PairElemAssign (PairElem selector <$> (annotateExpr expr)
-                                             <*> (return pos1))
-                                             (return pos2)
+annotateRHS (PairElemAssign (PairElem selector expr pos1) pos2) = do
+  newExpr <- annotateExpr expr
+  return $ PairElemAssign (PairElem selector newExpr pos1) pos2
 
-annotateRHS (FuncCallAssign f es pos)
-  = liftM3
-      FuncCallAssign
-      (annotateIdent Function f)
-      (annotateExprList es)
-      (return pos)
+annotateRHS (FuncCallAssign f exprList pos) = do
+  newFunc <- annotateIdent Function f
+  newExprList <- annotateExprList exprList
+  return $ FuncCallAssign newFunc newExprList pos
