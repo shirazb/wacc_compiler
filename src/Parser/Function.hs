@@ -44,24 +44,33 @@ parseFunctionBody = do
 --       return, or if there are trailing statements after an exit or return 
 --       statement. Checks for patterns (Seq Return{} _ _) and (Seq Exit{} _ _)
 checkExecutionPath :: Stat -> Parser Char ()
+
 checkExecutionPath s@Return{}
- = return ()
+  = return ()
+
 checkExecutionPath s@Exit{}
- = return ()
+  = return ()
+
 checkExecutionPath (If _ s1 s2 _)
- = checkExecutionPath s1 >> checkExecutionPath s2
+  = checkExecutionPath s1 >> checkExecutionPath s2
+
 checkExecutionPath (While _ s1 _)
- = checkExecutionPath s1
+  = checkExecutionPath s1
+
 checkExecutionPath (Block s1 _)
- = checkExecutionPath s1
+  = checkExecutionPath s1
+
 checkExecutionPath (Seq Return{} _ _) = do
-   pos <- getPosition
-   throwError ("Syntax Error: Unreachable statement after return", pos)
+  pos <- getPosition
+  throwError ("Syntax Error: Unreachable statement after return", pos)
+
 checkExecutionPath (Seq Exit{} _ _) = do
-   pos <- getPosition
-   throwError ("Syntax Error: Unreachable statement after exit", pos)
+  pos <- getPosition
+  throwError ("Syntax Error: Unreachable statement after exit", pos)
+
 checkExecutionPath (Seq s1 s2 _)
- = checkExecutionPath s2
+  = checkExecutionPath s2
+
 checkExecutionPath _ = do
   pos <- getPosition
   throwError 

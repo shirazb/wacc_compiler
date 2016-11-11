@@ -8,7 +8,7 @@ import qualified Data.Map as Map
 import Control.Monad.State.Strict (get, put)
 
 import Utilities.Definitions
-import Semantics.ErrorMsgs
+import Semantics.ErrorMessages
 
 -- POST: Returns true if the given identifier is marked with an error.
 identHasError :: Ident -> Bool

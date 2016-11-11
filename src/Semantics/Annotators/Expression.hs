@@ -10,7 +10,7 @@ module Semantics.Annotators.Expression (
 import qualified Data.Map as Map
 
 import Semantics.Annotators.Identifier
-import Semantics.ErrorMsgs
+import Semantics.ErrorMessages 
 import Utilities.Definitions
 
 

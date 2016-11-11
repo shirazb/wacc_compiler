@@ -12,7 +12,7 @@ import qualified Data.Map as Map
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
-import Semantics.ErrorMsgs
+import Semantics.ErrorMessages
 import Utilities.Definitions
 
 addFuncDeclToST :: Func -> LexicalScoper Ident

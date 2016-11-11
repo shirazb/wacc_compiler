@@ -48,7 +48,7 @@ import qualified Data.Map as Map
 import Semantics.Annotators.Function
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
-import Semantics.ErrorMsgs
+import Semantics.ErrorMessages
 import Utilities.Definitions
 
 annotateAST :: AST -> AST

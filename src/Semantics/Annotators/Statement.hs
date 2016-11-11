@@ -7,7 +7,7 @@ import Control.Monad.State.Strict
 import qualified Data.Map as Map
 import Debug.Trace
 
-import Semantics.ErrorMsgs
+import Semantics.ErrorMessages
 import Semantics.Annotators.Expression
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Util

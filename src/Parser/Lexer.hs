@@ -21,10 +21,10 @@ commentDelim
 -- POST: Removes single line comments
 comments :: Parser Char ()
 comments = do
-    string commentDelim
-    many (satisfy (/= '\n'))
-    require (char '\n') "Comment not terminated."
-    return ()
+  string commentDelim
+  many (satisfy (/= '\n'))
+  require (char '\n') "Comment not terminated."
+  return ()
 
 -- Post: Removes spaces incl \t,\n etc
 spaces :: Parser Char ()

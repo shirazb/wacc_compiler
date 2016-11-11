@@ -1,10 +1,8 @@
-{-
-WACC SYNTAX/DATA DEFINITIONS. Definitions used to build Abstract Syntax Tree
-(AST). AST is an internal represenation of the parsed contents of a given
-input file. Module also defines show instances, which are primarily used to
-print the internal represenation in a more human readable format to aid
-debugging.
--}
+{- This module contains the data definitions for the WACC syntac. Definitions 
+used to build an Abstract Syntax Tree (AST). The AST is an internal 
+represenation of the parsed contents of a given input file. This module also 
+defines show instances, which are used to pretty-print the internal 
+represenation of the program -}
 
 module Utilities.Definitions where
 
@@ -16,16 +14,14 @@ import qualified Data.Map as Map
 import Control.Monad.State.Strict (State)
 import Control.Monad.Writer.Strict (Writer)
 
-type Env       = Map.Map (String, Context) Info
-type AST       = Program
-type Position  = (Int, Int)
-type Err       = (String, Position)
-
--- Type Checking
-type ErrorMsg      = String
-type TypeChecker a = Writer [ErrorMsg] a
-
+type Env             = Map.Map (String, Context) Info
+type AST             = Program
+type Position        = (Int, Int)
+type Err             = (String, Position)
+type ErrorMsg        = String
+type TypeChecker a   = Writer [ErrorMsg] a
 type LexicalScoper a = State SymbolTable a
+type ScopeError      = (String, ScopeErrorType, Position)
 
 data Program   = Program [Func] Stat                     deriving (Eq, Show)
 data Func      = Func Type Ident ParamList Stat Position deriving (Eq, Show)
@@ -33,8 +29,6 @@ data ParamList = ParamList [Param] Position              deriving (Eq, Show)
 data Param     = Param Type Ident Position               deriving (Eq, Show)
 data ArrayElem = ArrayElem Ident [Expr] Position         deriving (Eq, Show)
 data Ident     = Ident String Info                       deriving (Eq, Show)
-
-type ScopeError = (String, ScopeErrorType, Position)
 
 data ScopeErrorType
   = NoError
@@ -77,7 +71,6 @@ data Stat
   | Seq Stat Stat Position
   deriving (Eq, Show)
 
-
 data AssignLHS
   = Var Ident Position
   | ArrayDeref ArrayElem Position
@@ -91,7 +84,6 @@ data AssignRHS
   | PairElemAssign PairElem Position
   | FuncCallAssign Ident [Expr] Position
   deriving (Eq, Show)
-
 
 data PairElem
   = PairElem PairElemSelector Expr Position
@@ -111,10 +103,10 @@ data BaseType
 
 data Type
   = BaseT BaseType
-  | PairT Type Type   -- cannot be FuncT
-  | ArrayT Int Type   -- can only be PairT or BaseT --should we enforce this
+  | PairT Type Type   
+  | ArrayT Int Type   
   | Pair
-  | FuncT Type [Type] -- cannot be FuncT or Pair
+  | FuncT Type [Type] 
   | NoType
   | PolyArray
   | PolyFunc
@@ -122,34 +114,6 @@ data Type
   | RelationalT
   | DataType
   deriving (Show)
-
-instance Eq Type where
-  NoType == _             = True
-  _      == NoType        = True
-  PolyArray  == ArrayT _ _ = True
-  ArrayT _ _ == PolyArray  = True
-  PolyArray == BaseT BaseString   = True
-  BaseT BaseString == PolyArray   = True
-  BaseT  BaseString == ArrayT 1 (BaseT BaseChar)  = True
-  ArrayT 1 (BaseT BaseChar) == (BaseT BaseString) = True
-  _ == PolyArray          = False
-  PolyArray == _          = False
-  FuncT t ts == FuncT t' ts' = t == t' && ts == ts'
-  ArrayT dim t == ArrayT dim' t' = t == t' && dim == dim'
-  PairT t1 t2 == PairT t1' t2' = t1 == t1' && t2 == t2'
-  BaseT t == BaseT t' = t == t'
-  PolyFunc  == PolyFunc  = True
-  PolyFunc  == FuncT _ _ = True
-  FuncT _ _ == PolyFunc  = True
-  PolyPair  == PairT _ _ = True
-  PairT _ _ == PolyPair  = True
-  PolyPair  == PolyPair  = True
-  PolyPair  == Pair      = True
-  Pair      == PolyPair  = True
-  PairT _ _ == Pair      = True
-  Pair      == PairT _ _ = True
-  Pair      == Pair      = True
-  _ == _ = False
 
 data Expr
   = StringLit String Position
@@ -203,40 +167,73 @@ data BinOp
   | EquOp EqOps
   deriving (Eq, Show)
 
-{- Fundamental Types -}
+{- FUNDAMENTAL TYPES -}
 
-baseTypes       = [("int", BaseInt), ("bool", BaseBool),
-                   ("char", BaseChar), ("string", BaseString)]
+baseTypes = [("int", BaseInt), ("bool", BaseBool),
+             ("char", BaseChar), ("string", BaseString)]
 
-{- Binary Operator Precedences -}
+{- BINARY OPERATOR PRECEDENCES -}
 
 binOpPrec1, binOpPrec2, binOpPrec3 :: [(String, BinOp)]
 binOpPrec4, binOpPrec5, binOpPrec6 :: [(String, BinOp)]
 
-binOpPrec1      = [("/", Arith Div), ("%", Arith Mod), ("*", Arith Mul)]
-binOpPrec2      = [("+", Arith Add), ("-", Arith Sub)]
-binOpPrec3      = [(">=", RelOp GTE), (">",  RelOp GT),
-                   ("<=", RelOp LTE), ("<",  RelOp LT)]
-binOpPrec4      = [("==", EquOp EQ), ("!=", EquOp NEQ)]
-binOpPrec5      = [("&&", Logic AND)]
-binOpPrec6      = [("||", Logic OR)]
+binOpPrec1 = [("/", Arith Div), ("%", Arith Mod), ("*", Arith Mul)]
+binOpPrec2 = [("+", Arith Add), ("-", Arith Sub)]
+binOpPrec3 = [(">=", RelOp GTE), (">",  RelOp GT),
+              ("<=", RelOp LTE), ("<",  RelOp LT)]
+binOpPrec4 = [("==", EquOp EQ), ("!=", EquOp NEQ)]
+binOpPrec5 = [("&&", Logic AND)]
+binOpPrec6 = [("||", Logic OR)]
 
-{- Unary Operator Precedences -}
+{- UNARY OPERATOR PRECEDENCES -}
 
 unOpPrec1, unOpPrec2 :: [(String, UnOp)]
 
 unOpPrec1 = [("!", Not), ("-", Neg)]
 unOpPrec2 = [("len", Len), ("ord", Ord), ("chr", Chr)]
 
-{- Escape Chars -}
+{- ESCAPE CHARS -}
+
 escapeCharList = [('b','\b'), ('n','\n'), ('f','\f'),
                   ('r','\r'), ('t','\t'), ('\\','\\'),
                   ('\"','\"'), ('\'','\''), ('0', '\0')]
 
-{- Int bounds -}
+{- INT BOUNDS -}
+
 minInt, maxInt :: Int
 minInt = -2147483648
 maxInt = 2147483647
+
+{- EQUALITY INSTANCES -}
+
+instance Eq Type where
+  NoType == _             = True
+  _      == NoType        = True
+  PolyArray  == ArrayT _ _ = True
+  ArrayT _ _ == PolyArray  = True
+  PolyArray == BaseT BaseString   = True
+  BaseT BaseString == PolyArray   = True
+  BaseT  BaseString == ArrayT 1 (BaseT BaseChar)  = True
+  ArrayT 1 (BaseT BaseChar) == (BaseT BaseString) = True
+  _ == PolyArray          = False
+  PolyArray == _          = False
+  FuncT t ts == FuncT t' ts' = t == t' && ts == ts'
+  ArrayT dim t == ArrayT dim' t' = t == t' && dim == dim'
+  PairT t1 t2 == PairT t1' t2' = t1 == t1' && t2 == t2'
+  BaseT t == BaseT t' = t == t'
+  PolyFunc  == PolyFunc  = True
+  PolyFunc  == FuncT _ _ = True
+  FuncT _ _ == PolyFunc  = True
+  PolyPair  == PairT _ _ = True
+  PairT _ _ == PolyPair  = True
+  PolyPair  == PolyPair  = True
+  PolyPair  == Pair      = True
+  Pair      == PolyPair  = True
+  PairT _ _ == Pair      = True
+  Pair      == PairT _ _ = True
+  Pair      == Pair      = True
+  _ == _ = False
+
 
 
 {-

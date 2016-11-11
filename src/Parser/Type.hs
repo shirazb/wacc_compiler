@@ -39,7 +39,7 @@ parseArrayType = do
 -- NOTE: These have no type information other than that they are a pair
 parseNestedPairType :: Parser Char Type
 parseNestedPairType
-    = token "pair" >> return Pair
+  = token "pair" >> return Pair
 
 -- POST: Parses a pair type
 parsePairType :: Parser Char Type

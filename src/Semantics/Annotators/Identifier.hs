@@ -11,7 +11,7 @@ import qualified Data.Map as Map
 import Control.Monad.State.Strict
 
 import Semantics.Annotators.Util
-import Semantics.ErrorMsgs
+import Semantics.ErrorMessages
 import Utilities.Definitions
 
 -- PRE: info is NoInfo
