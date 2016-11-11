@@ -1,8 +1,7 @@
 {-
-  These annotators descend the AST performing lexical scoping whilst
-  simultaneously adding type information to each identifier encountered. This
-  is so that, during type checking, the type of an identifier encountered
-  anywhere in the AST is known.
+  Annotators traverse the AST and perform lexical scoping in parallel with 
+  adding type information to each encountered identifier. This added information 
+  is used later for type checking.
 
   Lexical scoping is performed using the following symbol table data type:
 
@@ -14,7 +13,7 @@
   Context are needed as functions and variables in the same scope can share the
   same name.
 
-  Each new scope corresponds to its own SymbolTable, meaning it has its own Env.
+  Each new scope corresponds to its own SymbolTable and Env.
   The inner SymbolTable will point to its direct parent scope, which in turn
   will point to its parent scope, and so on. Thus, the None constructor is
   required to signify when we have reached the global scope that has no parent
@@ -25,17 +24,16 @@
   up to <st>.
 
   Only declaration statements and function declarations introduce new
-  identifiers to the symbol table. To check if these are in scope, we check the
-  current Env and, if required, look upwards through the parent scopes
-  for an already in scope identifier of the same name and context. If
-  none is found, we add a new entry to the current Env and annotate the
-  identifier in the AST with its type info. Otherwise, we mark the identifier
-  as a duplicate in the AST.
+  identifiers to the symbol table. To check if these are already in scope, we
+  check the current Env and, if required, look upwards through the parent scopes
+  for an identifier with the same name and context. If no match is found, we add 
+  a new entry to the current Env and annotate the identifier in the AST with its
+  type information. Otherwise, we mark the identifier as a duplicate in the AST.
 
   Whenever an identifer is used (not declared), we perform the same lookup
-  to check if an identifer is already in scope. If it is, we add the retrieved
-  type info to the identifier in the AST. Otherwise, we mark
-  it as not in scope.
+  to check if an identifer is in scope. If it is, we add the retrieved
+  type information to the identifier in the AST. Otherwise, we mark it as not in 
+  scope.
 -}
 
 module Semantics.Annotators.AST (
