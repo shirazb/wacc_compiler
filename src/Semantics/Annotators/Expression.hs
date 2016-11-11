@@ -13,7 +13,7 @@ import Semantics.ErrorMessages
 import Utilities.Definitions
 
 -- POST: Annotates expressions
-annotateExpr :: Expr -> LexicalScoper Expr
+annotateExpr :: Expr -> ScopeAnalysis Expr
 
 annotateExpr (IdentE ident pos) = do
   newIdent <- annotateIdent Variable ident
@@ -37,6 +37,6 @@ annotateExpr literal
   = return literal
 
 -- POST: Annotates a list of expressions
-annotateExprList :: [Expr] -> LexicalScoper [Expr]
+annotateExprList :: [Expr] -> ScopeAnalysis [Expr]
 annotateExprList
   = mapM annotateExpr

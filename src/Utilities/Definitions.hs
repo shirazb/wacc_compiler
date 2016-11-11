@@ -20,7 +20,7 @@ type Position        = (Int, Int)
 type Err             = (String, Position)
 type ErrorMsg        = String
 type TypeChecker a   = Writer [ErrorMsg] a
-type LexicalScoper a = State SymbolTable a
+type ScopeAnalysis a = State SymbolTable a
 type ScopeError      = (String, ScopeErrorType, Position)
 
 data Program   = Program [Func] Stat                     deriving (Eq)

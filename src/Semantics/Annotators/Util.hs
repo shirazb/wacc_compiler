@@ -72,7 +72,7 @@ lookUpIdent nameAndCtxt (ST parentST env)
 
 -- POST: Peforms a given annotator inside of a
 --       child scope. Exits to the parent scope
-inChildScope :: LexicalScoper a -> LexicalScoper a
+inChildScope :: ScopeAnalysis a -> ScopeAnalysis a
 inChildScope child = do
   parentST <- get
   put (ST parentST Map.empty)
@@ -81,6 +81,6 @@ inChildScope child = do
   return annotatedAST
 
 -- POST: Same as above but applys a function to the result of annotation
-inChildScopeAndWrap :: (a -> b) -> LexicalScoper a -> LexicalScoper b
+inChildScopeAndWrap :: (a -> b) -> ScopeAnalysis a -> ScopeAnalysis b
 inChildScopeAndWrap f child
   = f <$> inChildScope child

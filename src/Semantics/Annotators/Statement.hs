@@ -14,7 +14,7 @@ import Semantics.Annotators.Util ( inChildScope )
 import Utilities.Definitions
 
 -- POST: Annotates statements
-annotateStat :: Stat -> LexicalScoper Stat
+annotateStat :: Stat -> ScopeAnalysis Stat
 
 annotateStat s@Skip{}
   = return s
@@ -74,7 +74,7 @@ annotateStat (Seq s1 s2 pos) = do
   return $ Seq newStat1 newStat2 pos
 
 -- POST: Annotates an AssignLHS
-annotateLHS :: AssignLHS -> LexicalScoper AssignLHS
+annotateLHS :: AssignLHS -> ScopeAnalysis AssignLHS
 
 annotateLHS (Var ident pos) = do
   newIdent <- annotateIdent Variable ident
@@ -90,7 +90,7 @@ annotateLHS (PairDeref (PairElem elemSelector expr pos1) pos2) = do
   return $ PairDeref (PairElem elemSelector newExpr  pos1) pos2
 
 -- POST: Annotates an AssignRHS
-annotateRHS :: AssignRHS -> LexicalScoper AssignRHS
+annotateRHS :: AssignRHS -> ScopeAnalysis AssignRHS
 
 annotateRHS (ExprAssign expr pos) = do
   newExpr <- annotateExpr expr

@@ -4,9 +4,9 @@ import System.Exit
 
 {- LOCAL IMPORTS -}
 import Parser.Program
-import Parser.Combinators
+import Parser.BasicCombinators
 import Semantics.Annotators.AST
-import Semantics.ScopeChecker
+import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
 

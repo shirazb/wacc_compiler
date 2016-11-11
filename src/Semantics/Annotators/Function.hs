@@ -17,13 +17,13 @@ import Semantics.ErrorMessages
 import Utilities.Definitions
 
 -- POST: Adds function name to the global symbol table
-addFuncDeclToST :: Func -> LexicalScoper Ident
+addFuncDeclToST :: Func -> ScopeAnalysis Ident
 addFuncDeclToST (Func t ident paramList body pos)
   = annotateNewIdent ident (Info t Function)
 
 -- PRE:  Function name ident already annotated
 -- POST: Annotates all the identifiers within the function body.
-annotateFunc :: Func -> LexicalScoper Func
+annotateFunc :: Func -> ScopeAnalysis Func
 annotateFunc (Func t ident paramList body pos) = do
   globalST     <- get
 
@@ -39,11 +39,11 @@ annotateFunc (Func t ident paramList body pos) = do
   return $ Func t ident newParamList newBody pos
 
 -- POST: Annotates a list of parameters
-annotateParamList :: ParamList -> LexicalScoper ParamList
+annotateParamList :: ParamList -> ScopeAnalysis ParamList
 annotateParamList (ParamList ps pos)
   = ParamList <$> mapM annotateParam ps <*> return pos
 
 -- POST: Annotates the input parameter
-annotateParam :: Param -> LexicalScoper Param
+annotateParam :: Param -> ScopeAnalysis Param
 annotateParam (Param t ident pos)
   = Param t <$> annotateNewIdent ident (Info t Variable) <*> return pos

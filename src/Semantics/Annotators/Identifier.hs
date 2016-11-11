@@ -17,7 +17,7 @@ import Utilities.Definitions
 -- PRE:  info parameter is NoInfo
 -- POST: If the identifier is not a duplicate, adds it to the current ST.
 --       Otherwise, marks it as a duplicate
-annotateNewIdent :: Ident -> Info -> LexicalScoper Ident
+annotateNewIdent :: Ident -> Info -> ScopeAnalysis Ident
 annotateNewIdent (Ident name NoInfo) info = do
   st            <- get
   let newIdent  = Ident name info
@@ -31,7 +31,7 @@ annotateNewIdent (Ident name info) info'
 -- PRE:  Info is NoInfo
 -- POST: If the identifier is in scope, retrieves its type information.
 --       Otherwise, marks it as not in scope.
-annotateIdent :: Context -> Ident -> LexicalScoper Ident
+annotateIdent :: Context -> Ident -> ScopeAnalysis Ident
 annotateIdent ctext ident@(Ident name NoInfo) = do
   st <- get
   return $ case lookUpIdent (name, ctext) st of

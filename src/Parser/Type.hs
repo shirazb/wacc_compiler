@@ -7,9 +7,9 @@ import Control.Applicative (Alternative (..))
 import Data.Maybe          (fromJust)
 
 {- LOCAL IMPORTS -}
-import Parser.Combinators
+import Parser.BasicCombinators
 import Parser.Identifier
-import Parser.Lexer
+import Parser.LexicalResolver
 import Utilities.Definitions
 
 -- POST: Parses types

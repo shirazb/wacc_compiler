@@ -6,8 +6,8 @@ import Control.Applicative  (Alternative (..))
 import Control.Monad        (liftM2, guard)
 
 {- LOCAL IMPORTS -}
-import Parser.Combinators
-import Parser.Lexer
+import Parser.BasicCombinators
+import Parser.LexicalResolver
 import Utilities.Definitions
 
 -- POST: Parses strings that are permitted to be identifiers

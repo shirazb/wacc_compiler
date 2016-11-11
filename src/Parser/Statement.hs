@@ -7,10 +7,10 @@ import Control.Applicative ((<|>), (<$>), liftA3)
 import Control.Monad.State (liftM2)
 
 {- LOCAL IMPORTS -}
-import Parser.Combinators
+import Parser.BasicCombinators
 import Parser.Expression
 import Parser.Identifier
-import Parser.Lexer
+import Parser.LexicalResolver
 import Parser.Type
 import Utilities.Definitions
 

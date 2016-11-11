@@ -6,9 +6,9 @@ import Control.Monad ( liftM3 )
 import Control.Monad.Except ( throwError )
 
 {- LOCAL IMPORTS -}
-import Parser.Combinators ( Parser, getPosition, require, sepby )
+import Parser.BasicCombinators ( Parser, getPosition, require, sepby )
 import Parser.Identifier ( identifier )
-import Parser.Lexer
+import Parser.LexicalResolver
 import Parser.Statement ( parseStatement )
 import Parser.Type ( parseType )
 import Utilities.Definitions

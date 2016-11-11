@@ -8,9 +8,9 @@ import Control.Monad.Except (throwError)
 
 {- LOCAL IMPORTS -}
 import Parser.Function
-import Parser.Lexer
+import Parser.LexicalResolver
 import Parser.Statement
-import Parser.Combinators
+import Parser.BasicCombinators
 import Semantics.Annotators.AST
 import Utilities.Definitions
 

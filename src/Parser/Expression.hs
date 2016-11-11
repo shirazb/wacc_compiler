@@ -15,9 +15,9 @@ import Control.Monad.Except (throwError)
 import Data.Maybe           (fromJust)
 
 {- LOCAL IMPORTS -}
-import Parser.Lexer
+import Parser.LexicalResolver
 import Parser.Identifier
-import Parser.Combinators
+import Parser.BasicCombinators
 import Utilities.Definitions
 
 -- POST: Parses valid expressions and generates an error upon failing
