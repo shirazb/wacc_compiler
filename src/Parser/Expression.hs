@@ -221,7 +221,7 @@ arrayElem = do
   pos     <- getPosition
   ident   <- identifier
   indexes <- arrayIndexes
-  return $ ArayElem identifier arrayIndexes pos
+  return $ ArrayElem identifier arrayIndexes pos
 
 -- POST: Parses the array indexers e.g. [1][2]
 arrayIndexes :: Parser Char [Expr]
