@@ -1,14 +1,12 @@
-{-
-  This module defines a number of parser combinators used to parse statements in
-  the WACC language. Refer to the BNF specification of the WACC language to see
-  exactly what a statement is in the WACC language.
--}
+{- This module defines a number of parser combinators used to parse
+statements -}
 
 module Parser.Statement (parseStatement) where
 
 import Control.Applicative ((<|>), (<$>), liftA3)
 import Control.Monad.State (liftM2)
 
+{- LOCAL IMPORTS -}
 import Parser.Combinators
 import Parser.Expression
 import Parser.Identifier
@@ -16,14 +14,14 @@ import Parser.Lexer
 import Parser.Type
 import Utilities.Definitions
 
-
--- POST: Parses all valid statements in the WACC language, it is factored out
---       like this to prevent the parser going in to an infinite loop due to
---       left recursion
+-- POST: Parses all valid statements in the WACC language
+-- NOTE: It is factored out like this to prevent the parser going in to an
+--       infinite loop due to left recursion
 parseStatement :: Parser Char Stat
 parseStatement
   = parseSeq <|> parseStatement'
 
+-- POST: Parses all valid statements in the WACC language
 parseStatement' :: Parser Char Stat
 parseStatement'
   =   parseDeclaration
@@ -39,11 +37,7 @@ parseStatement'
   <|> parseBlock
   <|> parseSkip
 
-{-
-Parsers for statements in the WACC language.
--}
-
--- POST: Parses an if statement.
+-- POST: Parses an if statement
 parseIfStat :: Parser Char Stat
 parseIfStat = do
   pos <- getPosition
@@ -56,7 +50,7 @@ parseIfStat = do
   require (keyword "fi") "Missing 'fi' keyword"
   return $ If cond thenStat elseStat pos
 
--- POST: Parses a while loop.
+-- POST: Parses a while loop
 parseWhileStat :: Parser Char Stat
 parseWhileStat = do
   pos <- getPosition
@@ -67,7 +61,7 @@ parseWhileStat = do
   require (keyword "done") "Missing 'done' keyword"
   return $ While cond loopBody pos
 
--- POST: Parses a new block of statements.
+-- POST: Parses a new block of statements
 parseBlock :: Parser Char Stat
 parseBlock = do
   pos <- getPosition
@@ -77,7 +71,7 @@ parseBlock = do
   return $ Block stat pos
 
 
--- POST: Parses a sequence of statements seperated by the semi-colon operator.
+-- POST: Parses a sequence of statements seperated by the semi-colon operator
 parseSeq :: Parser Char Stat
 parseSeq = parseStatement' >>= rest
   where
@@ -87,12 +81,12 @@ parseSeq = parseStatement' >>= rest
       stat' <-  require parseStatement "Invalid statement in sequence"
       rest $ Seq stat stat' pos) <|> return stat
 
--- POST: Parses the skip keyword.
+-- POST: Parses the skip keyword
 parseSkip :: Parser Char Stat
 parseSkip
   = keyword "skip" >> Skip <$> getPosition
 
--- POST: Parses a declaration of the form type name = rhs.
+-- POST: Parses a declaration of the form type name = rhs
 parseDeclaration :: Parser Char Stat
 parseDeclaration = do
   pos        <- getPosition
@@ -102,7 +96,7 @@ parseDeclaration = do
   assignRHS  <- require parseRHS "Invalid RHS in declaration"
   return $ Declaration varType ident assignRHS pos
 
--- POST: Parses an assignment of the form lhs = rhs.
+-- POST: Parses an assignment of the form lhs = rhs
 parseAssignment :: Parser Char Stat
 parseAssignment = do
   pos <- getPosition
@@ -112,21 +106,7 @@ parseAssignment = do
   rhs <- require parseRHS "Invalid RHS in assignment"
   return $ Assignment lhs rhs pos
 
-
-{-
-  The following two Parsers parse the built in functions of the WACC language.
-  We have a generic parser for all built in functions except Read. This is
-  because the argument of read differs from the other built in functions.
--}
-
-parseRead :: Parser Char Stat
-parseRead = do
-  pos <- getPosition
-  keyword "read"
-  lhs <- parseLHS
-  return $ Read lhs pos
-
-
+-- POST: Parses the built in functions of the WACC language
 parseBuiltInFunc :: String -> (Expr -> Position -> Stat) -> Parser Char Stat
 parseBuiltInFunc funcName func = do
   pos <- getPosition
@@ -135,11 +115,17 @@ parseBuiltInFunc funcName func = do
              " function")
   return $ func expr1 pos
 
-{-
-  Parsers for the left hand sides and right hand sides of the WACC language.
--}
+-- POST: Parses the 'read' function of the WACC language
+-- NOTE: This method is separate from the general parseBuiltInFunc as the
+--       argument of 'read' differs from the other built in functions
+parseRead :: Parser Char Stat
+parseRead = do
+  keyword "read"
+  lhs <- parseLHS
+  pos <- getPosition
+  return $ Read lhs pos
 
--- POST: Parses all valid right hand sides in WACC.
+-- POST: Parses all valid right hand sides in WACC
 parseRHS :: Parser Char AssignRHS
 parseRHS
   =   assignToExpr
@@ -148,26 +134,23 @@ parseRHS
   <|> assignToArrayLit
   <|> assignToNewPair
 
--- POST: Parses all valid left hand sides in WACC.
+-- POST: Parses all valid left hand sides in WACC
 parseLHS :: Parser Char AssignLHS
 parseLHS
   =   do {pos <- getPosition; element <- arrayElem; return $ ArrayDeref element pos}
   <|> do {pos <- getPosition; pairE <- pairElem; return $ PairDeref pairE pos}
   <|> do {pos <- getPosition; ident <- identifier; return $ Var ident pos}
 
-{-
-  Parsers used in the definitions of parseLHS & parseRHS, they parse
-  various LHS's or RHS's in the WACC language.
--}
+{- HELPER FUNCTIONS -}
 
--- POST: Parses an expression (RHS).
+-- POST: Parses an expression (RHS)
 assignToExpr :: Parser Char AssignRHS
 assignToExpr = do
   pos <- getPosition
   expr <- parseExpr
   return $ ExprAssign expr pos
 
--- POST: Parses a newpair declaration (RHS).
+-- POST: Parses a newpair declaration (RHS)
 assignToNewPair :: Parser Char AssignRHS
 assignToNewPair = do
   pos <- getPosition
@@ -179,7 +162,7 @@ assignToNewPair = do
   require (punctuation ')') "Missing closing parenthesis for newpair"
   return $ NewPairAssign expr1 expr2 pos
 
--- POST: Parses functions calls (RHS).
+-- POST: Parses functions calls (RHS)
 assignToFuncCall :: Parser Char AssignRHS
 assignToFuncCall = do
   pos      <- getPosition
@@ -188,7 +171,7 @@ assignToFuncCall = do
   arglist  <- require (parseExprList '(' ')') "Invalid parameter list"
   return $ FuncCallAssign name arglist pos
 
--- POST: Parses array literals (RHS).
+-- POST: Parses array literals (RHS)
 assignToArrayLit :: Parser Char AssignRHS
 assignToArrayLit = do
   pos <- getPosition
@@ -197,12 +180,7 @@ assignToArrayLit = do
   require (punctuation ']') "No closing bracket in array literal"
   return $ ArrayLitAssign exprList pos
 
-
-{-
-  The following parsers are used to parse pair elements.
--}
-
--- POST: Parses pair elements in which can appear in both lhs & rhs.
+-- POST: Parses pair elements in which can appear in both the LHS and the RHS
 pairElem :: Parser Char PairElem
 pairElem = do
   pos <- getPosition
@@ -210,16 +188,18 @@ pairElem = do
   expr <- pairElemExpr
   return $ PairElem selector expr pos
 
--- POST: Parses a pair elem expression.
+-- POST: Parses a pair elem expression
 pairElemExpr :: Parser Char Expr
 pairElemExpr
   = require parseExpr "Invalid expression in pairElem"
 
+-- POST: Parses the 'fst' keyword in a pair
 pairFst :: Parser Char PairElemSelector
 pairFst = do
   keyword "fst"
   return Fst
 
+-- POST: Parses the 'snd' keyword in a pair
 pairSnd :: Parser Char PairElemSelector
 pairSnd = do
   keyword "snd"

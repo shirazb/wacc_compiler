@@ -1,7 +1,9 @@
-{-
-  Annotators traverse the AST and perform lexical scoping in parallel with 
-  adding type information to each encountered identifier. This added information 
-  is used later for type checking.
+{- This module traverses through and annotates the AST.
+
+  These annotators descend the AST performing lexical scoping whilst
+  simultaneously adding type information to each identifier encountered. This
+  is so that, during type checking, the type of an identifier encountered
+  anywhere in the AST is known.
 
   Lexical scoping is performed using the following symbol table data type:
 
@@ -26,29 +28,28 @@
   Only declaration statements and function declarations introduce new
   identifiers to the symbol table. To check if these are already in scope, we
   check the current Env and, if required, look upwards through the parent scopes
-  for an identifier with the same name and context. If no match is found, we add 
+  for an identifier with the same name and context. If no match is found, we add
   a new entry to the current Env and annotate the identifier in the AST with its
   type information. Otherwise, we mark the identifier as a duplicate in the AST.
 
   Whenever an identifer is used (not declared), we perform the same lookup
-  to check if an identifer is in scope. If it is, we add the retrieved
-  type information to the identifier in the AST. Otherwise, we mark it as not in 
-  scope.
--}
+  to check if an identifer is already in scope. If it is, we add the retrieved
+  type info to the identifier in the AST. Otherwise, we mark it as not in
+  scope. -}
 
-module Semantics.Annotators.AST (
-  annotateAST
-) where
+module Semantics.Annotators.AST (annotateAST) where
 
 import Control.Monad.State.Strict (runState)
 import qualified Data.Map as Map
 
+{- LOCAL IMPORTS -}
 import Semantics.Annotators.Function
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
-import Semantics.ErrorMsgs
+import Semantics.ErrorMessages
 import Utilities.Definitions
 
+-- POST: Traverses the AST and annotates it
 annotateAST :: AST -> AST
 annotateAST (Program fs main)
   = newAST
@@ -60,6 +61,7 @@ annotateAST (Program fs main)
       newFs' <- mapM annotateFunc newFs
       inChildScopeAndWrap (Program newFs') (annotateStat main)
 
+-- POST: Replaces the identifier of the function
 replaceIdent :: Ident -> Func -> Func
 replaceIdent i (Func t _ pl st pos)
   = Func t i pl st pos

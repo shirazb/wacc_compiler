@@ -1,21 +1,14 @@
-{-
-A parser built using parser combinators for the WACC language. Parser
-combinators are used because of the flexibility and modularity that they
-offer. Building a parser combinator in Haskell also serves as a learning
-experience to learn the more advanced features of Haskell. The parser
-currently has no error handling.
--}
-
 import Control.Monad.Writer.Strict
 import System.Environment
 import System.Exit
 
+{- LOCAL IMPORTS -}
 import Parser.Program
+import Parser.Combinators
 import Semantics.Annotators.AST
 import Semantics.ScopeChecker
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
-import Parser.Combinators
 
 main = do
   args         <- getArgs

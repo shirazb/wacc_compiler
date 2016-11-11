@@ -1,14 +1,14 @@
-{-
-  This module defines a number of utility functions which are used
-  whilst annotating the AST.
--}
+{- This module defines a number of utility functions which are used whilst
+annotating the AST -}
+
 module Semantics.Annotators.Util where
 
 import qualified Data.Map as Map
 import Control.Monad.State.Strict (get, put)
 
+{- LOCAL IMPORTS -}
+import Semantics.ErrorMessages
 import Utilities.Definitions
-import Semantics.ErrorMsgs
 
 -- POST: Returns true if the given identifier is marked with an error.
 identHasError :: Ident -> Bool
@@ -17,6 +17,7 @@ identHasError (Ident _ (ScopeError _))
 identHasError _
   = False
 
+-- POST: Sets the info of a given identifier
 setInfo :: Info -> Ident -> Ident
 setInfo info (Ident name _)
   = Ident name info
@@ -31,32 +32,34 @@ addToST :: Ident -> SymbolTable -> SymbolTable
 addToST ident@(Ident _ Info{}) (ST parent env)
   = ST parent (addToEnv ident env)
 addToST _ _
-  = error $ assertionFailed "Cannot add non annotated or error identifer to the symbol table."
+  = error $ assertionFailed "Cannot add non annotated or error" ++
+      " identifer to the symbol table."
 
+-- POST: Retrieves the info of the given input identifier
 identInfo :: Ident -> Info
 identInfo (Ident _ info)
   = info
 
--- POST: Returns the name and context of an annotated identifier.
+-- POST: Returns the name and context of an annotated identifier
 nameAndContext :: Ident -> (String, Context)
 nameAndContext (Ident name (Info _ context))
   = (name, context)
 nameAndContext ident
   = error $ assertNoNameAndContext ident
 
--- POST: Sets the error type of the identifer.
+-- POST: Sets the error type of the identifer
 setErrType :: ScopeErrorType -> Ident -> Ident
 setErrType errType (Ident name _)
   = Ident name (ScopeError errType)
 
 -- POST: Returns information about a given identifier if it is in the
---       the current scope of the symbol table.
+--       the current scope of the symbol table
 lookUpIdentCurrScope :: (String, Context) -> SymbolTable -> Maybe Info
 lookUpIdentCurrScope nameAndCtxt (ST _ env)
   = Map.lookup nameAndCtxt env
 
 -- POST: Returns information about a given identifier if it is in
---       any scope of the symbol table.
+--       any scope of the symbol table
 lookUpIdent :: (String, Context) -> SymbolTable -> Maybe Info
 lookUpIdent _ None
   = error "write a proper error msg -- lookUpIdent"
@@ -77,7 +80,7 @@ inChildScope child = do
   put parentST
   return annotatedAST
 
--- POST: Same as above but applys a function to the result of annotation.
+-- POST: Same as above but applys a function to the result of annotation
 inChildScopeAndWrap :: (a -> b) -> LexicalScoper a -> LexicalScoper b
 inChildScopeAndWrap f child
   = f <$> inChildScope child

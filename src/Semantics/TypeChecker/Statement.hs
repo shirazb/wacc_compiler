@@ -1,18 +1,21 @@
+{- This module type checks statements -}
+
 {-# LANGUAGE LambdaCase #-}
 
-module Semantics.TypeChecker.Statement (
-  typeCheckStat
-) where
+module Semantics.TypeChecker.Statement (typeCheckStat) where
 
 import Control.Monad.Writer.Strict
 
+{- LOCAL IMPORTS -}
 import Semantics.TypeChecker.AssignLHS
 import Semantics.TypeChecker.AssignRHS
 import Semantics.TypeChecker.Expression
 import Semantics.ErrorMessages
 import Utilities.Definitions
 
+-- POST: Type checks statements
 typeCheckStat :: Stat -> TypeChecker ()
+
 typeCheckStat (Skip _)
   = return ()
 
@@ -25,22 +28,17 @@ typeCheckStat stat@(Assignment lhs rhs pos) = do
   typeRHS <- typeCheckRHS rhs
   when (typeLHS /= typeRHS) (tell [typeMismatch typeLHS typeRHS (getPosRHS rhs) stat])
 
--- read has to only be a program variable?
--- array elem or pair element
--- the types here are wrong
 typeCheckStat (Read lhs pos) = do
   t <- typeCheckLHS lhs
-  unless (checkCharOrInt t)
-      (tell ["Read function called with incorrect types"])
+  unless (checkCharOrInt t) (tell [typeMismatch RelationalT t pos lhs])
   return ()
-
 
 typeCheckStat (Free expr pos)
   = typeCheckExpr expr >>= \case
       ArrayT _ _ -> return ()
       PairT _ _  -> return ()
       NoType     -> return ()
-      _          -> tell ["freeing thing not on the heap"]
+      _          -> tell [freeNonHeapObject pos]
 
 typeCheckStat exitStat@(Exit expr pos) = do
   t <- typeCheckExpr expr
