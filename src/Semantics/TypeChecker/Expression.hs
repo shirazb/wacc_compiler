@@ -4,15 +4,15 @@ module Semantics.TypeChecker.Expression where
 
 import qualified Prelude
 import Prelude hiding (LT, EQ)
-import Control.Monad.Writer.Strict
+import Control.Monad.Writer.Strict (tell, unless)
 
 import Utilities.Definitions
 import Semantics.ErrorMessages
 
 {- Utility -}
 -- POST: Checks if the argument provided to the Unary operator
--- is of the correct type. Logs an error message if they are not, otherwise
--- it returns the return type of the unary operator.
+-- is of the correct type. Logs an error message if they are not and returns
+-- NoType, otherwise it returns the return type of the unary operator.
 checkUnAppType :: Show a => Type -> Type -> Type -> Position -> a
                               -> TypeChecker Type
 checkUnAppType expectedT actualT opReturnT pos a
@@ -22,6 +22,9 @@ checkUnAppType expectedT actualT opReturnT pos a
         return NoType
       } else return opReturnT
 
+-- POST: Checks if the two arguments provided to the binary operator are of the
+-- correct type, if they are then it returns the return type of the binary opeartor.
+-- Otherwise it returns NoType and it logs and error message.
 checkBinaryApp :: BinOp -> Type -> Type -> Type -> Expr -> TypeChecker Type
 checkBinaryApp op opT arg1T arg2T expr
   = if arg1T /= arg2T
@@ -29,16 +32,13 @@ checkBinaryApp op opT arg1T arg2T expr
              return NoType;
       else evalArg
   where
-    evalArg = case arg1T of
-                 NoType -> return NoType
-                 _      -> evalArg2
-    evalArg2 = case arg2T of
-                 NoType -> return NoType
-                 _      -> eval
-    eval     = if opT /= arg1T || opT /= arg2T
-                 then tell [typeMismatch opT arg1T (getPos expr) expr] >>
-                        return NoType
-                 else return arg1T
+    evalArg = case (arg1T, arg2T) of
+                  (NoType, _) -> return NoType
+                  (_, NoType) -> return NoType
+                  _           -> if opT /= arg1T || opT /= arg2T
+                                   then tell [typeMismatch opT arg1T (getPos expr) expr] >>
+                                        return NoType
+                                   else return arg1T
 
 typeCheckExpr :: Expr -> TypeChecker Type
 typeCheckExpr (IntLit _ _)

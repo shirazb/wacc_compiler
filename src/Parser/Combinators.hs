@@ -1,5 +1,5 @@
 {-
-  Basic parser combinator definitions which are used to 
+  Basic parser combinator definitions which are used to
   build larger and more complex parsers.
 -}
 
