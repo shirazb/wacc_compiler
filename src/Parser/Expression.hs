@@ -14,9 +14,9 @@ module Parser.Expression (
   arrayElem
 ) where
 
-import Control.Applicative ((<*>), (<|>), some, many, liftA2, liftA3)
+import Control.Applicative  ((<*>), (<|>), some, many)
 import Control.Monad.Except (throwError)
-import Data.Maybe (fromJust)
+import Data.Maybe           (fromJust)
 
 import Parser.Lexer
 import Parser.Identifier
@@ -217,11 +217,11 @@ bracketedExpr
 -- EXAMPLE: parse arrayElem "abc[1][2]" will return
 --          ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser Char ArrayElem
-arrayElem
-  = liftA3 ArrayElem
-      identifier
-      arrayIndexes
-      getPosition
+arrayElem = do
+  pos     <- getPosition
+  ident   <- identifier
+  indexes <- arrayIndexes
+  return $ ArayElem identifier arrayIndexes pos
 
 -- POST: Parses the array indexers e.g. [1][2]
 arrayIndexes :: Parser Char [Expr]
@@ -230,8 +230,10 @@ arrayIndexes
 
 -- POST: Wraps parsed array elements in appropriate data constructor.
 arrayElemExpr :: Parser Char Expr
-arrayElemExpr
-  = liftA2 ExprArray arrayElem getPosition
+arrayElemExpr = do
+  pos      <- getPosition
+  element  <- arrayElem
+  return $ ExprArray element pos
 
 -- POST: Parses a list of expressions.
 parseExprList :: Char -> Char -> Parser Char [Expr]
