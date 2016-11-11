@@ -198,6 +198,7 @@ getPos e
       UnaryApp _ _    p -> p
       BinaryApp _ _ _ p -> p
 
+-- POST correctly type checks pair elem:
 typeCheckPairElem :: PairElem -> TypeChecker Type
 typeCheckPairElem pair@(PairElem _ (PairLiteral _) pos)
   = tell [nullPtrDeref pos pair] >> return NoType
@@ -210,7 +211,8 @@ typeCheckPairElem pair@(PairElem selector expr pos) = do
       | otherwise -> do
           tell [typeMismatch PolyPair exprT pos pair]
           return NoType
-
+-- POST: Returns the type of an array, if called on StringLit
+--       it returns a type of a 1 dimensional array of chars.
 getArrayType :: Type -> Type
 getArrayType a@ArrayT{}
   = a
