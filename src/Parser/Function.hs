@@ -67,11 +67,16 @@ checkExecutionPath _ = do
 
 -- POST: Parses comma-delimited list of parameters.
 parseParamList :: Parser Char ParamList
-parseParamList
-  = ParamList <$> sepby parseParam (punctuation ',') <*> getPosition
+parseParamList = do
+  pos    <- getPosition
+  params <- sepby parseParam (punctuation ',')
+  return $ ParamList params pos
 
 -- POST:    Parses a single parameter.
 -- EXAMPLE: (parse parseParam "int name") produces (Param Int "name")
 parseParam :: Parser Char Param
-parseParam
-  = liftM3 Param parseType identifier getPosition
+parseParam = do
+  pos    <- getPosition
+  t      <- parseType
+  ident  <- identifier
+  return $ Param t ident pos
