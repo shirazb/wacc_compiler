@@ -10,7 +10,7 @@ import Utilities.Definitions
 
 typeCheckProgram :: Program -> TypeChecker ()
 typeCheckProgram (Program fs main) = do
-  when (checkForReturnInMain main) (tell ["return in main"])
+  when (checkForReturnInMain main) (tell ["Semantic Error: Return is not allowed in main"])
   mapM_ typeCheckFunc fs
   typeCheckStat main
 

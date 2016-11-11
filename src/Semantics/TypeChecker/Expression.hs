@@ -40,6 +40,10 @@ checkBinaryApp op opT arg1T arg2T expr
                                         return NoType
                                    else return arg1T
 
+
+-- POST: Type checks expressions, returns either a type which is the
+-- type of the expression or returns NoType denoting that the
+-- expression failed to Type check.
 typeCheckExpr :: Expr -> TypeChecker Type
 typeCheckExpr (IntLit _ _)
   = return (BaseT BaseInt)
@@ -99,10 +103,19 @@ typeCheckExpr binExpr@(BinaryApp op@(EquOp _) expr expr' pos) = do
                                  >> return NoType
                   | otherwise -> return (BaseT BaseBool)
 
+{-
+  Utility Functions which are shared between the type checkers of expressions.
+-}
+
+-- POST: Returns true if the given type is of either type char or int.
 checkCharOrInt :: Type -> Bool
 checkCharOrInt t
   = t == BaseT BaseChar || t == BaseT BaseInt
 
+-- POST: Type checks an array elem as defined in the
+-- WACC langauge. Returns the type of the array elem
+-- with the correct dimension if type checking succeeds
+-- otherwise logs and error message and returns NoType
 typeCheckArrayElem :: ArrayElem -> TypeChecker Type
 typeCheckArrayElem arrElem@(ArrayElem ident indexes pos) = do
   -- get ident's type
@@ -138,7 +151,7 @@ typeCheckArrayElem arrElem@(ArrayElem ident indexes pos) = do
       return NoType
 
 
--- Given a dimension and a Type, constructs an array of that dimension and type.
+-- POST: Given a dimension and a Type, constructs an array of that dimension and type.
 -- 0-dimensional arrays are returned just as a type, not wrapped in an ArrayT
 constructType :: Int -> Type -> Type
 constructType dim innerT
@@ -147,7 +160,8 @@ constructType dim innerT
   | dim == 0   = innerT
   | otherwise  = ArrayT dim innerT
 
--- Checks is an array type, and if so, that its inner type is a PairT or BaseT
+-- POST: Checks is an array type, and if so,
+--       that its inner type is a PairT or BaseT
 isValidArrayType :: Type -> Bool
 isValidArrayType (ArrayT _ (PairT _ _))
   = True
@@ -158,18 +172,19 @@ isValidArrayType (ArrayT _ (BaseT _))
 isValidArrayType _
   = False
 
--- Returns the type of an ident
+-- POST: Returns the type of an ident
 typeCheckIdent :: Ident -> TypeChecker Type
 typeCheckIdent (Ident _ info)
   = return (typeInfo info)
 
--- checkIsInt e <-> e is an int
+-- POST: checkIsInt e <-> e is an int
 typeCheckIsInt :: Expr -> TypeChecker ()
 typeCheckIsInt e = do
   eType <- typeCheckExpr e
   unless (eType == BaseT BaseInt)
     (tell [typeMismatch (BaseT BaseInt) eType (getPos e) e])
 
+-- POST: Returns the positon of the given expression in the source file
 getPos :: Expr -> Position
 getPos e
   = case e of

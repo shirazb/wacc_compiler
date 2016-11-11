@@ -6,6 +6,7 @@ import Control.Monad.Writer.Strict
 
 import Semantics.TypeChecker.Statement
 import Semantics.TypeChecker.Expression
+import Semantics.ErrorMessages
 import Utilities.Definitions
 
 typeCheckFunc :: Func -> TypeChecker ()
@@ -17,7 +18,7 @@ checkFunctionReturn (Skip _) expT
   = return ()
 checkFunctionReturn (Return expr _) expT = do
   t <- typeCheckExpr expr
-  when (t /= expT) (tell ["FUNCTION RETURN TYPE DOES NOT MATCH"])
+  when (t /= expT) (tell [typeMismatch expT t (getPos expr) expr])
   return ()
 checkFunctionReturn (If _ s1 s2 _) expT = do
   checkFunctionReturn s1 expT
