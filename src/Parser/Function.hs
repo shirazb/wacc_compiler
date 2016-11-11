@@ -6,11 +6,11 @@ module Parser.Function  where
 import Control.Monad ( liftM3 )
 import Control.Monad.Except ( throwError )
 
+import Parser.Combinators ( Parser, getPosition, require, sepby )
 import Parser.Identifier ( identifier )
 import Parser.Lexer
 import Parser.Statement ( parseStatement )
 import Parser.Type ( parseType )
-import Parser.Combinators ( Parser, getPosition, require, sepby )
 import Utilities.Definitions
 
 -- POST: Parses a function defintion.
