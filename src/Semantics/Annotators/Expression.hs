@@ -1,14 +1,18 @@
+{-
+  Annotates all the identifers found within expressions.
+-}
+
 module Semantics.Annotators.Expression (
   annotateExpr,
   annotateExprList
 ) where
 
-import Control.Monad.State.Strict
 import qualified Data.Map as Map
 
 import Semantics.Annotators.Identifier
 import Semantics.ErrorMsgs
 import Utilities.Definitions
+
 
 annotateExpr :: Expr -> LexicalScoper Expr
 annotateExpr (IdentE ident pos) = do
@@ -29,7 +33,6 @@ annotateExpr (BinaryApp binOp e1 e2 pos) = do
   e2' <- annotateExpr e2
   return $ BinaryApp binOp e1' e2' pos
 
--- Must be the last case
 annotateExpr literal
   = return literal
 
