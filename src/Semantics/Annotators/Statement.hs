@@ -1,23 +1,22 @@
 {-
-  Annotates AST statements with types and scope errors.
+  Annotates AST statement nodes with types and scope errors. Each function 
+  defined here traverses the structure of a statement node and delegates 
+  annotation of their constituent fields to annotators defined elsewhere.
 -}
   
 module Semantics.Annotators.Statement ( annotateStat ) where
 
-import Control.Monad (liftM2, mapM)
-import Control.Monad.State.Strict ( liftM2, liftM3, liftM4 )
-
 import Semantics.Annotators.Expression ( annotateExpr, annotateExprList )
 import Semantics.Annotators.Identifier ( annotateIdent, annotateNewIdent )
-import Semantics.Annotators.Util ( inChildScope, inChildScopeAndWrap )
+import Semantics.Annotators.Util ( inChildScope )
 import Utilities.Definitions
 
 annotateStat :: Stat -> LexicalScoper Stat
 annotateStat s@Skip{}
   = return s
 
---NOTE: Must annotate RHS before LHS to handle local re-declaration of variable 
---      from parent scope.
+--NOTE: Must annotate RHS before LHS to allow local re-declaration of a variable 
+--      declared in a parent scope.
 annotateStat (Declaration t ident rhs pos) = do
   newRHS   <- annotateRHS rhs
   newIdent <- annotateNewIdent ident (Info t Variable)
@@ -63,12 +62,6 @@ annotateStat (Block s pos) = do
   newStat <- inChildScope (annotateStat s)
   return $ Block newStat pos
 
-
-{-
-annotateStat (Block s pos)
-  = (inChildScopeAndWrap Block (annotateStat s)) <*> (return pos)
--}
-
 annotateStat (Seq s1 s2 pos) = do
   newStat1 <- annotateStat s1
   newStat2 <- annotateStat s2
@@ -97,9 +90,9 @@ annotateRHS (ArrayLitAssign exprList pos) = do
   newExprList <- annotateExprList exprList
   return $ ArrayLitAssign newExprList pos
 
----- fstExpr should not change state of sndExpr as exprs are side effect free
--- NOTE: Expressions have no side effects, so can be annotated simultaneously,
---       that is, evaluated given the same symbol table.
+-- NOTE: Expressions have no side effects, so fst and snd can be annotated 
+--       sequentially - the annotation of fst won't affect that of snd, because
+--       annotating fst won't modify the state of the symbol table.
 annotateRHS (NewPairAssign fstExpr sndExpr pos) = do
   newFstExpr <- annotateExpr fstExpr
   newSndExpr <- annotateExpr sndExpr
