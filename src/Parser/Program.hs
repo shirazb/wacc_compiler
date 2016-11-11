@@ -1,17 +1,20 @@
+{- This module defines a parser for the overall program-}
+
 module Parser.Program (parseProgram) where
 
 import Control.Applicative  (many, liftA2)
 import Control.Monad.State  (MonadState (..), StateT (..))
 import Control.Monad.Except (throwError)
 
+{- LOCAL IMPORTS -}
 import Parser.Function
 import Parser.Lexer
 import Parser.Statement
 import Parser.Combinators
-import Utilities.Definitions
 import Semantics.Annotators.AST
+import Utilities.Definitions
 
--- Parses a WACC program.
+-- POST: Parses a WACC program
 parseProgram :: Parser Char Program
 parseProgram
   = bracket
@@ -24,7 +27,8 @@ parseProgram
           (many parseFunction)
           (require parseStatement "Invalid or missing program body")
 
--- Parses the end token of a WACC program and ensures there is nothing after.
+-- POST: Parses the end token of a WACC program and ensures there is nothing 
+--       afterwards
 endingParse :: Parser Char String
 endingParse = do
   require (string "end") "Unexpected Symbol"

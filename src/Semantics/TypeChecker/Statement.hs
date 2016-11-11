@@ -30,8 +30,7 @@ typeCheckStat stat@(Assignment lhs rhs pos) = do
 
 typeCheckStat (Read lhs pos) = do
   t <- typeCheckLHS lhs
-  when (not (checkCharOrInt t)) (tell ["Read function called with" ++
-    " incorrect types"])
+  when (not (checkCharOrInt t)) (tell [typeMismatch RelationalT t pos])
   return ()
 
 typeCheckStat (Free expr pos)

@@ -1,10 +1,6 @@
-{-
-This module consists of parser combinators which are used to parse
-expressions in the WACC language. A number of basic expression
-combinators have been defined which are then used as building blocks
-to build more complex parsers of expressions. Refer to BNF spec of WACC
-language to see exactly what an expression is in the WACC language.
--}
+{- This module defines parser combinators which are used to parse expressions.
+A number of basic expression combinators have been defined which are then used 
+as building blocks to build more complex parsers of expressions -}
 
 {-# LANGUAGE MultiWayIf #-}
 
@@ -18,18 +14,20 @@ import Control.Applicative ((<*>), (<|>), some, many, liftA2, liftA3)
 import Control.Monad.Except (throwError)
 import Data.Maybe (fromJust)
 
+{- LOCAL IMPORTS -}
 import Parser.Lexer
 import Parser.Identifier
 import Parser.Combinators
 import Utilities.Definitions
 
--- NB:   parseExpr avoids left recursion in binary expressions by separating
---       binary expression parser from the other forms of expression parsers.
--- POST: Parses valid expressions, generates an error upon failing.
+-- POST: Parses valid expressions and generates an error upon failing
+-- NOTE: parseExpr avoids left recursion in binary expressions by separating
+--       binary expression parser from the other forms of expression parsers
 parseExpr :: Parser Char Expr
 parseExpr
   = binaryExpr <|> parseExpr'
 
+-- POST: Parses valid expressions
 parseExpr' :: Parser Char Expr
 parseExpr'
   =   arrayElemExpr
@@ -42,9 +40,10 @@ parseExpr'
   <|> exprIdent
   <|> pairLiteral
 
-{- LITERAL COMBINATORS: -}
+{- LITERAL COMBINATORS -}
 
--- can be optionally signed.
+-- POST: Parser for integers
+-- NOTE: Can be optionally signed
 intLiteral :: Parser Char Expr
 intLiteral = trimWS $ do
   sign <- string "-" <|> string "+" <|> return []
@@ -55,6 +54,7 @@ intLiteral = trimWS $ do
           throwError ("Syntax: Int Overflow", updateRowPosition pos)
      | otherwise -> return $ IntLit n pos
 
+-- POST: Parser for booleans
 boolLiteral :: Parser Char Expr
 boolLiteral = do
   boolean <- keyword "true" <|> keyword "false"
@@ -66,6 +66,7 @@ quoted :: Char -> Parser Char b -> Parser Char b
 quoted c parser
   = bracket (char c) parser (char c)
 
+-- POST: Parser for chars
 charLiteral :: Parser Char Expr
 charLiteral = do
   cLit <- quoted '\''
@@ -73,6 +74,7 @@ charLiteral = do
   pos <- getPosition
   return (CharLit cLit pos)
 
+-- POST: Parser for pairs
 pairLiteral :: Parser Char Expr
 pairLiteral
   = keyword "null" >> PairLiteral <$> getPosition
@@ -87,18 +89,14 @@ stringLiter
       (quoted '\"' (require (many character) "Invalid char found in string"))
       getPosition
 
-{-
-  Complex combinators used to parse larger and more complex expressions.
-  They are built using the basic combinators defined above and a few
-  generic combinators defined in the BasicCombinators module.
--}
+{- UNARY & BINARY EXPRESSION COMBINATORS -}
 
--- PRE: None
--- POST: Parses all valid application of unary operators expressions.
+-- POST: Parses all valid application of unary operators expressions
 unaryExpr :: Parser Char Expr
 unaryExpr
   = parseUnaryAppHigh <|> parseUnaryAppLow
 
+-- POST: Parses unary operators with low precedence
 parseUnaryAppLow :: Parser Char Expr
 parseUnaryAppLow = do
   op      <- foldr1 (<|>) (map (keyword . fst) unOpPrec2)
@@ -107,18 +105,13 @@ parseUnaryAppLow = do
   pos     <- getPosition
   return $ UnaryApp op' expr pos
 
+-- POST: Parses unary operators with high precedence
 parseUnaryAppHigh :: Parser Char Expr
 parseUnaryAppHigh = do
   op   <- parseFromMap unOpPrec1
   expr <- require parseExpr "Invalid argument to unary operator"
   pos  <- getPosition
   return $ UnaryApp op expr pos
-
-{-
-  A number of parsers used to parse valid binary expressions in the WACC
-  language. The design of the parser combinators take in to acccount the
-  precdence of binary operators.
--}
 
 -- POST:    Parses all valid binary expressions
 -- EXAMPLE: parse  binaryExpr "1 + 2" will return
@@ -127,55 +120,70 @@ binaryExpr  :: Parser Char Expr
 binaryExpr
   = prec5Binary `chainl1` parseBinOpPrec6
 
+-- POST: Parses the binary expressions with precedence level 5 left 
+--       associatively
 prec5Binary :: Parser Char Expr
 prec5Binary
   = prec4Binary `chainl1` parseBinOpPrec5
 
+-- POST: Parses the binary expressions with precedence level 4 left 
+--       associatively
 prec4Binary :: Parser Char Expr
 prec4Binary
   = prec3Binary `chainl1` parseBinOpPrec4
 
+-- POST: Parses the binary expressions with precedence level 3 left 
+--       associatively
 prec3Binary :: Parser Char Expr
 prec3Binary
   = prec2Binary `chainl1` parseBinOpPrec3
 
+-- POST: Parses the binary expressions with precedence level 2 left 
+--       associatively
 prec2Binary :: Parser Char Expr
 prec2Binary
   = prec1Binary `chainl1` parseBinOpPrec2
 
+-- POST: Parses the binary expressions with precedence level 1 left 
+--       associatively
 prec1Binary :: Parser Char Expr
 prec1Binary
   = parseExpr' `chainl1` parseBinOpPrec1
 
+-- POST: Parses binary operators of precedence level 1
 parseBinOpPrec1 :: Parser Char BinOp
 parseBinOpPrec1
   = parseFromMap binOpPrec1
 
+-- POST: Parses binary operators of precedence level 2
 parseBinOpPrec2 :: Parser Char BinOp
 parseBinOpPrec2
   = parseFromMap binOpPrec2
 
+-- POST: Parses binary operators of precedence level 3
 parseBinOpPrec3 :: Parser Char BinOp
 parseBinOpPrec3
   = parseFromMap binOpPrec3
 
+-- POST: Parses binary operators of precedence level 4
 parseBinOpPrec4 :: Parser Char BinOp
 parseBinOpPrec4
   = parseFromMap binOpPrec4
 
+-- POST: Parses binary operators of precedence level 5
 parseBinOpPrec5 :: Parser Char BinOp
 parseBinOpPrec5
   = parseFromMap binOpPrec5
 
+-- POST: Parses binary operators of precedence level 6
 parseBinOpPrec6 :: Parser Char BinOp
 parseBinOpPrec6
   = parseFromMap binOpPrec6
 
--- POST:    Returns a parser which parses a sequence of expressions seperated
---          by a meaningful seperator, for example, the operator (+). The
---          parser returns the expression wrapped up in the appropriate data
---          constructors. Assume existence of parser which returns the Add data
---          constructor as its result, call it parseAdd.
+{- HELPER FUNCTIONS -}
+
+-- POST:    Takes a parser of expressions and a parser of binary opterators and
+--          parsers them in a left associative fashion
 -- EXAMPLE: parse (chainl1 intLiteral parseAdd) "1 + 2 + 3" will return
 --          Add (Add (IntLit 1) (IntLit 2)) (IntLit 3)
 chainl1 :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
@@ -188,6 +196,8 @@ chainl1 p op
       pos  <- getPosition
       rest $ BinaryApp f x y pos) <|> return x
 
+-- POST: Takes a parser of expressions and a parser of binary opterators and
+--       parsers them in a right associative fashion
 chainr :: Parser Char Expr -> Parser Char BinOp -> Parser Char Expr
 chainr p op
   = p >>= rest
@@ -200,7 +210,7 @@ chainr p op
       ) <|> return x
 
 -- POST: Parser of bracketed expressions. Parser removes whitespace and throws
---       away brackets.
+--       away brackets
 bracketedExpr :: Parser Char Expr
 bracketedExpr
   = bracket
@@ -209,7 +219,7 @@ bracketedExpr
       (require (punctuation ')')
           "Missing closing parenthesis to bracketed expression")
 
--- POST:    Parses references to array elements.
+-- POST:    Parses references to array elements
 -- EXAMPLE: parse arrayElem "abc[1][2]" will return
 --          ArrayElem "abc" [IntLit 1, IntLit 2]
 arrayElem :: Parser Char ArrayElem
@@ -224,15 +234,15 @@ arrayIndexes :: Parser Char [Expr]
 arrayIndexes
   = some (bracket (punctuation '[') parseExpr (punctuation ']'))
 
--- POST: Wraps parsed array elements in appropriate data constructor.
+-- POST: Wraps parsed array elements in appropriate data constructor
 arrayElemExpr :: Parser Char Expr
 arrayElemExpr
   = liftA2 ExprArray arrayElem getPosition
 
--- POST: Parses a list of expressions.
+-- POST: Parses a list of expressions
 parseExprList :: Char -> Char -> Parser Char [Expr]
 parseExprList open close
   = bracket
       (punctuation open)
       (sepby parseExpr (punctuation ','))
-      (punctuation close)
+      (pun:wqctuation close)
