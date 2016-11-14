@@ -1,7 +1,10 @@
-{- This module provides the ARM Assembly data types, show instances and 
+{- This module provides the ARM Assembly data types, show instances and
 boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
+
+class CodeGen a where
+  codegen :: a -> [Instr]
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
 
@@ -17,10 +20,16 @@ data Instr
   = Push Op
   | Pop Op
   | Mov Op Op
+  | BL String
+  | LDR Op Op
+  | ADDS Op Op Op
+  | SUBS Op Op Op
+  | SMULL Op Op Op Op
 
 data Op
   = Reg Int
   | Imm Int
+
 
 
 {- SHOW INSTANCES-}
@@ -38,4 +47,3 @@ instance Show Op where
     = "r" ++ show i
   show (Imm i)
     = "#" ++ show i
-
