@@ -9,6 +9,7 @@ instance CodeGen Stat where
   codegen (Exit e _ )
     = codegen e ++ [BL "exit"]
 
+
 instance CodeGen Expr where
   codegen (IntLit i _)
     = [LDR (Reg 0) (Imm i)]
@@ -17,8 +18,7 @@ instance CodeGen Expr where
   codegen (IdentE ident pos)
     = undefined
   -- how do we know???
-  -- where the variable is on the stack??
-  --
+  -- where the variable is on the stack??--
   codegen (BinaryApp (Arith op) e e' _)
     = codegen e ++ [Push (Reg 0)] ++
       codegen e'++ [Mov (Reg 1) (Reg 0)]
