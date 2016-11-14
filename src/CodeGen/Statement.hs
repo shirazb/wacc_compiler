@@ -1,14 +1,20 @@
-module CodeGen.Statement where
-import Utilities.Definitions
-import CodeGen.Assembly
+{- This module generates ARM Assembly code for statements -}
 
+module CodeGen.Statement where
+
+{- LOCAL IMPORTS -}
+
+import CodeGen.Assembly
+import Utilities.Definitions
 
 instance CodeGen Stat where
   codegen (Skip _)
-    = []
-  codegen (Exit e _ )
-    = codegen e ++ [BL "exit"]
+    = [Mov (Imm 0) (Imm 0)]
 
+--  codegen (Exit e _ )
+--    = codegen e ++ [BL "exit"]
+
+{-
 instance CodeGen Expr where
   codegen (IntLit i _)
     = [LDR (Reg 0) (Imm i)]
@@ -24,8 +30,6 @@ instance CodeGen Expr where
       codegen e'++ [Mov (Reg 1) (Reg 0)]
       ++ [Pop (Reg 0)] ++ [chooseArithInstr op]
 
-
-
 chooseArithInstr :: ArithOp -> Instr
 chooseArithInstr Add
   = ADDS (Reg 0) (Reg 0) (Reg 1)
@@ -33,3 +37,5 @@ chooseArithInstr Sub
   = SUBS (Reg 0) (Reg 0) (Reg 1)
 chooseArithInstr Mul
   = SMULL (Reg 0) (Reg 1) (Reg 0) (Reg 1)
+
+-}

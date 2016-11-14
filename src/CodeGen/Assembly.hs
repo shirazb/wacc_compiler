@@ -10,8 +10,9 @@ class CodeGen a where
 
 text, global, semiC :: String
 
-text   = "    .text"
-global = "    .global"
+space  = "    "
+text   = space ++ ".text"
+global = space ++ ".global "
 semiC  = ":"
 
 {- ARM ASSEMBLY DATA TYPES -}
@@ -27,12 +28,15 @@ data Instr
   | SMULL Op Op Op Op
 
 data Op
-  = Reg Int
+  = OpReg Register
   | Imm Int
 
+data Register
+  = LR
+  | PC
+  | Reg Int
 
-
-{- SHOW INSTANCES-}
+{- SHOW INSTANCES -}
 
 instance Show Instr where
   show (Push r)
@@ -43,7 +47,15 @@ instance Show Instr where
     = "MOV " ++ show op ++ ", " ++ show op'
 
 instance Show Op where
-  show (Reg i)
-    = "r" ++ show i
+  show (OpReg r)
+    = show r
   show (Imm i)
     = "#" ++ show i
+
+instance Show Register where
+  show LR
+    = "lr"
+  show PC
+    = "pc"
+  show (Reg i)
+    = "r" ++ show i
