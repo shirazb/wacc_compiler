@@ -8,12 +8,22 @@ class CodeGen a where
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
 
-text, global, semiC :: String
+space, spaceX2, text, global, dataLabel, word, ascii :: String
 
-space  = "    "
-text   = space ++ ".text"
-global = space ++ ".global "
-semiC  = ":"
+space     = "    "
+spaceX2   = space ++ space
+text      = space ++ ".text"
+global    = space ++ ".global main"
+dataLabel = ".data"
+word      = ".word"
+ascii     = ".ascii"
+
+-- POST:    Prints the the ARM Assembly message label and its number
+-- EXAMPLE: "msg_0:" "msg_2:"
+msg :: Int -> String
+msg n = "msg_" ++ n ++ ":"
+
+type Label = String
 
 {- ARM ASSEMBLY DATA TYPES -}
 
@@ -21,15 +31,13 @@ data Instr
   = Push Op
   | Pop Op
   | Mov Op Op
-  | BL String
+  | BL Label
   | LDR Op Op
-  | ADDS Op Op Op
-  | SUBS Op Op Op
-  | SMULL Op Op Op Op
 
 data Op
   = OpReg Register
-  | Imm Int
+  | ImmMov Int
+  | ImmLDR Int
 
 data Register
   = LR
@@ -45,12 +53,18 @@ instance Show Instr where
     = "POP {" ++ show r ++ "}"
   show (Mov op op')
     = "MOV " ++ show op ++ ", " ++ show op'
+  show (BL l)
+    = "BL " ++ l
+  show (LDR op op')
+    = "LDR " ++ show op ++ ", " ++ show op'
 
 instance Show Op where
   show (OpReg r)
     = show r
-  show (Imm i)
+  show (ImmMov i)
     = "#" ++ show i
+  show (ImmLDR i)
+    = "=" ++ show i
 
 instance Show Register where
   show LR

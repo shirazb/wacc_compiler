@@ -9,15 +9,15 @@ import Utilities.Definitions
 
 instance CodeGen Stat where
   codegen (Skip _)
-    = [Mov (Imm 0) (Imm 0)]
+    = [Mov (OpReg (Reg 0)) (ImmMov 0)]
 
---  codegen (Exit e _ )
---    = codegen e ++ [BL "exit"]
+  codegen (Exit e _)
+    = codegen e ++ [BL "exit"] ++ [Mov (OpReg (Reg 0)) (ImmMov 0)]
 
-{-
 instance CodeGen Expr where
   codegen (IntLit i _)
-    = [LDR (Reg 0) (Imm i)]
+    = [LDR (OpReg (Reg 0)) (ImmLDR i)]
+{-
   codegen (StringLit _ _)
     = undefined
   codegen (IdentE ident pos)
