@@ -2,9 +2,21 @@
 boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
+import Control.Monad.StateStack
+import qualified Data.Map as Map
+import Control.Monad.State
+import Debug.Trace
 
 class CodeGen a where
   codegen :: a -> [Instr]
+
+
+type Env = Map.Map String Integer
+type InstructionMonad a = StateStackT Env (State Int) a
+
+
+-- genInstruction p = runState (runStateStackT p []) 1
+
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
 

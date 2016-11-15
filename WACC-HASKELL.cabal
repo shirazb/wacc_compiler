@@ -43,7 +43,8 @@ executable WACC-HASKELL
   build-depends:       base >=4.8 && <4.10,
                        mtl >=2.2 && <2.3,
                        transformers >=0.4 && <0.6,
-                       containers >=0.4 && <0.6
+                       containers >=0.4 && <0.6,
+                       statestack >= 0.2
   hs-source-dirs:      src,
                        app,
                        src/Semantics/Annotators,

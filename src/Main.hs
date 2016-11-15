@@ -9,6 +9,7 @@ import Semantics.Annotators.AST
 import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
+import CodeGen.Assembly
 
 main = do
   args         <- getArgs
