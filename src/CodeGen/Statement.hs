@@ -2,19 +2,29 @@
 
 module CodeGen.Statement where
 
-{- LOCAL IMPORTS -}
 
+{- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import Utilities.Definitions
+import Parser.BasicCombinators
+import Parser.Program
+import Semantics.Annotators.AST
+
 
 instance CodeGen Stat where
   codegen (Skip _)
     = [Mov (Imm 0) (Imm 0)]
 
+
+
+
+
+
 --  codegen (Exit e _ )
 --    = codegen e ++ [BL "exit"]
 
 {-
+
 instance CodeGen Expr where
   codegen (IntLit i _)
     = [LDR (Reg 0) (Imm i)]
