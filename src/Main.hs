@@ -10,6 +10,10 @@ import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
 import CodeGen.Assembly
+import CodeGen.Statement
+import Parser.Statement
+
+-- test1 = Declaration (BaseT BaseInt)
 
 main = do
   args         <- getArgs

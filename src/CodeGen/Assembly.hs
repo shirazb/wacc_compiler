@@ -7,15 +7,17 @@ import qualified Data.Map as Map
 import Control.Monad.State
 import Debug.Trace
 
+
 class CodeGen a where
-  codegen :: a -> [Instr]
+  codegen :: a -> InstructionMonad [Instr]
 
 
-type Env = Map.Map String Integer
-type InstructionMonad a = StateStackT Env (State Int) a
+type Env = Map.Map String Int
+type InstructionMonad a = StateStackT (Env, Int) (State Int) a
 
 
--- genInstruction p = runState (runStateStackT p []) 1
+genInstruction p = runState (runStateStackT p (Map.empty, 0)) 0
+
 
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
@@ -45,43 +47,49 @@ data Instr
   | Mov Op Op
   | BL Label
   | LDR Op Op
+  | STR Op [Op]
+  | SUB Op Op Op
+  deriving (Show)
 
 data Op
   = OpReg Register
-  | ImmMov Int
+  | Imm Int
   | ImmLDR Int
+  deriving (Show)
 
 data Register
   = LR
   | PC
   | Reg Int
+  | SP
+  deriving (Show)
 
 {- SHOW INSTANCES -}
 
-instance Show Instr where
-  show (Push r)
-    = "PUSH {" ++ show r ++ "}"
-  show (Pop r)
-    = "POP {" ++ show r ++ "}"
-  show (Mov op op')
-    = "MOV " ++ show op ++ ", " ++ show op'
-  show (BL l)
-    = "BL " ++ l
-  show (LDR op op')
-    = "LDR " ++ show op ++ ", " ++ show op'
-
-instance Show Op where
-  show (OpReg r)
-    = show r
-  show (ImmMov i)
-    = "#" ++ show i
-  show (ImmLDR i)
-    = "=" ++ show i
-
-instance Show Register where
-  show LR
-    = "lr"
-  show PC
-    = "pc"
-  show (Reg i)
-    = "r" ++ show i
+-- instance Show Instr where
+--   show (Push r)
+--     = "PUSH {" ++ show r ++ "}"
+--   show (Pop r)
+--     = "POP {" ++ show r ++ "}"
+--   show (Mov op op')
+--     = "MOV " ++ show op ++ ", " ++ show op'
+--   show (BL l)
+--     = "BL " ++ l
+--   show (LDR op op')
+--     = "LDR " ++ show op ++ ", " ++ show op'
+--
+-- instance Show Op where
+--   show (OpReg r)
+--     = show r
+--   show (Imm i)
+--     = "#" ++ show i
+--   show (ImmLDR i)
+--     = "=" ++ show i
+--
+-- instance Show Register where
+--   show LR
+--     = "lr"
+--   show PC
+--     = "pc"
+--   show (Reg i)
+--     = "r" ++ show i
