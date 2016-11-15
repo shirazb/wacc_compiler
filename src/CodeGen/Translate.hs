@@ -8,17 +8,24 @@ import CodeGen.Assembly
 import CodeGen.Statement
 import Utilities.Definitions
 
+-- POST: Takes an AST and translates it to ARM Assembly code
 translateAST :: AST -> IO ()
 translateAST (Program _ s) = putStr (output s)
 
+-- POST: Given a statement from a program tree (AST), it converts the statement
+--       into ARM Assembly code represented as a string
 output :: Stat -> String
 output s
-  = text ++ "\n\n" ++ global ++ "main" ++ "\n\n" ++
-    space ++ "main" ++ ":" ++ "\n" ++
-    space ++ space ++ show (Push (OpReg LR)) ++ "\n" ++         
-    space ++ space ++ show (head (codegen s)) ++ "\n" ++
-    space ++ space ++ show (Pop (OpReg PC)) ++ "\n"
+  = text ++ "\n\n" ++ global ++ "\n\n" ++
+    space ++ "main:" ++ "\n" ++
+    spaceX2 ++ show (Push (OpReg LR)) ++ "\n" ++
+    spaceX2 ++ concatMap ((flip (++) ("\n" ++ spaceX2)) . show) (codegen s) ++
+    show (Pop (OpReg PC)) ++ "\n"
 
-prog :: AST
-prog = Program [] (Skip (1,12))
+{- TEST PROGRAMS -}
 
+prog1 :: AST
+prog1 = Program [] (Skip (1,12))
+
+prog2 :: AST
+prog2 = Program [] (Exit (IntLit 256 (1,12)) (1,7))
