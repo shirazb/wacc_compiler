@@ -18,7 +18,7 @@ instance CodeGen Stat where
     let newMap = Map.insert name offset map'
     let newOffset = offset + typeSize t
     put (newMap, newOffset)
-    let str = [STR Word NoIdx R0 [SP,ImmI offset]]
+    let str = [STR W NoIdx R0 [SP,ImmI offset]]
     return $ instr ++ str
   codegen (Block s _) = do
     let sizeOfscope = scopeSize s
@@ -61,9 +61,9 @@ instance CodeGen AssignRHS where
 
 instance CodeGen Expr where
   codegen (IntLit i _)
-    = return [LDR W NoIdx R0 (ImmI i)]
+    = return [LDR W NoIdx R0 [ImmLDRI i]]
   codegen (CharLit c _)
-    = return [LDR W NoIdx R0 (ImmC c)]
+    = return [LDR W NoIdx R0 [ImmLDRC c]]
   codegen (BoolLit b _)
     = return [Mov R0 (ImmI bInt)]
     where
@@ -73,7 +73,7 @@ instance CodeGen Expr where
   codegen (IdentE (Ident name (Info t _)) _) = do
     let size = sizeFromType t
     (env, _) <- get
-    let offset = Map.lookup name env
+    let offset = fromJust $ Map.lookup name env
     return [LDR size NoIdx R0 [SP, ImmI offset]]
   codegen (ExprArray _ _)
     = undefined
@@ -85,7 +85,6 @@ instance CodeGen Expr where
     instr <- codegen e
     let negE = [RSBS R0 R0 (ImmI 0)]
     return $ instr ++ negE
-  
 instance CodeGen Func where
   codegen _
     = return []

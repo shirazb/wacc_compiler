@@ -51,7 +51,7 @@ data Instr
   | ADD Op Op Op
   | EOR Op Op Op
   | RSBS Op Op Op
-
+-- include load immediate instructions
 
 data Size = B | W | SB
 data Indexing = Pre | Post | NoIdx
@@ -60,7 +60,8 @@ data Indexing = Pre | Post | NoIdx
 data Op
   = ImmI Int
   | ImmC Char
-  | ImmLDR Int
+  | ImmLDRI Int
+  | ImmLDRC Char
   | R0
   | R1
   | LR
@@ -87,6 +88,8 @@ instance Show Instr where
     = "MOV " ++ show op ++ ", " ++ show op'
   show (BL l)
     = "BL " ++ l
+  show (LDR s NoIdx op [op'])
+    = "LDR " ++ show s ++ " " ++ show op ++ ", " ++ show op'
   show (LDR s i op ops)
     = "LDR " ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (STR s i op ops)
@@ -95,6 +98,10 @@ instance Show Instr where
     = "SUB " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
   show (ADD op op' op'')
     = "ADD " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+  show (EOR op op' op'')
+    = "EOR " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+  show (RSBS op op' op'')
+    = "RSBS " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
 
 showIndexing :: Indexing -> [Op] -> String
 showIndexing index ops
@@ -110,8 +117,10 @@ instance Show Op where
     = "#" ++ show i
   show (ImmC c)
     = "#" ++ show c
-  show (ImmLDR i)
+  show (ImmLDRI i)
     = "=" ++ show i
+  show (ImmLDRC c)
+    = "=" ++ show c
   show LR
     = "lr"
   show PC
