@@ -12,8 +12,23 @@ import Utilities.Definitions
 import CodeGen.Assembly
 import CodeGen.Statement
 import Parser.Statement
+import qualified Data.Map as Map
+import Data.List
 
 -- test1 = Declaration (BaseT BaseInt)
+
+-- makeAST :: String -> AST
+-- makeInstr :: String -> InstructionMonad [Instr]
+-- makeInstr :: [Char] -> (([Instr], (Map.Map String Int, Int)), Int)
+-- makeInstr :: String -> [Instr]
+makeInstr :: String -> IO ()
+makeInstr s
+  = putStrLn $ concat $ intersperse "\n" (map show $ fst . fst $ genInstruction (codegen main))
+  where
+  (Right (Just ((a,b),_))) =  runParser parseProgram s
+  annotation = annotateAST a
+  Program fs main = annotation
+
 
 main = do
   args         <- getArgs

@@ -4,6 +4,7 @@ boilerplate code for our code generation output -}
 module CodeGen.Assembly where
 import Control.Monad.StateStack
 import qualified Data.Map as Map
+import Utilities.Definitions hiding (Env)
 import Control.Monad.State
 import Debug.Trace
 
@@ -15,9 +16,7 @@ class CodeGen a where
 type Env = Map.Map String Int
 type InstructionMonad a = StateStackT (Env, Int) (State Int) a
 
-
 genInstruction p = runState (runStateStackT p (Map.empty, 0)) 0
-
 
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
@@ -46,50 +45,76 @@ data Instr
   | Pop Op
   | Mov Op Op
   | BL Label
-  | LDR Op Op
-  | STR Op [Op]
+  | LDR Size Indexing Op [Op]
+  | STR Size Indexing Op [Op]
   | SUB Op Op Op
-  deriving (Show)
+  | ADD Op Op Op
+  | EOR Op Op Op
+  | RSBS Op Op Op
+
+
+data Size = B | W | SB
+data Indexing = Pre | Post | NoIdx
+
 
 data Op
-  = OpReg Register
-  | Imm Int
+  = ImmI Int
+  | ImmC Char
   | ImmLDR Int
-  deriving (Show)
-
-data Register
-  = LR
+  | R0
+  | R1
+  | LR
   | PC
-  | Reg Int
   | SP
-  deriving (Show)
+
+typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, B), (BaseT BaseBool, SB)]
+
+
 
 {- SHOW INSTANCES -}
+instance Show Size where
+  show B = "B"
+  show W = ""
+  show SB = "SB"
 
--- instance Show Instr where
---   show (Push r)
---     = "PUSH {" ++ show r ++ "}"
---   show (Pop r)
---     = "POP {" ++ show r ++ "}"
---   show (Mov op op')
---     = "MOV " ++ show op ++ ", " ++ show op'
---   show (BL l)
---     = "BL " ++ l
---   show (LDR op op')
---     = "LDR " ++ show op ++ ", " ++ show op'
---
--- instance Show Op where
---   show (OpReg r)
---     = show r
---   show (Imm i)
---     = "#" ++ show i
---   show (ImmLDR i)
---     = "=" ++ show i
---
--- instance Show Register where
---   show LR
---     = "lr"
---   show PC
---     = "pc"
---   show (Reg i)
---     = "r" ++ show i
+
+instance Show Instr where
+  show (Push r)
+    = "PUSH {" ++ show r ++ "}"
+  show (Pop r)
+    = "POP {" ++ show r ++ "}"
+  show (Mov op op')
+    = "MOV " ++ show op ++ ", " ++ show op'
+  show (BL l)
+    = "BL " ++ l
+  show (LDR s i op ops)
+    = "LDR " ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+  show (STR s i op ops)
+    = "STR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+  show (SUB op op' op'')
+    = "SUB " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+  show (ADD op op' op'')
+    = "ADD " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+
+showIndexing :: Indexing -> [Op] -> String
+showIndexing index ops
+  = case index of
+    Pre  -> show ops ++ "!"
+    Post -> show (init ops) ++ ", " ++ show (last ops)
+    NoIdx -> show ops
+
+instance Show Op where
+  show R0
+    = "r0"
+  show (ImmI i)
+    = "#" ++ show i
+  show (ImmC c)
+    = "#" ++ show c
+  show (ImmLDR i)
+    = "=" ++ show i
+  show LR
+    = "lr"
+  show PC
+    = "pc"
+  show SP
+    = "sp"
