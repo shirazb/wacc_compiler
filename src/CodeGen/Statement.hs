@@ -10,8 +10,6 @@ import qualified Data.Map as Map
 import Control.Monad.StateStack
 
 
-
-
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
     instr <- codegen rhs
