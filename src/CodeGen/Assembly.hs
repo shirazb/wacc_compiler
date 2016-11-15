@@ -3,6 +3,34 @@ boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
 
+
+import Control.Monad.StateStack
+import qualified Data.Map as Map
+import Control.Monad.Identity
+import Control.Monad.State
+import Debug.Trace
+type VarMap = Map.Map String Int
+
+-- what do we want as the type??
+type Test a = StateStack Int a
+type InstructionMonad a = StateStackT Int (StateT Int ((StateT VarMap Identity))) a
+
+-- runStack :: (Num s, Num s1) => StateStackT s1 (StateT s (StateStackT (Map.Map k a1) Identity)) a -> (((a, s1), s), Map.Map k a1)
+runStack p = runIdentity $ runStateT (runStateT (runStateStackT p 1) 2) Map.empty
+
+getMap :: InstructionMonad String
+getMap = do
+  st <- get
+  traceM "                              -------------------------                      "
+  traceM $ show st
+  st1 <- lift get
+  traceM "                              -------------------------                      "
+  traceM $ show st1
+  traceM "                              -------------------------                      "
+  st' <- lift (lift get)
+  traceM $ show st'
+  return "sd"
+
 class CodeGen a where
   codegen :: a -> [Instr]
 
