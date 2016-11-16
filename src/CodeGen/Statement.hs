@@ -85,6 +85,12 @@ instance CodeGen Expr where
     instr <- codegen e
     let negE = [RSBS R0 R0 (ImmI 0)]
     return $ instr ++ negE
+  codegen (UnaryApp Len e _) = do
+    instr <- codegen e
+    let getLen = [LDR W NoIdx R0 [R0]]
+    return $ instr ++ getLen
+  codegen (UnaryApp Ord e _) = do
+    return []
 instance CodeGen Func where
   codegen _
     = return []
