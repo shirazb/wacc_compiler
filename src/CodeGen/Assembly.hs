@@ -9,9 +9,10 @@ import Control.Monad.State
 import Debug.Trace
 
 
+
+type DataSegment = String
 class CodeGen a where
   codegen :: a -> InstructionMonad [Instr]
-
 
 type Env = Map.Map String Int
 type InstructionMonad a = StateStackT (Env, Int) (State Int) a
@@ -68,7 +69,7 @@ data Op
   | PC
   | SP
 
-typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, B), (BaseT BaseBool, SB)]
+typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, SB), (BaseT BaseBool, SB)]
 
 
 
@@ -89,9 +90,9 @@ instance Show Instr where
   show (BL l)
     = "BL " ++ l
   show (LDR s NoIdx op [op'])
-    = "LDR " ++ show s ++ " " ++ show op ++ ", " ++ show op'
+    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ show op'
   show (LDR s i op ops)
-    = "LDR " ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (STR s i op ops)
     = "STR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (SUB op op' op'')

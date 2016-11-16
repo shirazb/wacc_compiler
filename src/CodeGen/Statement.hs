@@ -10,6 +10,8 @@ import qualified Data.Map as Map
 import Control.Monad.StateStack
 import Data.Maybe (fromJust)
 
+-- returnInstr instr = return (instr , "")
+
 
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
@@ -21,16 +23,16 @@ instance CodeGen Stat where
     let str = [STR W NoIdx R0 [SP,ImmI offset]]
     return $ instr ++ str
   codegen (Block s _) = do
+    save
     let sizeOfscope = scopeSize s
     (map', offset) <- get
     let newMap = Map.map (+ sizeOfscope) map'
-    save
     put (newMap, 0)
-    let assembleSpace = [SUB SP SP (ImmI sizeOfscope)]
+    let makeRoomStack = [SUB SP SP (ImmI sizeOfscope)]
     instr <- codegen s
     let clearSpace = [ADD SP SP (ImmI sizeOfscope)]
     restore
-    return $ assembleSpace ++ instr ++ clearSpace
+    return $ makeRoomStack ++ instr ++ clearSpace
   codegen (Seq s1 s2 _) = do
     instr1 <- codegen s1
     instr2 <- codegen s2
@@ -63,7 +65,7 @@ instance CodeGen Expr where
   codegen (IntLit i _)
     = return [LDR W NoIdx R0 [ImmLDRI i]]
   codegen (CharLit c _)
-    = return [LDR W NoIdx R0 [ImmLDRC c]]
+    = return [Mov R0 (ImmC c)]
   codegen (BoolLit b _)
     = return [Mov R0 (ImmI bInt)]
     where
@@ -89,8 +91,10 @@ instance CodeGen Expr where
     instr <- codegen e
     let getLen = [LDR W NoIdx R0 [R0]]
     return $ instr ++ getLen
-  codegen (UnaryApp Ord e _) = do
-    return []
+  codegen (UnaryApp Ord (CharLit c _) _)
+    = return [Mov R0 (ImmC c)]
+  codegen (UnaryApp Ord e _)
+    = codegen e
 instance CodeGen Func where
   codegen _
     = return []
