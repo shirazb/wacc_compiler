@@ -1,0 +1,13 @@
+#!/usr/bin/ruby
+
+files  = []
+files = `find ../wacc_examples/invalid -name *.wacc`.split("\n")
+
+
+files.each {|item| puts "######"
+                   puts item
+                   output =  `cabal run #{item}`
+                   puts output
+                   puts "#####"}
+
+#puts files

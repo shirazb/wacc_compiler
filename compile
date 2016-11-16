@@ -9,6 +9,7 @@ filename = ARGV[0]
 output = `stack exec WACC-HASKELL #{filename}`
 exitCode = $?.exitstatus
 
+
 puts "Compilation Done"
 
 exit (exitCode)
