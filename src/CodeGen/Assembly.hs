@@ -2,12 +2,16 @@
 boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
+
 import Control.Monad.StateStack
 import qualified Data.Map as Map
-import Utilities.Definitions hiding (Env)
 import Control.Monad.State
-import Debug.Trace
+import Control.Monad.Identity
+import Data.Functor.Identity
+import Data.Maybe (fromJust)
 
+{- LOCAL IMPORTS -}
+import Utilities.Definitions hiding (Env)
 
 
 type DataSegment = String
@@ -17,6 +21,7 @@ class CodeGen a where
 type Env = Map.Map String Int
 type InstructionMonad a = StateStackT (Env, Int) (State Int) a
 
+-- genInstruction :: InstructionMonad a -> ((a, (Map.Map k a1, t)), s)
 genInstruction p = runState (runStateStackT p (Map.empty, 0)) 0
 
 
@@ -48,15 +53,16 @@ data Instr
   | BL Label
   | LDR Size Indexing Op [Op]
   | STR Size Indexing Op [Op]
-  | SUB Op Op Op
-  | ADD Op Op Op
+  | SUB Flag Op Op Op
+  | ADD Flag Op Op Op
   | EOR Op Op Op
   | RSBS Op Op Op
+
 -- include load immediate instructions
 
 data Size = B | W | SB
 data Indexing = Pre | Post | NoIdx
-
+data Flag = S | NF
 
 data Op
   = ImmI Int
@@ -71,7 +77,27 @@ data Op
 
 typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, SB), (BaseT BaseBool, SB)]
 
+scopeSize :: Stat -> Int
+scopeSize (Declaration t _ _ _)
+  = typeSize t
+scopeSize (Seq s1 s2 _)
+  = scopeSize s1 + scopeSize s2
+scopeSize _
+  = 0
 
+typeSize :: Type -> Int
+typeSize (BaseT BaseInt)
+  = 4
+typeSize (BaseT BaseBool)
+  = 1
+typeSize (BaseT BaseChar)
+  = 1
+typeSize _
+  = error "not yet implemented"
+
+sizeFromType :: Type -> Size
+sizeFromType
+  = fromJust . flip lookup typeSizes
 
 {- SHOW INSTANCES -}
 instance Show Size where
@@ -95,15 +121,20 @@ instance Show Instr where
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (STR s i op ops)
     = "STR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
-  show (SUB op op' op'')
-    = "SUB " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
-  show (ADD op op' op'')
-    = "ADD " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+  show (SUB fl op op' op'')
+    = "SUB " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+  show (ADD fl op op' op'')
+    = "ADD " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
   show (EOR op op' op'')
     = "EOR " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
   show (RSBS op op' op'')
     = "RSBS " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
 
+instance Show Flag where
+  show S
+    = "S"
+  show NF
+    = ""
 showIndexing :: Indexing -> [Op] -> String
 showIndexing index ops
   = case index of
