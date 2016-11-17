@@ -2,17 +2,15 @@
 
 module CodeGen.AssignRHS where
 
+import Control.Monad.StateStack
 import Control.Monad.State(get, put, lift)
 import qualified Data.Map as Map
-import Control.Monad.StateStack
 import Data.Maybe (fromJust)
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import CodeGen.Expression
-import CodeGen.Function
 import Utilities.Definitions
-
 
 instance CodeGen AssignRHS where
   codegen (ExprAssign e _)

@@ -2,12 +2,16 @@
 
 module CodeGen.Program where
 
+import Control.Monad.StateStack
 import qualified Data.Map as Map
 import Control.Monad.State
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import CodeGen.Statement
+import CodeGen.Expression
+import CodeGen.Function
+import CodeGen.AssignRHS
 import Utilities.Definitions hiding (Env)
 
 

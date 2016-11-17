@@ -2,13 +2,14 @@
 
 module CodeGen.Expression where
 
+import Control.Monad.StateStack
+import Control.Monad.State(get, put, lift)
+import qualified Data.Map as Map
+import Data.Maybe (fromJust)
+
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import Utilities.Definitions
-import Control.Monad.State(get, put, lift)
-import qualified Data.Map as Map
-import Control.Monad.StateStack
-import Data.Maybe (fromJust)
 
 instance CodeGen Expr where
   codegen (IntLit i _)

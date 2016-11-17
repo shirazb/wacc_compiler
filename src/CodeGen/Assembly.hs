@@ -6,13 +6,10 @@ module CodeGen.Assembly where
 import Control.Monad.StateStack
 import qualified Data.Map as Map
 import Control.Monad.State
-import Control.Monad.Identity
-import Data.Functor.Identity
 import Data.Maybe (fromJust)
 
 {- LOCAL IMPORTS -}
 import Utilities.Definitions hiding (Env)
-
 
 type DataSegment = String
 class CodeGen a where
@@ -23,7 +20,6 @@ type InstructionMonad a = StateStackT (Env, Int) (State Int) a
 
 -- genInstruction :: InstructionMonad a -> ((a, (Map.Map k a1, t)), s)
 genInstruction p = runState (runStateStackT p (Map.empty, 0)) 0
-
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
 
@@ -75,7 +71,11 @@ data Op
   | PC
   | SP
 
+{- Map from types to sizes -}
+
 typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, SB), (BaseT BaseBool, SB)]
+
+{- Utility Functions -}
 
 scopeSize :: Stat -> Int
 scopeSize (Declaration t _ _ _)
@@ -99,12 +99,20 @@ sizeFromType :: Type -> Size
 sizeFromType
   = fromJust . flip lookup typeSizes
 
+showIndexing :: Indexing -> [Op] -> String
+showIndexing index ops
+  = case index of
+    Pre  -> show ops ++ "!"
+    Post -> show (init ops) ++ ", " ++ show (last ops)
+    NoIdx -> show ops
+
+
 {- SHOW INSTANCES -}
+
 instance Show Size where
   show B = "B"
   show W = ""
   show SB = "SB"
-
 
 instance Show Instr where
   show (Push r)
@@ -135,12 +143,6 @@ instance Show Flag where
     = "S"
   show NF
     = ""
-showIndexing :: Indexing -> [Op] -> String
-showIndexing index ops
-  = case index of
-    Pre  -> show ops ++ "!"
-    Post -> show (init ops) ++ ", " ++ show (last ops)
-    NoIdx -> show ops
 
 instance Show Op where
   show R0
