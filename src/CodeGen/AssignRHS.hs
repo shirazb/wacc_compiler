@@ -25,7 +25,7 @@ instance CodeGen AssignRHS where
     let pushParams = concat $ reverse $ zipWith (\p t -> p ++ pushParam t) params paramTypes
     let callFunc = [BL name]
     let paramSpace  = sum (map typeSize paramTypes)
-    let clearParams = [ADD NF SP SP (ImmI paramSpace)]
+    let clearParams = [ADD NF SP SP (ImmOp2 paramSpace)]
     return $ pushParams ++ callFunc ++ clearParams
     where
       pushParam :: Type -> [Instr]

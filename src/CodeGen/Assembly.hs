@@ -35,6 +35,34 @@ getNextLabel = do
   updateNextLabelNum (labelNum + 1)
   return $ "L" ++ show labelNum
 
+incrementOffset :: Int -> InstructionMonad ()
+incrementOffset n = do
+  (env, offset) <- get
+  put (env, offset + n)
+
+decrementOffset :: Int -> InstructionMonad ()
+decrementOffset n = do
+  (env, offset) <- get
+  put (env, offset - n)
+
+-- Assert Ops are registers
+-- Could avoid duplication.
+push, pop :: [Op] -> InstructionMonad [Instr]
+push []
+  = return []
+push (x : xs) = do
+  let pushX = [Push x]
+  incrementOffset 4
+  pushRest <- push xs
+  return $ pushX ++ pushRest
+pop []
+  = return []
+pop (x : xs) = do
+  let popX = [Pop x]
+  decrementOffset 4
+  popRest <- pop xs
+  return $ popX ++ popRest
+
 -- genInstruction :: InstructionMonad a -> ((a, (Map.Map k a1, t)), s)
 genInstruction p = runState (runStateStackT p (Map.empty, 0)) 0
 
@@ -68,8 +96,8 @@ data Instr
   | BEQ Label
   | LDR Size Indexing Op [Op]
   | STR Size Indexing Op [Op]
-  | SUB Flag Op Op Op
-  | ADD Flag Op Op Op
+  | SUB Flag Op Op Op2
+  | ADD Flag Op Op Op2
   | EOR Op Op Op
   | RSBS Op Op Op
   | CMP Op Op2
@@ -98,11 +126,13 @@ data Shift
    | ASR
    | ROR
    | NoShift
+   deriving (Show)
 
 data Op2
   =  ImmOp2 Int
-   | RegShift Op Shift
-   | NoOp2
+   | RegOp2 Op           -- Op must be a register
+   | RegShift Op Shift   -- Op must be a register
+   | Shift Op Shift Int  -- Op must be a register
 
 data Op
   = ImmI Int
@@ -111,6 +141,7 @@ data Op
   | ImmLDRC Char
   | R0
   | R1
+  | R4
   | LR
   | PC
   | SP
@@ -129,6 +160,10 @@ scopeSize (Seq s1 s2 _)
 scopeSize _
   = 0
 
+pointerSize :: Int
+pointerSize
+  = 4
+
 typeSize :: Type -> Int
 typeSize (BaseT BaseInt)
   = 4
@@ -136,6 +171,8 @@ typeSize (BaseT BaseBool)
   = 1
 typeSize (BaseT BaseChar)
   = 1
+typeSize (ArrayT _ innerType)
+  = pointerSize
 typeSize _
   = error "not yet implemented"
 
@@ -177,10 +214,10 @@ instance Show Instr where
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (STR s i op ops)
     = "STR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
-  show (SUB fl op op' op'')
-    = "SUB " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
-  show (ADD fl op op' op'')
-    = "ADD " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+  show (SUB fl op op' op2)
+    = "SUB " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op2
+  show (ADD fl op op' op2)
+    = "ADD " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op2
   show (EOR op op' op'')
     = "EOR " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
   show (RSBS op op' op'')
@@ -197,6 +234,10 @@ instance Show Flag where
 instance Show Op where
   show R0
     = "r0"
+  show R1
+    = "r1"
+  show R4
+    = "r4"
   show (ImmI i)
     = "#" ++ show i
   show (ImmC c)
@@ -211,3 +252,13 @@ instance Show Op where
     = "pc"
   show SP
     = "sp"
+
+instance Show Op2 where
+  show (ImmOp2 n)
+    = "#" ++ show n
+  show (RegOp2 op)
+    = show op
+  show (RegShift reg shift)
+    = show shift ++ " " ++ show reg
+  show (Shift reg shift amount)
+    = show reg ++ ", " ++ show shift ++ " #" ++ show amount

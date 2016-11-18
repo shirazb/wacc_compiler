@@ -17,7 +17,7 @@ import Parser.Statement
 
 makeInstr :: String -> IO ()
 makeInstr s
-  = putStrLn $ concat $ intersperse "\n" (map show $ fst . fst $ genInstruction (codegen main))
+  = putStrLn $ intercalate "\n" (map show $ fst . fst $ genInstruction (codegen main))
   where
   (Right (Just ((a,b),_))) =  runParser parseProgram s
   annotation = annotateAST a

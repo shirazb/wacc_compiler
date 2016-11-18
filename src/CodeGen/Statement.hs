@@ -30,9 +30,9 @@ instance CodeGen Stat where
     (map', offset) <- get
     let newMap = Map.map (+ sizeOfscope) map'
     put (newMap, 0)
-    let makeRoomStack = [SUB NF SP SP (ImmI sizeOfscope)]
+    let makeRoomStack = [SUB NF SP SP (ImmOp2 sizeOfscope)]
     instr <- codegen s
-    let clearSpace = [ADD NF SP SP (ImmI sizeOfscope)]
+    let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]
     restore
     return $ makeRoomStack ++ instr ++ clearSpace
   codegen (Seq s1 s2 _) = do
@@ -44,9 +44,9 @@ instance CodeGen Stat where
   -- NEEDS TO CALL STR FOR THE CORRECT NUMBER OF BYTES
   codegen (Assignment lhs rhs _) = do
     evalRHS <- codegen rhs
-    let saveRHS = push [R0]
+    saveRHS <- push [R0]
     evalLHS <- codegen lhs
-    let getRHS  = pop [R1]
+    getRHS  <- pop [R1]
     let doAssignment = [STR W NoIdx R0 [R1]]
     return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
   codegen (Return expr _)

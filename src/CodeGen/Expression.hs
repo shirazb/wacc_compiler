@@ -51,11 +51,12 @@ instance CodeGen Expr where
   -- then we dont have to duplicate
   -- the other code
   codegen (BinaryApp op e e' _) = do
-    instr <- codegen e
-    let saveFirst = [Push R0]
-    instr1 <- codegen e'
-    let evaluate = [Mov R1 R0, Pop R0]
-    return $ instr ++ saveFirst ++ instr1 ++ evaluate ++ chooseBinOp op
+    instr     <- codegen e
+    saveFirst <- push [R0]
+    instr1    <- codegen e'
+    let evaluate = [Mov R1 R0]
+    restoreR0 <- pop [R0]
+    return $ instr ++ saveFirst ++ instr1 ++ evaluate ++ restoreR0 ++ chooseBinOp op
 
 -- minimal bytes
 -- length of array stored first
