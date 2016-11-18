@@ -3,6 +3,8 @@ boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
 
+
+
 import Control.Monad.StateStack
 import qualified Data.Map as Map
 import Control.Monad.State
@@ -12,6 +14,7 @@ import Data.Maybe (fromJust)
 import Utilities.Definitions hiding (Env)
 
 type DataSegment = String
+
 class CodeGen a where
   codegen :: a -> InstructionMonad [Instr]
 

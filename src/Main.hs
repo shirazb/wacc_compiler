@@ -1,6 +1,8 @@
 import Control.Monad.Writer.Strict
 import System.Environment
 import System.Exit
+import qualified Data.Map as Map
+import Data.List
 
 {- LOCAL IMPORTS -}
 import Parser.Program
@@ -12,15 +14,7 @@ import Utilities.Definitions
 import CodeGen.Assembly
 import CodeGen.Statement
 import Parser.Statement
-import qualified Data.Map as Map
-import Data.List
 
--- test1 = Declaration (BaseT BaseInt)
-
--- makeAST :: String -> AST
--- makeInstr :: String -> InstructionMonad [Instr]
--- makeInstr :: [Char] -> (([Instr], (Map.Map String Int, Int)), Int)
--- makeInstr :: String -> [Instr]
 makeInstr :: String -> IO ()
 makeInstr s
   = putStrLn $ concat $ intersperse "\n" (map show $ fst . fst $ genInstruction (codegen main))
