@@ -54,3 +54,18 @@ instance CodeGen Stat where
   codegen (Exit expr _) = do
     evalExpr <- codegen expr
     return $ evalExpr ++ [BL "exit"]
+  codegen (If cond thenStat elseStat _) = do
+    elseStatLabel      <- getNextLabel
+    afterIfLabel       <- getNextLabel
+    let evalCond       = [CMP R0 (ImmOp2 0)]
+    let branchIfFalse  = [BEQ elseStatLabel]
+    execThenStat       <- codegen thenStat
+    execElseStat       <- codegen elseStat
+    let branchAfterIf  = [BT afterIfLabel]
+    return $  evalCond ++
+              branchIfFalse ++
+              execThenStat ++
+              branchAfterIf ++
+              [Def elseStatLabel] ++
+              execElseStat ++
+              [Def afterIfLabel]

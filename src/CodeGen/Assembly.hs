@@ -21,6 +21,20 @@ class CodeGen a where
 type Env = Map.Map String Int
 type InstructionMonad a = StateStackT (Env, Int) (State Int) a
 
+updateNextLabelNum :: Int -> InstructionMonad ()
+updateNextLabelNum
+  = lift . put
+
+getNextLabelNum :: InstructionMonad Int
+getNextLabelNum
+  = lift get
+
+getNextLabel :: InstructionMonad String
+getNextLabel = do
+  labelNum <- getNextLabelNum
+  updateNextLabelNum (labelNum + 1)
+  return $ "L" ++ show labelNum
+
 -- genInstruction :: InstructionMonad a -> ((a, (Map.Map k a1, t)), s)
 genInstruction p = runState (runStateStackT p (Map.empty, 0)) 0
 
@@ -49,7 +63,9 @@ data Instr
   = Push Op
   | Pop Op
   | Mov Op Op
+  | BT Label   -- branch true, or "B". B constructor already in use.
   | BL Label
+  | BEQ Label
   | LDR Size Indexing Op [Op]
   | STR Size Indexing Op [Op]
   | SUB Flag Op Op Op
@@ -58,6 +74,7 @@ data Instr
   | RSBS Op Op Op
   | CMP Op Op2
   | SMULL Op Op Op Op
+  | Def Label
 
 -- include load immediate instructions
 
@@ -148,8 +165,12 @@ instance Show Instr where
     = "POP {" ++ show r ++ "}"
   show (Mov op op')
     = "MOV " ++ show op ++ ", " ++ show op'
+  show (BT l)
+    = "B " ++ l
   show (BL l)
     = "BL " ++ l
+  show (BEQ l)
+    = "BEQ " ++ l
   show (LDR s NoIdx op [op'])
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ show op'
   show (LDR s i op ops)
@@ -164,6 +185,8 @@ instance Show Instr where
     = "EOR " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
   show (RSBS op op' op'')
     = "RSBS " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+  show (Def l)
+    = l ++ ":"
 
 instance Show Flag where
   show S
