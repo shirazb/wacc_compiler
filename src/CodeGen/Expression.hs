@@ -50,17 +50,21 @@ instance CodeGen Expr where
   -- ranges over all bin ops
   -- then we dont have to duplicate
   -- the other code
-  codegen (BinaryApp arith@(Arith op) e e' _) = do
+  codegen (BinaryApp op e e' _) = do
     instr <- codegen e
     let saveFirst = [Push R0]
     instr1 <- codegen e'
-    let evaluate = [Mov R1 R0, Pop R0, chooseArithOp op]
-    return $ instr ++ saveFirst ++ instr1 ++ evaluate
+    let evaluate = [Mov R1 R0, Pop R0]
+    return $ instr ++ saveFirst ++ instr1 ++ evaluate ++ chooseBinOp op
 
-chooseArithOp :: ArithOp -> Instr
-chooseArithOp Add
-  = ADD S R0 R0 R1
-chooseArithOp Sub
-  = SUB S R0 R0 R1
-chooseArithOp _
-   = error "Not all arithmetic ops defined"
+chooseBinOp :: BinOp -> [Instr]
+chooseBinOp (Arith Add)
+  = [ADD S R0 R0 R1]
+chooseBinOp (Arith Sub)
+  = [SUB S R0 R0 R1]
+chooseBinOp (Arith Div)
+  = error "Division not implemented"
+chooseBinOp (Arith Mod)
+  = error "Mod not implemented"
+chooseBinOp (Arith Mul)
+   = [SMULL R0 R1 R0 R1, CMP R1 (RegShift R0 ASR)]

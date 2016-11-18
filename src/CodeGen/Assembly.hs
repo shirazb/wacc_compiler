@@ -53,13 +53,32 @@ data Instr
   | ADD Flag Op Op Op
   | EOR Op Op Op
   | RSBS Op Op Op
+  | CMP Op Op2
+  | SMULL Op Op Op Op
 
 -- include load immediate instructions
 
-data Size = B | W | SB
-data Indexing = Pre | Post | NoIdx
-data Flag = S | NF
-
+data Size
+  = B
+  | W
+  | SB
+data Indexing
+  = Pre
+  | Post
+  | NoIdx
+data Flag
+ = S
+ | NF
+data Shift
+  =  LSL
+   | LSR
+   | ASR
+   | ROR
+   | NoShift
+data Op2
+  =  ImmOp2 Int
+   | RegShift Op Shift
+   | NoOp2
 data Op
   = ImmI Int
   | ImmC Char
