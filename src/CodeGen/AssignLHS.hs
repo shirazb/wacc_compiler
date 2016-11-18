@@ -3,15 +3,17 @@
 module CodeGen.AssignLHS where
 
 import Control.Monad.StateStack
-import Control.Monad.State(get, put, lift)
+import Control.Monad.State (get, put, lift)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import CodeGen.Expression
-import Utilities.Definitions
+import Utilities.Definitions hiding (Env)
 
 instance CodeGen AssignLHS where
-  codegen _
-    = error "TODO: AssignLHS"
+  codegen (Var ident _)
+    = loadIdentAddr R0 ident
+  codegen (ArrayDeref arrayElem _)
+    = codegen arrayElem

@@ -41,12 +41,12 @@ instance CodeGen Stat where
     return $ instr1 ++ instr2
   codegen (Skip _)
     = return []
-  -- LHS / RHS / Expr should handle typing..?
+  -- NEEDS TO CALL STR FOR THE CORRECT NUMBER OF BYTES
   codegen (Assignment lhs rhs _) = do
     evalRHS <- codegen rhs
-    let saveRHS = [Push R0]
+    let saveRHS = push [R0]
     evalLHS <- codegen lhs
-    let getRHS  = [Pop R1]
+    let getRHS  = pop [R1]
     let doAssignment = [STR W NoIdx R0 [R1]]
     return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
   codegen (Return expr _)
@@ -83,3 +83,5 @@ instance CodeGen Stat where
       evalCond ++
       [CMP R0 (ImmOp2 1)] ++
       [BEQ loopBodyLabel]
+  codegen _
+    = error "not yet implemented"
