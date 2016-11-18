@@ -55,12 +55,12 @@ instance CodeGen Stat where
     evalExpr <- codegen expr
     return $ evalExpr ++ [BL "exit"]
   codegen (If cond thenStat elseStat _) = do
-    elseStatLabel      <- getNextLabel
-    afterIfLabel       <- getNextLabel
     let evalCond       = [CMP R0 (ImmOp2 0)]
+    elseStatLabel      <- getNextLabel
     let branchIfFalse  = [BEQ elseStatLabel]
     execThenStat       <- codegen thenStat
     execElseStat       <- codegen elseStat
+    afterIfLabel       <- getNextLabel
     let branchAfterIf  = [BT afterIfLabel]
     return $  evalCond ++
               branchIfFalse ++
@@ -69,3 +69,17 @@ instance CodeGen Stat where
               [Def elseStatLabel] ++
               execElseStat ++
               [Def afterIfLabel]
+  codegen (While cond stat _) = do
+    loopBodyLabel <- getNextLabel
+    loopCondLabel <- getNextLabel
+    -- does order of these two matter?
+    evalCond      <- codegen cond
+    execBody      <- codegen stat
+    return $
+      [BT loopCondLabel] ++
+      [Def loopBodyLabel] ++
+      execBody ++
+      [Def loopCondLabel] ++
+      evalCond ++
+      [CMP R0 (ImmOp2 1)] ++
+      [BEQ loopBodyLabel]
