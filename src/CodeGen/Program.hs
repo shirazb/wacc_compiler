@@ -20,9 +20,9 @@ genInstrFromAST (Program fs body) = do
   let pLr = [Push LR]
   let sizeOfscope = scopeSize body
   put (Map.empty, sizeOfscope)
-  let makeRoomStack = [SUB NF SP SP (ImmI sizeOfscope)]
+  let makeRoomStack = [SUB NF SP SP (ImmOp2 sizeOfscope)]
   instr <- codegen body
-  let clearSpace = [ADD NF SP SP (ImmI sizeOfscope)]
+  let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]
   let succesfulExit = [Mov R0 (ImmI 0)]
   let popPC = [Pop PC]
   return $ pLr++ makeRoomStack ++ instr ++ clearSpace ++ succesfulExit ++ popPC

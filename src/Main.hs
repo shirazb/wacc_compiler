@@ -18,7 +18,7 @@ import CodeGen.Program
 
 makeInstr :: String -> IO ()
 makeInstr s
-  = putStrLn $ intercalate "\n" (map show $ fst . fst $ genInstruction (codegen main))
+  = putStrLn $ intercalate "\n" (map show $ fst . fst $ genInstruction (genInstrFromAST annotation))
   where
   (Right (Just ((a,b),_))) =  runParser parseProgram s
   annotation = annotateAST a

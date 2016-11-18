@@ -63,7 +63,7 @@ pop (x : xs) = do
   popRest <- pop xs
   return $ popX ++ popRest
 
--- genInstruction :: InstructionMonad a -> ((a, (Map.Map k a1, t)), s)
+genInstruction :: InstructionMonad a -> ((a, (Env, Int)), Int)
 genInstruction p = runState (runStateStackT p (Map.empty, 0)) 0
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
