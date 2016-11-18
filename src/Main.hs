@@ -1,6 +1,8 @@
 import Control.Monad.Writer.Strict
 import System.Environment
 import System.Exit
+import qualified Data.Map as Map
+import Data.List
 
 {- LOCAL IMPORTS -}
 import Parser.Program
@@ -10,19 +12,9 @@ import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
 import CodeGen.Assembly
-<<<<<<< HEAD
-=======
 import CodeGen.Statement
 import Parser.Statement
-import qualified Data.Map as Map
-import Data.List
 
--- test1 = Declaration (BaseT BaseInt)
-
--- makeAST :: String -> AST
--- makeInstr :: String -> InstructionMonad [Instr]
--- makeInstr :: [Char] -> (([Instr], (Map.Map String Int, Int)), Int)
--- makeInstr :: String -> [Instr]
 makeInstr :: String -> IO ()
 makeInstr s
   = putStrLn $ concat $ intersperse "\n" (map show $ fst . fst $ genInstruction (codegen main))
@@ -31,7 +23,6 @@ makeInstr s
   annotation = annotateAST a
   Program fs main = annotation
 
->>>>>>> d7d3ce22674d38359049768e9d226086b3e694b4
 
 main = do
   args         <- getArgs
