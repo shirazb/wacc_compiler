@@ -133,6 +133,7 @@ data Op2
    | RegOp2 Op           -- Op must be a register
    | RegShift Op Shift   -- Op must be a register
    | Shift Op Shift Int  -- Op must be a register
+   | NoOp2
 
 data Op
   = ImmI Int

@@ -117,5 +117,14 @@ chooseBinOp (Arith Div)
   = error "Division not implemented"
 chooseBinOp (Arith Mod)
   = error "Mod not implemented"
+-- this is forward planning right here...
+-- we dont have error handling but im
+-- anticipating we will hopefully
+-- so that is why i added the cmp Instruction
+-- i copied how the reference compiler did it
+-- however i still havent fully clocked
+-- why they are doing what they are doing
 chooseBinOp (Arith Mul)
-   = [SMULL R0 R1 R0 R1, CMP R1 (RegShift R0 ASR)]
+   = [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
+chooseBinOp (Logic AND)
+   = error "and is a bit mad"

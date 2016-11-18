@@ -14,6 +14,7 @@ import Utilities.Definitions
 import CodeGen.Assembly
 import CodeGen.Statement
 import Parser.Statement
+import CodeGen.Program
 
 makeInstr :: String -> IO ()
 makeInstr s
@@ -21,7 +22,7 @@ makeInstr s
   where
   (Right (Just ((a,b),_))) =  runParser parseProgram s
   annotation = annotateAST a
-  Program fs main = annotation
+
 
 
 main = do

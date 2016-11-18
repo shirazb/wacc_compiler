@@ -20,7 +20,7 @@ instance CodeGen Stat where
     instr <- codegen rhs
     (map', offset) <- get
     let newMap = Map.insert name offset map'
-    let newOffset = offset + typeSize t
+    let newOffset = offset - typeSize t
     put (newMap, newOffset)
     let str = [STR W NoIdx R0 [SP,ImmI offset]]
     return $ instr ++ str
