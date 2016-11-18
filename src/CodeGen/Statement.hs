@@ -10,6 +10,7 @@ import Data.Maybe (fromJust)
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import CodeGen.Expression
+import CodeGen.AssignLHS
 import CodeGen.AssignRHS
 import Utilities.Definitions
 
@@ -38,3 +39,18 @@ instance CodeGen Stat where
     instr1 <- codegen s1
     instr2 <- codegen s2
     return $ instr1 ++ instr2
+  codegen (Skip _)
+    = return []
+  -- LHS / RHS / Expr should handle typing..?
+  codegen (Assignment lhs rhs _) = do
+    evalRHS <- codegen rhs
+    let saveRHS = [Push R0]
+    evalLHS <- codegen lhs
+    let getRHS  = [Pop R1]
+    let doAssignment = [STR W NoIdx R0 [R1]]
+    return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
+  codegen (Return expr _)
+    = codegen expr
+  codegen (Exit expr _) = do
+    evalExpr <- codegen expr
+    return $ evalExpr ++ [BL "exit"]

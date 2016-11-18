@@ -65,23 +65,28 @@ data Size
   = B
   | W
   | SB
+
 data Indexing
   = Pre
   | Post
   | NoIdx
+
 data Flag
  = S
  | NF
+
 data Shift
   =  LSL
    | LSR
    | ASR
    | ROR
    | NoShift
+
 data Op2
   =  ImmOp2 Int
    | RegShift Op Shift
    | NoOp2
+
 data Op
   = ImmI Int
   | ImmC Char
