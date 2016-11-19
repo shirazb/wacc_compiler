@@ -26,7 +26,7 @@ instance CodeGen Stat where
     let str = [STR W NoIdx R0 [SP,ImmI newOffset]]
     return $ instr ++ str
   codegen (Block s _)
-    = inNewScope s
+    = genInNewScope s
     -- save
     -- let sizeOfscope = scopeSize s
     -- (map', _ ) <- get
@@ -60,8 +60,8 @@ instance CodeGen Stat where
     let evalCond       = [CMP R0 (ImmOp2 0)]
     elseStatLabel      <- getNextLabel
     let branchIfFalse  = [BEQ elseStatLabel]
-    execThenStat       <- inNewScope thenStat
-    execElseStat       <- inNewScope elseStat
+    execThenStat       <- genInNewScope thenStat
+    execElseStat       <- genInNewScope elseStat
     afterIfLabel       <- getNextLabel
     let branchAfterIf  = [BT afterIfLabel]
     return $  evalCond ++
@@ -76,7 +76,7 @@ instance CodeGen Stat where
     loopCondLabel <- getNextLabel
     -- does order of these two matter?
     evalCond      <- codegen cond
-    execBody      <- inNewScope stat
+    execBody      <- genInNewScope stat
     return $
       [BT loopCondLabel] ++
       [Def loopBodyLabel] ++
@@ -89,8 +89,8 @@ instance CodeGen Stat where
     = error "not yet implemented"
 
 -- Codegens the statement inside of a new scope
-inNewScope :: Stat -> InstructionMonad [Instr]
-inNewScope s = do
+genInNewScope :: Stat -> InstructionMonad [Instr]
+genInNewScope s = do
   save
   let sizeOfScope = scopeSize s
   (env, _) <- get
