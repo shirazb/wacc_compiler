@@ -27,16 +27,6 @@ instance CodeGen Stat where
     return $ instr ++ str
   codegen (Block s _)
     = genInNewScope s
-    -- save
-    -- let sizeOfscope = scopeSize s
-    -- (map', _ ) <- get
-    -- let newMap = Map.map (+ sizeOfscope) map'
-    -- put (newMap, sizeOfscope)
-    -- let makeRoomStack = [SUB NF SP SP (ImmOp2 sizeOfscope)]
-    -- instr <- codegen s
-    -- let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]
-    -- restore
-    -- return $ makeRoomStack ++ instr ++ clearSpace
   codegen (Seq s1 s2 _) = do
     instr1 <- codegen s1
     instr2 <- codegen s2
@@ -49,7 +39,8 @@ instance CodeGen Stat where
     saveRHS <- push [R0]
     evalLHS <- codegen lhs
     getRHS  <- pop [R1]
-    let doAssignment = [STR W NoIdx R0 [R1]]
+    let size = sizeOfLHS lhs
+    let doAssignment = [STR sizeOfLHS NoIdx R0 [R1]]
     return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
   codegen (Return expr _)
     = codegen expr
@@ -101,3 +92,12 @@ genInNewScope s = do
   let clearStackSpace = [ADD NF SP SP (ImmOp2 sizeOfScope)]
   restore
   return $ createStackSpace ++ instrs ++ clearStackSpace
+
+-- Returns the Size (word, byte etc.) of an AssignLHS
+sizeOfLHS :: AssignLHS -> Size
+sizeOfLHS (Var (Ident _ (Info t _)) _)
+  = sizeFromType t
+sizeOfLHS (ArrayDeref (ArrayElem (Ident (Info t _)) _) _)
+  = sizeFromType t
+sizeOfLHS (PairDeref (PairElem _ expr _) _)
+  = error "don't know how to get type of PairDeref"
