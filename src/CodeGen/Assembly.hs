@@ -34,25 +34,30 @@ sizeOfFirstType (Seq s1 s2 _)
 sizeOfFirstType _
   = 0
 
+-- Updates the next label number with the given number
 updateNextLabelNum :: Int -> InstructionMonad ()
 updateNextLabelNum
   = lift . put
 
+-- Retrieves the next label number
 getNextLabelNum :: InstructionMonad Int
 getNextLabelNum
   = lift get
 
+-- Returns the String "L:" appended with the next label num, and updates the label number
 getNextLabel :: InstructionMonad String
 getNextLabel = do
   labelNum <- getNextLabelNum
   updateNextLabelNum (labelNum + 1)
   return $ "L" ++ show labelNum
 
+-- Increments the offset of the stack pointer (to the start of the scope)
 incrementOffset :: Int -> InstructionMonad ()
 incrementOffset n = do
   (env, offset) <- get
   put (env, offset + n)
 
+-- Decrements the offset of the stack pointer (to the start of the scope)
 decrementOffset :: Int -> InstructionMonad ()
 decrementOffset n = do
   (env, offset) <- get

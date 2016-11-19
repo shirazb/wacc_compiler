@@ -25,17 +25,18 @@ instance CodeGen Stat where
     put (newMap, newOffset)
     let str = [STR W NoIdx R0 [SP,ImmI newOffset]]
     return $ instr ++ str
-  codegen (Block s _) = do
-    save
-    let sizeOfscope = scopeSize s
-    (map', _ ) <- get
-    let newMap = Map.map (+ sizeOfscope) map'
-    put (newMap, sizeOfscope)
-    let makeRoomStack = [SUB NF SP SP (ImmOp2 sizeOfscope)]
-    instr <- codegen s
-    let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]
-    restore
-    return $ makeRoomStack ++ instr ++ clearSpace
+  codegen (Block s _)
+    = inNewScope s
+    -- save
+    -- let sizeOfscope = scopeSize s
+    -- (map', _ ) <- get
+    -- let newMap = Map.map (+ sizeOfscope) map'
+    -- put (newMap, sizeOfscope)
+    -- let makeRoomStack = [SUB NF SP SP (ImmOp2 sizeOfscope)]
+    -- instr <- codegen s
+    -- let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]
+    -- restore
+    -- return $ makeRoomStack ++ instr ++ clearSpace
   codegen (Seq s1 s2 _) = do
     instr1 <- codegen s1
     instr2 <- codegen s2
@@ -59,8 +60,8 @@ instance CodeGen Stat where
     let evalCond       = [CMP R0 (ImmOp2 0)]
     elseStatLabel      <- getNextLabel
     let branchIfFalse  = [BEQ elseStatLabel]
-    execThenStat       <- codegen thenStat
-    execElseStat       <- codegen elseStat
+    execThenStat       <- inNewScope thenStat
+    execElseStat       <- inNewScope elseStat
     afterIfLabel       <- getNextLabel
     let branchAfterIf  = [BT afterIfLabel]
     return $  evalCond ++
@@ -75,7 +76,7 @@ instance CodeGen Stat where
     loopCondLabel <- getNextLabel
     -- does order of these two matter?
     evalCond      <- codegen cond
-    execBody      <- codegen stat
+    execBody      <- inNewScope stat
     return $
       [BT loopCondLabel] ++
       [Def loopBodyLabel] ++
@@ -86,3 +87,17 @@ instance CodeGen Stat where
       [BEQ loopBodyLabel]
   codegen _
     = error "not yet implemented"
+
+-- Codegens the statement inside of a new scope
+inNewScope :: Stat -> InstructionMonad [Instr]
+inNewScope s = do
+  save
+  let sizeOfScope = scopeSize s
+  (env, _) <- get
+  let envWithOffset = Map.map (+ sizeOfScope) env
+  put (envWithOffset, sizeOfScope)
+  let createStackSpace = [SUB NF SP SP (ImmOp2 sizeOfScope)]
+  instrs <- codegen s
+  let clearStackSpace = [ADD NF SP SP (ImmOp2 sizeOfScope)]
+  restore
+  return $ createStackSpace ++ instrs ++ clearStackSpace
