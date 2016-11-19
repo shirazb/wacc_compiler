@@ -3,7 +3,7 @@
 module CodeGen.AssignRHS where
 
 import Control.Monad.StateStack
-import Control.Monad.State(get, put, lift)
+import Control.Monad.State.Strict (get, put, lift)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 

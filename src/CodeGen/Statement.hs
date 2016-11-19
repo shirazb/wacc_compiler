@@ -3,7 +3,7 @@
 module CodeGen.Statement where
 
 import Control.Monad.StateStack
-import Control.Monad.State(get, put, lift)
+import Control.Monad.State.Strict (get, put, lift)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 
@@ -13,23 +13,24 @@ import CodeGen.Expression
 import CodeGen.AssignLHS
 import CodeGen.AssignRHS
 import Utilities.Definitions
+import Debug.Trace
 
 
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
     instr <- codegen rhs
     (map', offset) <- get
-    let newMap = Map.insert name offset map'
     let newOffset = offset - typeSize t
+    let newMap = Map.insert name newOffset map'
     put (newMap, newOffset)
-    let str = [STR W NoIdx R0 [SP,ImmI offset]]
+    let str = [STR W NoIdx R0 [SP,ImmI newOffset]]
     return $ instr ++ str
   codegen (Block s _) = do
     save
     let sizeOfscope = scopeSize s
-    (map', offset) <- get
+    (map', _ ) <- get
     let newMap = Map.map (+ sizeOfscope) map'
-    put (newMap, 0)
+    put (newMap, sizeOfscope)
     let makeRoomStack = [SUB NF SP SP (ImmOp2 sizeOfscope)]
     instr <- codegen s
     let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]

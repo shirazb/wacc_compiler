@@ -23,8 +23,6 @@ makeInstr s
   (Right (Just ((a,b),_))) =  runParser parseProgram s
   annotation = annotateAST a
 
-
-
 main = do
   args         <- getArgs
   let filename = head args

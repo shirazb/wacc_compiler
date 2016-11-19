@@ -3,11 +3,9 @@ boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
 
-
-
 import Control.Monad.StateStack
 import qualified Data.Map as Map
-import Control.Monad.State
+import Control.Monad.State.Strict (get, put, lift, State, runState)
 import Data.Maybe (fromJust)
 
 {- LOCAL IMPORTS -}
@@ -20,6 +18,21 @@ class CodeGen a where
 
 type Env = Map.Map String Int
 type InstructionMonad a = StateStackT (Env, Int) (State Int) a
+
+
+getOffset :: Stat -> Int
+getOffset s
+  = scopeSize s - sizeOfFirstType s
+
+sizeOfFirstType :: Stat -> Int
+sizeOfFirstType (Declaration t _ _ _ )
+  = typeSize t
+sizeOfFirstType (Seq (Declaration t _ _ _) _ _)
+  = typeSize t
+sizeOfFirstType (Seq s1 s2 _)
+  = sizeOfFirstType s2
+sizeOfFirstType _
+  = 0
 
 updateNextLabelNum :: Int -> InstructionMonad ()
 updateNextLabelNum
