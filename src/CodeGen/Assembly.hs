@@ -1,4 +1,4 @@
-{- This module provides the ARM Assembly data types, show instances and
+st{- This module provides the ARM Assembly data types, show instances and
 boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
@@ -183,6 +183,7 @@ typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, SB), (BaseT BaseBool, SB)]
 
 {- Utility Functions -}
 
+-- Returns the size of a scope
 scopeSize :: Stat -> Int
 scopeSize (Declaration t _ _ _)
   = typeSize t
@@ -204,8 +205,10 @@ typeSize (BaseT BaseChar)
   = 1
 typeSize (ArrayT _ innerType)
   = pointerSize
-typeSize _
-  = error "not yet implemented"
+typeSize Pair
+  = pointerSize
+typeSize t
+  = error "Cannot call typeSize on type \'" ++ show t ++ "\'"
 
 sizeFromType :: Type -> Size
 sizeFromType
