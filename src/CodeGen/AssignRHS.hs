@@ -30,6 +30,6 @@ instance CodeGen AssignRHS where
     where
       pushParam :: Type -> [Instr]
       pushParam t
-        = [STR size Pre R0 [SP, ImmI (- typeSize t)]]
+        = [STR size Pre R0 [RegOp SP, ImmI (- typeSize t)]]
         where
           size = sizeFromType t

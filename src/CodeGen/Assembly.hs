@@ -65,7 +65,7 @@ decrementOffset n = do
 
 -- Assert Ops are registers
 -- Could avoid duplication.
-push, pop :: [Op] -> InstructionMonad [Instr]
+push, pop :: [Reg] -> InstructionMonad [Instr]
 push []
   = return []
 push (x : xs) = do
@@ -106,20 +106,20 @@ type Label = String
 {- ARM ASSEMBLY DATA TYPES -}
 
 data Instr
-  = Push Op
-  | Pop Op
-  | Mov Op Op
+  = Push Reg
+  | Pop Reg
+  | Mov Reg Op
   | BT Label   -- branch true, or "B". B constructor already in use.
   | BL Label
   | BEQ Label
-  | LDR Size Indexing Op [Op]
-  | STR Size Indexing Op [Op]
-  | SUB Flag Op Op Op2
-  | ADD Flag Op Op Op2
-  | EOR Op Op Op
-  | RSBS Op Op Op
-  | CMP Op Op2
-  | SMULL Op Op Op Op
+  | LDR Size Indexing Reg [Op]
+  | STR Size Indexing Reg [Op]
+  | SUB Flag Reg Reg Op2
+  | ADD Flag Reg Reg Op2
+  | EOR Reg Reg Op
+  | RSBS Reg Reg Op
+  | CMP Reg Op2
+  | SMULL Reg Reg Reg Reg
   | Def Label
 
 -- include load immediate instructions
@@ -148,22 +148,34 @@ data Shift
 
 data Op2
   =  ImmOp2 Int
-   | RegOp2 Op           -- Op must be a register
-   | RegShift Op Shift   -- Op must be a register
-   | Shift Op Shift Int  -- Op must be a register
+   | RegOp2 Reg
+   | RegShift Reg Shift
+   | Shift Reg Shift Int
    | NoOp2
+
+data Reg
+  =  R0
+   | R1
+   | R2
+   | R3
+   | R4
+   | R5
+   | R6
+   | R7
+   | R8
+   | R9
+   | R10
+   | R11
+   | SP
+   | LR
+   | PC
 
 data Op
   = ImmI Int
   | ImmC Char
   | ImmLDRI Int
   | ImmLDRC Char
-  | R0
-  | R1
-  | R4
-  | LR
-  | PC
-  | SP
+  | RegOp Reg
 
 {- Map from types to sizes -}
 
@@ -251,12 +263,6 @@ instance Show Flag where
     = ""
 
 instance Show Op where
-  show R0
-    = "r0"
-  show R1
-    = "r1"
-  show R4
-    = "r4"
   show (ImmI i)
     = "#" ++ show i
   show (ImmC c)
@@ -265,12 +271,38 @@ instance Show Op where
     = "=" ++ show i
   show (ImmLDRC c)
     = "=" ++ show c
+
+instance Show Reg where
   show LR
     = "lr"
   show PC
     = "pc"
   show SP
     = "sp"
+  show R0
+    = "r0"
+  show R1
+    = "r1"
+  show R2
+    = "r2"
+  show R3
+    = "r3"
+  show R4
+    = "r4"
+  show R5
+    = "r5"
+  show R6
+    = "r6"
+  show R7
+    = "r7"
+  show R8
+    = "r8"
+  show R9
+    = "r9"
+  show R10
+    = "r10"
+  show R11
+    = "r11"
 
 instance Show Op2 where
   show (ImmOp2 n)

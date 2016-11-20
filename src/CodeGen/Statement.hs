@@ -23,7 +23,7 @@ instance CodeGen Stat where
     let newOffset = offset - typeSize t
     let newMap = Map.insert name newOffset map'
     put (newMap, newOffset)
-    let str = [STR W NoIdx R0 [SP,ImmI newOffset]]
+    let str = [STR W NoIdx R0 [RegOp SP,ImmI newOffset]]
     return $ instr ++ str
   codegen (Block s _)
     = genInNewScope s
@@ -40,7 +40,7 @@ instance CodeGen Stat where
     evalLHS <- codegen lhs
     getRHS  <- pop [R1]
     let size = sizeOfLHS lhs
-    let doAssignment = [STR sizeOfLHS NoIdx R0 [R1]]
+    let doAssignment = [STR (sizeOfLHS lhs) NoIdx R0 [RegOp R1]]
     return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
   codegen (Return expr _)
     = codegen expr
@@ -97,7 +97,7 @@ genInNewScope s = do
 sizeOfLHS :: AssignLHS -> Size
 sizeOfLHS (Var (Ident _ (Info t _)) _)
   = sizeFromType t
-sizeOfLHS (ArrayDeref (ArrayElem (Ident (Info t _)) _) _)
+sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
   = sizeFromType t
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
   = error "don't know how to get type of PairDeref"
