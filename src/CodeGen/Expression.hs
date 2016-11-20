@@ -26,7 +26,7 @@ instance CodeGen Expr where
     let size = sizeFromType t
     (env, _) <- get
     let offset = fromJust (Map.lookup name env)
-    return [LDR size NoIdx R0 [SP, ImmI offset]]
+    return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
   codegen (ExprArray _ _)
     = undefined
   codegen (UnaryApp Not e _) = do
@@ -39,7 +39,7 @@ instance CodeGen Expr where
     return $ instr ++ negE
   codegen (UnaryApp Len e _) = do
     instr <- codegen e
-    let getLen = [LDR W NoIdx R0 [R0]]
+    let getLen = [LDR W NoIdx R0 [RegOp R0]]
     return $ instr ++ getLen
   codegen (UnaryApp Ord (CharLit c _) _)
     = return [Mov R0 (ImmC c)]
@@ -54,7 +54,7 @@ instance CodeGen Expr where
     instr     <- codegen e
     saveFirst <- push [R0]
     instr1    <- codegen e'
-    let evaluate = [Mov R1 R0]
+    let evaluate = [Mov R1 (RegOp R0)]
     restoreR0 <- pop [R0]
     return $ instr ++ saveFirst ++ instr1 ++ evaluate ++ restoreR0 ++ chooseBinOp op
 
@@ -86,12 +86,12 @@ instance CodeGen ArrayElem where
 
 codeGenArrayElem :: Type -> [Expr] -> InstructionMonad [Instr]
 codeGenArrayElem t []
-  = return [Mov R0 R4]
+  = return [Mov R0 (RegOp R4)]
 codeGenArrayElem (ArrayT dim innerType) (i : is) = do
   calcIdx          <- codegen i
   let skipDim      = [ADD NF R4 R4 (ImmOp2 4)]
   let skipToElem   = [ADD NF R4 R4 (Shift R0 LSL (typeSize innerType))]
-  let dereference  = [LDR (sizeFromType innerType) NoIdx R4 [R4]]
+  let dereference  = [LDR (sizeFromType innerType) NoIdx R4 [RegOp R4]]
   derefInnerArray  <- codeGenArrayElem innerType is
   return $
     calcIdx          ++
@@ -102,11 +102,11 @@ codeGenArrayElem (ArrayT dim innerType) (i : is) = do
     derefInnerArray
 
 -- Op must be a reg
-loadIdentAddr :: Op -> Ident -> InstructionMonad [Instr]
+loadIdentAddr :: Reg -> Ident -> InstructionMonad [Instr]
 loadIdentAddr r (Ident name info) = do
   (env, offsetSP) <- get
   let offsetToVar = fromJust (Map.lookup name env) + offsetSP
-  return [LDR W NoIdx r [SP, ImmLDRI offsetToVar]]
+  return [LDR W NoIdx r [RegOp SP, ImmLDRI offsetToVar]]
 
 chooseBinOp :: BinOp -> [Instr]
 chooseBinOp (Arith Add)
@@ -117,13 +117,6 @@ chooseBinOp (Arith Div)
   = error "Division not implemented"
 chooseBinOp (Arith Mod)
   = error "Mod not implemented"
--- this is forward planning right here...
--- we dont have error handling but im
--- anticipating we will hopefully
--- so that is why i added the cmp Instruction
--- i copied how the reference compiler did it
--- however i still havent fully clocked
--- why they are doing what they are doing
 chooseBinOp (Arith Mul)
    = [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
 chooseBinOp (Logic AND)
