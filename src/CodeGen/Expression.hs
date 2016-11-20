@@ -22,6 +22,8 @@ instance CodeGen Expr where
       bInt = if b then 1 else 0
   codegen (PairLiteral _)
     = return [Mov R0 (ImmI 0)]
+  -- we might need two different type size maps
+  -- for ldr and str
   codegen (IdentE (Ident name (Info t _)) _) = do
     let size = sizeFromType t
     (env, _) <- get
@@ -45,11 +47,6 @@ instance CodeGen Expr where
     = return [Mov R0 (ImmC c)]
   codegen (UnaryApp Ord e _)
     = codegen e
-  -- refactor this so
-  -- that our chooseop function
-  -- ranges over all bin ops
-  -- then we dont have to duplicate
-  -- the other code
   codegen (BinaryApp op e e' _) = do
     instr     <- codegen e
     saveFirst <- push [R0]

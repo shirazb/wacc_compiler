@@ -21,11 +21,11 @@ instance CodeGen AssignRHS where
     populateArray    <- moveExprsIntoArray exprs 4
     return $
       mallocArray ++
-      [Mov R3 R0] ++
+      [Mov R3 (RegOp R0)] ++
       populateArray ++
       [Mov R0 (ImmI (length exprs))] ++
-      [STR W NoIdx R0 [R3]] ++
-      [Mov R0 R3]
+      [STR W NoIdx R0 [RegOp R3]] ++
+      [Mov R0 (RegOp R3)]
     where
       moveExprsIntoArray :: [Expr] -> Int -> InstructionMonad [Instr]
       moveExprsIntoArray [] _
@@ -37,7 +37,7 @@ instance CodeGen AssignRHS where
         moveRemaining <- moveExprsIntoArray es newOffset
         return $
           evalE ++
-          [STR size NoIdx R0 [R3, (ImmI offset)]] ++
+          [STR size NoIdx R0 [RegOp R3, ImmI offset]] ++
           moveRemaining
   codegen NewPairAssign{}
     = undefined
@@ -59,4 +59,4 @@ instance CodeGen AssignRHS where
 -- Gens instrs to malloc the given amount
 malloc :: Int -> [Instr]
 malloc n
-  = [Mov R0 (ImmI n)] ++ [BL "malloc"]
+  = Mov R0 (ImmI n):[BL "malloc"]
