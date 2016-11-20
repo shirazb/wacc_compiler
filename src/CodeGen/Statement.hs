@@ -79,12 +79,18 @@ instance CodeGen Stat where
     evalE  <- codegen e
     return $
       evalE ++
-      [BL ("p_print_" ++ showPrintType (typeOfExpr e))]
+      [BL ("p_print_" ++ ioFuncType e)]
   codegen (Println e p) = do
     printE <- codegen (Print e p)
     return $
       printE ++
       [BL "p_print_ln"]
+  codegen (Read (Var ident _) p) = do
+    let e = IdentE ident p
+    evalE <- codegen e
+    return $
+      evalE ++
+      [BL ("p_read_" ++ ioFuncType e)]
 
 -- Codegens the statement inside of a new scope
 genInNewScope :: Stat -> InstructionMonad [Instr]
@@ -109,15 +115,15 @@ sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
   = sizeFromType (typeOfExpr expr)
 
--- Shows the type of the expr to print.
--- All reference types show "reference"
-showPrintType :: Type -> String
-showPrintType t = case t of
+-- Shows the correct IO function name to for the type of the expression
+ioFuncType :: Expr -> String
+ioFuncType e = case t of
   BaseT BaseString  -> reference
   BaseT bt          -> show bt
   PairT{}           -> reference
   ArrayT{}          -> reference
   Pair              -> reference
-  _                 -> error $ "Statement. showPrintType: Cannot print expression of type \'" ++ show t ++ "\'"
+  _                 -> error $ "Statement. showPrintType: Cannot use expression of type \'" ++ show t ++ "\'"
   where
+    t         = typeOfExpr e
     reference = "reference"
