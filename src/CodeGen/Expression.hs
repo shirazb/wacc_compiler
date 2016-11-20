@@ -8,12 +8,15 @@ import Control.Monad.StateStack
 import Control.Monad.State.Strict (get, put, lift)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
+import Debug.Trace
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import Utilities.Definitions
 
 instance CodeGen Expr where
+  codegen (StringLit s _)
+    = undefined
   codegen (IntLit i _)
     = return [LDR W NoIdx R0 [ImmLDRI i]]
   codegen (CharLit c _)
@@ -31,8 +34,8 @@ instance CodeGen Expr where
     (env, _) <- get
     let offset = fromJust (Map.lookup name env)
     return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
-  codegen (ExprArray _ _)
-    = undefined
+  codegen (ExprArray ae _)
+    = codegen ae
   codegen (UnaryApp Not e _) = do
     instr <- codegen e
     let notE = [EOR R0 R0 (ImmI 1)]
@@ -80,7 +83,10 @@ instance CodeGen ArrayElem where
   codegen (ArrayElem ident@(Ident name info) idxs _) = do
     let ArrayT _ innerType = typeInfo info
     saveR4          <- push [R4]
+    traceM $ show ("the inner type is: " ++ show innerType)
     loadIdentIntoR4 <- loadIdentAddr R4 ident
+    traceM $ show loadIdentIntoR4
+    traceM $ show "Before generating code for dereferencing an array"
     derefInnerTypes <- codeGenArrayElem innerType idxs
     restoreR4       <- pop [R4]
     return $
@@ -105,6 +111,11 @@ codeGenArrayElem (ArrayT dim innerType) (i : is) = do
     skipToElem       ++
     dereference      ++
     derefInnerArray
+codeGenArrayElem t (i : is) = do
+  return[]
+codeGenArrayElem _ _ = do
+  traceM "You have not matched any of the correct aray elem forms"
+  return []
 
 -- Op must be a reg
 loadIdentAddr :: Reg -> Ident -> InstructionMonad [Instr]

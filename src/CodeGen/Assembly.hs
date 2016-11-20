@@ -185,7 +185,8 @@ data Op
 
 {- Map from types to sizes -}
 
-typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, SB), (BaseT BaseBool, SB)]
+typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, SB),
+             (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W)]
 
 {- Utility Functions -}
 
