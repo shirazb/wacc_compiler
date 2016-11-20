@@ -255,6 +255,8 @@ instance Show Instr where
     = "EOR " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
   show (RSBS op op' op'')
     = "RSBS " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
+  show (CMP op op2)
+    = "CMP " ++ show op ++ ", " ++ show op2
   show (Def l)
     = l ++ ":"
 

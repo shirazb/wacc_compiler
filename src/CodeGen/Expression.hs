@@ -53,7 +53,8 @@ instance CodeGen Expr where
     instr1    <- codegen e'
     let evaluate = [Mov R1 (RegOp R0)]
     restoreR0 <- pop [R0]
-    return $ instr ++ saveFirst ++ instr1 ++ evaluate ++ restoreR0 ++ chooseBinOp op
+    binOpInstr <- chooseBinOp op
+    return $ instr ++ saveFirst ++ instr1 ++ evaluate ++ restoreR0 ++ binOpInstr
 
 -- minimal bytes
 -- length of array stored first
@@ -105,19 +106,25 @@ loadIdentAddr r (Ident name info) = do
   let offsetToVar = fromJust (Map.lookup name env) + offsetSP
   return [LDR W NoIdx r [RegOp SP, ImmLDRI offsetToVar]]
 
-chooseBinOp :: BinOp -> [Instr]
+chooseBinOp :: BinOp -> InstructionMonad [Instr]
 chooseBinOp (Arith Add)
-  = [ADD S R0 R0 (RegOp2 R1)]
+  = return [ADD S R0 R0 (RegOp2 R1)]
 chooseBinOp (Arith Sub)
-  = [SUB S R0 R0 (RegOp2 R1)]
+  = return [SUB S R0 R0 (RegOp2 R1)]
 chooseBinOp (Arith Div)
-  = error "Division not implemented"
+  = return $ BL "p_check_divide_by_zero" : [BL "__aeabi_idiv"]
 chooseBinOp (Arith Mod)
-  = error "Mod not implemented"
+  = return $ BL "p_checK_divide_by_zero" : [BL "__aeabi_idivmod"]
 chooseBinOp (Arith Mul)
-   = [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
-chooseBinOp (Logic AND)
-   = error "and is a bit mad"
+   = return [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
+chooseBinOp (Logic AND) = do
+  label <- getNextLabel
+  let fstCMP = CMP R0  (ImmOp2 0) : [BEQ label]
+  let setFalse = [Mov R0 (ImmI 0)]
+  let labelJump = [Def label]
+  return $ fstCMP ++ setFalse ++ labelJump
+
+
 
 -- Returns number of bytes an expression occupies
 exprSize :: Expr -> Int
