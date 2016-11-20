@@ -32,6 +32,11 @@ instance CodeGen Stat where
     return $ instr1 ++ instr2
   codegen (Skip _)
     = return []
+  codegen (Free e _) = do
+    evalE <- codegen e
+    return $
+      evalE ++
+      [BL "free"]
   -- NEEDS TO CALL STR FOR THE CORRECT NUMBER OF BYTES
   codegen (Assignment lhs rhs _) = do
     evalRHS <- codegen rhs
@@ -123,7 +128,7 @@ ioFuncType e = case t of
   PairT{}           -> reference
   ArrayT{}          -> reference
   Pair              -> reference
-  _                 -> error $ "Statement. showPrintType: Cannot use expression of type \'" ++ show t ++ "\'"
+  _                 -> error $ "Statement.showPrintType: Cannot use expression of type \'" ++ show t ++ "\'"
   where
     t         = typeOfExpr e
     reference = "reference"
