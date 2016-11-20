@@ -1,4 +1,4 @@
-st{- This module provides the ARM Assembly data types, show instances and
+{- This module provides the ARM Assembly data types, show instances and
 boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
@@ -208,7 +208,7 @@ typeSize (ArrayT _ innerType)
 typeSize Pair
   = pointerSize
 typeSize t
-  = error "Cannot call typeSize on type \'" ++ show t ++ "\'"
+  = error $ "Cannot call typeSize on type \'" ++ show t ++ "\'"
 
 sizeFromType :: Type -> Size
 sizeFromType

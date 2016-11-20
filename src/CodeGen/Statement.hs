@@ -15,7 +15,6 @@ import CodeGen.AssignRHS
 import Utilities.Definitions
 import Debug.Trace
 
-
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
     instr <- codegen rhs
@@ -23,7 +22,7 @@ instance CodeGen Stat where
     let newOffset = offset - typeSize t
     let newMap = Map.insert name newOffset map'
     put (newMap, newOffset)
-    let str = [STR (sizeFromType t) NoIdx R0 [RegOp SP,ImmI newOffset]]
+    let str = [STR (sizeFromType t) NoIdx R0 [RegOp SP, ImmI newOffset]]
     return $ instr ++ str
   codegen (Block s _)
     = genInNewScope s
@@ -76,8 +75,16 @@ instance CodeGen Stat where
       evalCond ++
       [CMP R0 (ImmOp2 1)] ++
       [BEQ loopBodyLabel]
-  codegen _
-    = error "not yet implemented"
+  codegen (Print e _) = do
+    evalE  <- codegen e
+    return $
+      evalE ++
+      [BL ("p_print_" ++ showPrintType (typeOfExpr e))]
+  codegen (Println e p) = do
+    printE <- codegen (Print e p)
+    return $
+      printE ++
+      [BL "p_print_ln"]
 
 -- Codegens the statement inside of a new scope
 genInNewScope :: Stat -> InstructionMonad [Instr]
@@ -101,3 +108,16 @@ sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
   = sizeFromType t
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
   = sizeFromType (typeOfExpr expr)
+
+-- Shows the type of the expr to print.
+-- All reference types show "reference"
+showPrintType :: Type -> String
+showPrintType t = case t of
+  BaseT BaseString  -> reference
+  BaseT bt          -> show bt
+  PairT{}           -> reference
+  ArrayT{}          -> reference
+  Pair              -> reference
+  _                 -> error $ "Statement. showPrintType: Cannot print expression of type \'" ++ show t ++ "\'"
+  where
+    reference = "reference"
