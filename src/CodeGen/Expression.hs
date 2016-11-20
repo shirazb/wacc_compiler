@@ -25,7 +25,7 @@ instance CodeGen Expr where
   codegen (IdentE (Ident name (Info t _)) _) = do
     let size = sizeFromType t
     (env, _) <- get
-    let offset = fromJust $ Map.lookup name env
+    let offset = fromJust (Map.lookup name env)
     return [LDR size NoIdx R0 [SP, ImmI offset]]
   codegen (ExprArray _ _)
     = undefined
@@ -128,3 +128,36 @@ chooseBinOp (Arith Mul)
    = [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
 chooseBinOp (Logic AND)
    = error "and is a bit mad"
+
+-- Returns number of bytes an expression occupies
+exprSize :: Expr -> Int
+exprSize
+ = typeSize . typeOfExpr
+
+-- Returns type of the expression
+typeOfExpr :: Expr -> Type
+typeOfExpr e = case e of
+  StringLit{}    -> ArrayT 1 (BaseT BaseChar)
+  CharLit{}      -> BaseT BaseChar
+  IntLit{}       -> BaseT BaseInt
+  BoolLit{}      -> BaseT BaseBool
+  PairLiteral{}  -> Pair
+  IdentE (Ident _ info) _                    -> typeInfo info
+  ExprArray (ArrayElem (Ident _ info) _ _) _ -> typeInfo info
+  UnaryApp unOp _ _      -> typeOfUnOp unOp
+  BinaryApp binOp _ _ _  -> typeOfBinOp binOp
+
+typeOfUnOp :: UnOp -> Type
+typeOfUnOp unOp = case unOp of
+  Not -> BaseT BaseBool
+  Neg -> BaseT BaseInt
+  Len -> BaseT BaseInt
+  Ord -> BaseT BaseInt
+  Chr -> BaseT BaseChar
+
+typeOfBinOp :: BinOp -> Type
+typeOfBinOp binOp = case binOp of
+  Logic _ -> BaseT BaseBool
+  Arith _ -> BaseT BaseInt
+  RelOp _ -> BaseT BaseBool
+  EquOp _ -> BaseT BaseBool

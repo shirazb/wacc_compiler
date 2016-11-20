@@ -160,6 +160,7 @@ data Op
   | ImmLDRC Char
   | R0
   | R1
+  | R3
   | R4
   | LR
   | PC
@@ -200,10 +201,9 @@ sizeFromType
   = fromJust . flip lookup typeSizes
 
 showIndexing :: Indexing -> [Op] -> String
-showIndexing index ops
-  = case index of
-    Pre  -> show ops ++ "!"
-    Post -> show (init ops) ++ ", " ++ show (last ops)
+showIndexing index ops = case index of
+    Pre   -> show ops ++ "!"
+    Post  -> show (init ops) ++ ", " ++ show (last ops)
     NoIdx -> show ops
 
 
@@ -255,6 +255,8 @@ instance Show Op where
     = "r0"
   show R1
     = "r1"
+  show R3
+    = "r3"
   show R4
     = "r4"
   show (ImmI i)
