@@ -121,6 +121,12 @@ data Instr
   | CMP Reg Op2
   | SMULL Reg Reg Reg Reg
   | Def Label
+  | MOVLT Reg Op2
+  | MOVGE Reg Op2
+  | MOVLE Reg Op2
+  | MOVGT Reg Op2
+  | MOVEQ Reg Op2
+  | MOVNE Reg Op2
 
 -- include load immediate instructions
 
@@ -257,6 +263,18 @@ instance Show Instr where
     = "RSBS " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
   show (CMP op op2)
     = "CMP " ++ show op ++ ", " ++ show op2
+  show (MOVLE op op2)
+    = "MOVLE " ++ show op ++ ", " ++ show op2
+  show (MOVGT op op2)
+    = "MOVGT " ++ show op ++ ", " ++ show op2
+  show (MOVLT op op2)
+    = "MOVLT " ++ show op ++ ", " ++ show op2
+  show (MOVGE op op2)
+    = "MOVGE " ++ show op ++ ", " ++ show op2
+  show (MOVEQ op op2)
+    = "MOVEQ " ++ show op ++ ", " ++ show op2
+  show (MOVNE op op2)
+    = "MOVNEQ " ++ show op ++  ", " ++ show op2
   show (Def l)
     = l ++ ":"
 

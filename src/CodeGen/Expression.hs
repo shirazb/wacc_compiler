@@ -2,6 +2,8 @@
 
 module CodeGen.Expression where
 
+import qualified Prelude
+import Prelude hiding (LT, GT, EQ)
 import Control.Monad.StateStack
 import Control.Monad.State.Strict (get, put, lift)
 import qualified Data.Map as Map
@@ -47,6 +49,10 @@ instance CodeGen Expr where
     = return [Mov R0 (ImmC c)]
   codegen (UnaryApp Ord e _)
     = codegen e
+  codegen (BinaryApp op@(Logic _) e e' _) = do
+    firstExpr <- codegen e
+    performLogicOp <- chooseBinOp op
+    return $ firstExpr ++ performLogicOp
   codegen (BinaryApp op e e' _) = do
     instr     <- codegen e
     saveFirst <- push [R0]
@@ -55,6 +61,7 @@ instance CodeGen Expr where
     restoreR0 <- pop [R0]
     binOpInstr <- chooseBinOp op
     return $ instr ++ saveFirst ++ instr1 ++ evaluate ++ restoreR0 ++ binOpInstr
+
 
 -- minimal bytes
 -- length of array stored first
@@ -117,12 +124,42 @@ chooseBinOp (Arith Mod)
   = return $ BL "p_checK_divide_by_zero" : [BL "__aeabi_idivmod"]
 chooseBinOp (Arith Mul)
    = return [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
-chooseBinOp (Logic AND) = do
+chooseBinOp (Logic op) = do
   label <- getNextLabel
-  let fstCMP = CMP R0  (ImmOp2 0) : [BEQ label]
-  let setFalse = [Mov R0 (ImmI 0)]
+  let fstCMP = CMP R0  (ImmOp2 logicNum) : [BEQ label]
+  let setFalse = [Mov R0 (ImmI (invertLogicalNum logicNum))]
   let labelJump = [Def label]
   return $ fstCMP ++ setFalse ++ labelJump
+  where
+    logicNum = case op of
+                 AND -> 0
+                 OR  -> 1
+    invertLogicalNum 0
+      = 1
+    invertLogicalNum _
+      = 0
+chooseBinOp (RelOp op) = do
+  let comp = [CMP R0 (RegOp2 R1)]
+  instr <- generateRelInstr op
+  return $ comp ++ instr
+  where
+    generateRelInstr LT
+      = return [MOVLT R0 (ImmOp2 1), MOVGE R0 (ImmOp2 0)]
+    generateRelInstr LTE
+      = return [MOVLE R0 (ImmOp2 1), MOVGT R0 (ImmOp2 0)]
+    generateRelInstr GTE
+      = return [MOVGE R0 (ImmOp2 1), MOVLT R0 (ImmOp2 0)]
+    generateRelInstr GT
+      = return [MOVGT R0 (ImmOp2 1), MOVLE R0 (ImmOp2 0)]
+chooseBinOp (EquOp op) = do
+  let comp = [CMP R0 (RegOp2 R1)]
+  instr <- generateEqualityInstr op
+  return $ comp ++ instr
+  where
+    generateEqualityInstr EQ
+      = return [MOVEQ R0 (ImmOp2 1), MOVNE R0 (ImmOp2 0)]
+    generateEqualityInstr NEQ
+      = return [MOVNE R0 (ImmOp2 1), MOVEQ R0 (ImmOp2 0)]
 
 
 
