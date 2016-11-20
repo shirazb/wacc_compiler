@@ -23,7 +23,7 @@ instance CodeGen Stat where
     let newOffset = offset - typeSize t
     let newMap = Map.insert name newOffset map'
     put (newMap, newOffset)
-    let str = [STR W NoIdx R0 [RegOp SP,ImmI newOffset]]
+    let str = [STR (sizeFromType t) NoIdx R0 [RegOp SP,ImmI newOffset]]
     return $ instr ++ str
   codegen (Block s _)
     = genInNewScope s
