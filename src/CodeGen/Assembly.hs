@@ -5,8 +5,10 @@ module CodeGen.Assembly where
 
 import Control.Monad.StateStack
 import qualified Data.Map as Map
-import Control.Monad.State.Strict (get, put, lift, State, runState)
+import Control.Monad.State.Strict (get, put, lift, State, runState, StateT (..))
 import Data.Maybe (fromJust)
+import Control.Monad.Writer
+import Control.Monad.Identity
 import Debug.Trace
 
 {- LOCAL IMPORTS -}
@@ -15,18 +17,20 @@ import Utilities.Definitions hiding (Env)
 type Label = String
 
 type TextSegment = [Instr]
-type DataSegment = [Data]
+data DataSegment = DataSeg [Data] Int deriving (Show)
 type Functions = [AssemblyFunc]
 type Env = Map.Map String Int
-type AssemblyProgram = (DataSegment, TextSegment, Functions)
-type CodeGenerator a = StateStackT (Env, Int) (State Int) a
+-- type AssemblyProgram = (DataSegment, TextSegment, Functions)
+type CodeGenerator a = StateT Functions (StateT DataSegment (StateStackT (Env, Int) (State Int))) a
+
 
 class CodeGen a where
-  codegen :: a -> CodeGenerator AssemblyProgram
+  codegen :: a -> CodeGenerator [Instr]
 
-genInstruction :: CodeGenerator a -> ((a, (Env, Int)), Int)
+-- genInstruction :: CodeGenerator a -> ((a, (Env, Int)), Int)
+genInstruction :: CodeGenerator a -> ((((a, Functions), DataSegment), (Env, Int)), Int)
 genInstruction p
-  = runState (runStateStackT p (Map.empty, 0)) 0
+  = runState (runStateStackT (runStateT (runStateT p []) (DataSeg mzero 0)) (Map.empty, 0)) 0
 
 {- ARM ASSEMBLY DATA TYPES -}
 -- we need to change mov to take Op2
@@ -60,7 +64,7 @@ data Data
   =  MSG Int String
 
 data AssemblyFunc
-  = FuncA String [Instr]
+  = FuncA String [Instr] deriving (Show)
 
 -- include load immediate instructions
 
@@ -190,15 +194,29 @@ sizeOfFirstType (Seq s1 s2 _)
 sizeOfFirstType _
   = 0
 
+getFunctionInfo :: CodeGenerator ()
+getFunctionInfo
+ = get
+
+-- putFunctionInfo :: CodeGenerator
+
+saveStackInfo :: CodeGenerator ()
+saveStackInfo
+  = lift (lift save)
+
+restoreStackInfo :: CodeGenerator ()
+restoreStackInfo
+  = lift (lift restore)
+
 -- Updates the next label number with the given number
 updateNextLabelNum :: Int -> CodeGenerator ()
 updateNextLabelNum
-  = lift . put
+  = lift . lift . lift . put
 
 -- Retrieves the next label number
 getNextLabelNum :: CodeGenerator Int
 getNextLabelNum
-  = lift get
+  = lift . lift . lift $ get
 
 -- Returns the String "L:" appended with the next label num, and updates the label number
 getNextLabel :: CodeGenerator String
@@ -207,19 +225,27 @@ getNextLabel = do
   updateNextLabelNum (labelNum + 1)
   return $ "L" ++ show labelNum
 
+putStackInfo :: (Env, Int) -> CodeGenerator ()
+putStackInfo
+  = lift . lift . put
+
+getStackInfo :: CodeGenerator (Env, Int)
+getStackInfo
+  = lift (lift get)
+
 -- Increments the offset of the stack pointer (to the start of the scope)
 incrementOffset :: Int -> CodeGenerator ()
 incrementOffset n = do
-  (env, offset) <- get
+  (env, offset) <- getStackInfo
   let newEnv = Map.map (+ n) env
-  put (newEnv, offset + n)
+  putStackInfo (newEnv, offset + n)
 
 -- Decrements the offset of the stack pointer (to the start of the scope)
 decrementOffset :: Int -> CodeGenerator ()
 decrementOffset n = do
-  (env, offset) <- get
+  (env, offset) <- getStackInfo
   let newEnv = Map.map (n -) env
-  put (newEnv, offset - n)
+  putStackInfo (newEnv, offset - n)
 
 -- Assert Ops are registers
 -- Could avoid duplication.
@@ -249,7 +275,8 @@ checkFuncDefined s fs
 {- ARM ASSEMBLY BOILERPLATE CODE -}
 
 space, spaceX2, text, global, dataLabel, word, ascii :: String
-
+spaceGen :: Int -> String
+spaceGen n = concat $ replicate n space
 space     = "    "
 spaceX2   = space ++ space
 text      = space ++ ".text"

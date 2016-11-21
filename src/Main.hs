@@ -17,13 +17,29 @@ import CodeGen.Statement
 import Parser.Statement
 import CodeGen.Program
 
-makeInstr :: String -> IO ()
+printInstrs :: String -> IO ()
+printInstrs
+  = putStrLn . makeInstr
+
+makeInstr :: String -> String
 makeInstr s
-  = putStrLn assemblyCode
+  = space ++ dataLabel ++ "\n" ++
+    dataInstrs ++ "\n" ++
+    "\n" ++
+    text ++ "\n" ++
+    "\n" ++
+    global ++ "\n" ++
+    textInstrs ++
+    funcInstrs
   where
-  (Right (Just ((a,b),_))) =  runParser parseProgram s
-  annotation = annotateAST a
-  assemblyCode = intercalate "\n" (map show $ fst . fst $ genInstruction (genInstrFromAST annotation))
+    (Right (Just ((a,b),_))) =  runParser parseProgram s
+    annotated  = annotateAST a
+    ((((textSeg, functions), DataSeg dataSeg _), _), _) = genInstruction (genInstrFromAST annotated)
+    textInstrs = showInstrs textSeg
+    dataInstrs = showInstrs dataSeg
+    funcInstrs = showInstrs functions
+    showInstrs :: Show a => [a] -> String
+    showInstrs = intercalate ("\n" ++ space) . map show
 
 main = do
   args         <- getArgs
@@ -43,5 +59,6 @@ main = do
   case generateTypeErrorMessages annotatedAST of
     [] -> return ()
     errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
-  -- makeInstr contents
+
+  printInstrs contents
   exitSuccess

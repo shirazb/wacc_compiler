@@ -17,22 +17,22 @@ import Utilities.Definitions
 --       is that this does addParamsToEnv after save.
 instance CodeGen Func where
   codegen (Func t ident (ParamList params _) body _) = do
-    save
+    saveStackInfo
     addParamsToEnv params 0
     let sizeOfScope = scopeSize body
-    (env, _) <- get
+    (env, _) <- getStackInfo
     let envWithOffset = Map.map (+ sizeOfScope) env
-    put (envWithOffset, sizeOfScope)
+    putStackInfo (envWithOffset, sizeOfScope)
     let createStackSpace = [SUB NF SP SP (ImmOp2 sizeOfScope)]
     instrs <- codegen body
     let clearStackSpace = [ADD NF SP SP (ImmOp2 sizeOfScope)]
-    restore
+    restoreStackInfo
     return $ createStackSpace ++ instrs ++ clearStackSpace
 
 addParamsToEnv :: [Param] -> Int -> CodeGenerator ()
 addParamsToEnv (Param t (Ident name _) _ : ps) offsetToParam = do
-  (env, offset)         <- get
+  (env, offset)         <- getStackInfo
   let newEnv            = Map.insert name offsetToParam env
   let offsetToNextParam = offsetToParam + typeSize t
-  put (newEnv, offset)
+  putStackInfo (newEnv, offset)
   addParamsToEnv ps offsetToNextParam

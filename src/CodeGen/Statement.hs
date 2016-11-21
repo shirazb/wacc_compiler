@@ -3,7 +3,7 @@
 module CodeGen.Statement where
 
 import Control.Monad.StateStack
-import Control.Monad.State.Strict (get, put, lift)
+import Control.Monad.State.Strict ( lift )
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 
@@ -18,10 +18,10 @@ import Debug.Trace
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
     instr <- codegen rhs
-    (map', offset) <- get
+    (map', offset) <- getStackInfo
     let newOffset = offset - typeSize t
     let newMap = Map.insert name newOffset map'
-    put (newMap, newOffset)
+    putStackInfo (newMap, newOffset)
     let str = [STR (sizeFromType typeSizesSTR t) NoIdx R0 [RegOp SP, ImmI newOffset]]
     return $ instr ++ str
   codegen (Block s _)
@@ -100,15 +100,15 @@ instance CodeGen Stat where
 -- Codegens the statement inside of a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
-  save
+  saveStackInfo
   let sizeOfScope = scopeSize s
-  (env, _) <- get
+  (env, _) <- getStackInfo
   let envWithOffset = Map.map (+ sizeOfScope) env
-  put (envWithOffset, sizeOfScope)
+  putStackInfo (envWithOffset, sizeOfScope)
   let createStackSpace = [SUB NF SP SP (ImmOp2 sizeOfScope)]
   instrs <- codegen s
   let clearStackSpace = [ADD NF SP SP (ImmOp2 sizeOfScope)]
-  restore
+  restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
 
 -- Returns the Size (word, byte etc.) of an AssignLHS

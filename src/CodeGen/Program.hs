@@ -20,7 +20,7 @@ genInstrFromAST (Program fs body) = do
   let defMain = [Def "main"]
   pLr <- push [LR]
   let sizeOfscope = scopeSize body
-  put (Map.empty, sizeOfscope)
+  putStackInfo (Map.empty, sizeOfscope)
   let makeRoomStack = [SUB NF SP SP (ImmOp2 sizeOfscope)]
   instr <- codegen body
   let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]

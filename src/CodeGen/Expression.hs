@@ -15,8 +15,7 @@ import CodeGen.Assembly
 import Utilities.Definitions
 
 instance CodeGen Expr where
-  codegen (StringLit s _)
-    = undefined
+  codegen (StringLit s _) = undefined
   codegen (IntLit i _)
     = return [LDR W NoIdx R0 [ImmLDRI i]]
   codegen (CharLit c _)
@@ -31,7 +30,7 @@ instance CodeGen Expr where
   -- for ldr and str
   codegen (IdentE (Ident name (Info t _)) _) = do
     let size = sizeFromType typeSizesLDR t
-    (env, _) <- get
+    (env, _) <- getStackInfo
     let offset = fromJust (Map.lookup name env)
     traceM $ "Looking up: " ++ name ++ " The value I got is: " ++ show offset
     return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
@@ -132,7 +131,7 @@ codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
 -- Op must be a reg
 loadIdentAddr :: Reg -> Ident -> CodeGenerator [Instr]
 loadIdentAddr r (Ident name info) = do
-  (env, offsetSP) <- get
+  (env, offsetSP) <- getStackInfo
   let offsetToVar = fromJust (Map.lookup name env) + offsetSP
   return [LDR W NoIdx r [RegOp SP, ImmLDRI offsetToVar]]
 
