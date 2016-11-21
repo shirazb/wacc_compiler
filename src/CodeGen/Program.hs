@@ -17,6 +17,7 @@ import Utilities.Definitions hiding (Env)
 
 genInstrFromAST :: AST -> InstructionMonad [Instr]
 genInstrFromAST (Program fs body) = do
+  let defMain = [Def "main"]
   pLr <- push [LR]
   let sizeOfscope = scopeSize body
   put (Map.empty, sizeOfscope)
@@ -25,4 +26,10 @@ genInstrFromAST (Program fs body) = do
   let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]
   let succesfulExit = [Mov R0 (ImmI 0)]
   popPC <- pop [PC]
-  return $ pLr++ makeRoomStack ++ instr ++ clearSpace ++ succesfulExit ++ popPC
+  return $ [Def "main"]  ++
+           pLr           ++
+           makeRoomStack ++
+           instr         ++
+           clearSpace    ++
+           succesfulExit ++ 
+           popPC

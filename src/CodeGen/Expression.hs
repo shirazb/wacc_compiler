@@ -63,31 +63,30 @@ instance CodeGen Expr where
     let evaluate = [Mov R1 (RegOp R0)]
     restoreR0 <- pop [R0]
     binOpInstr <- chooseBinOp op
-    return $ instr ++ saveFirst ++ instr1 ++ evaluate ++ restoreR0 ++ binOpInstr
+    return $ instr      ++
+             saveFirst  ++
+             instr1     ++
+             evaluate   ++
+             restoreR0  ++
+             binOpInstr
 
-
--- minimal bytes
--- length of array stored first
--- requries out of bounds check
--- first save reg used to point to array elem
--- then get ident location
--- then calc idx
--- check idx in bounds
--- add 4 to loc to point to first elem
--- add offset (ideally with LSL) (say R4 now points to element)
--- Mov R4, [R4]
--- recurse
--- mov found value into R0
--- PROBABLY BROKEN...
 instance CodeGen ArrayElem where
   codegen (ArrayElem ident@(Ident name info) idxs _) = do
-    let ArrayT _ innerType = typeInfo info
+    let t@(ArrayT _ innerType) = typeInfo info
+    -- this is saving r4 because we are going to use it
     saveR4          <- push [R4]
-    traceM $ show ("the inner type is: " ++ show innerType)
+    -- this line is going to generate the code
+    -- to load the ident direcitly in to the register r4
+    -- instead of doing
+    -- LDR r0 [sp, some offset]
+    -- mov r4, r0
+    -- you do ldr r4 [sp, someoffset]
+    -- its a minor optimisation
     loadIdentIntoR4 <- loadIdentAddr R4 ident
-    traceM $ show loadIdentIntoR4
-    traceM $ show "Before generating code for dereferencing an array"
-    derefInnerTypes <- codeGenArrayElem innerType idxs
+    -- now this is where most of the work happens
+    -- this is the part of the code that generates the actual dereferences
+    derefInnerTypes <- codeGenArrayElem t idxs
+    -- this is where we restore r4
     restoreR4       <- pop [R4]
     return $
       saveR4           ++
@@ -96,14 +95,27 @@ instance CodeGen ArrayElem where
       restoreR4
 
 codeGenArrayElem :: Type -> [Expr] -> InstructionMonad [Instr]
+-- im guess this base is case in place
+-- when you have no more dereferences
+-- you move the value currently stored in r4 in to r0
+-- as demonstrated by the reference compiler
 codeGenArrayElem t []
   = return [Mov R0 (RegOp R4)]
-codeGenArrayElem (ArrayT dim innerType) (i : is) = do
+codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
+  -- now we generate the code to get the expressions
+  -- we make the assumption that we store the value in register zero
   calcIdx          <- codegen i
+  -- this is where we skip the length of the array
+  -- in wacc the lenght of the array is always stored as the
+  -- first element in the array
   let skipDim      = [ADD NF R4 R4 (ImmOp2 4)]
-  let skipToElem   = [ADD NF R4 R4 (Shift R0 LSL (typeSize innerType))]
+  -- this is where we skip to the correct element
+  -- because we areusing lsl we have to divide the size of the type by 2
+  let skipToElem   = [ADD NF R4 R4 (Shift R0 LSL (typeSize innerType `div` 2))]
+  -- this is the actual storing of the value in LDR r4
   let dereference  = [LDR (sizeFromType innerType) NoIdx R4 [RegOp R4]]
-  derefInnerArray  <- codeGenArrayElem innerType is
+  -- and we go again :) yay
+  derefInnerArray  <- codeGenArrayElem array is
   return $
     calcIdx          ++
     -- check array index in bounds
@@ -111,11 +123,6 @@ codeGenArrayElem (ArrayT dim innerType) (i : is) = do
     skipToElem       ++
     dereference      ++
     derefInnerArray
-codeGenArrayElem t (i : is) = do
-  return[]
-codeGenArrayElem _ _ = do
-  traceM "You have not matched any of the correct aray elem forms"
-  return []
 
 -- Op must be a reg
 loadIdentAddr :: Reg -> Ident -> InstructionMonad [Instr]

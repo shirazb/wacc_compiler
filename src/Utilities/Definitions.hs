@@ -19,6 +19,7 @@ type AST             = Program
 type Position        = (Int, Int)
 type Err             = (String, Position)
 type ErrorMsg        = String
+type ArrayIndexes    = [Expr]
 type TypeChecker a   = Writer [ErrorMsg] a
 type ScopeAnalysis a = State SymbolTable a
 type ScopeError      = (String, ScopeErrorType, Position)
@@ -27,7 +28,7 @@ data Program   = Program [Func] Stat                     deriving (Eq, Show)
 data Func      = Func Type Ident ParamList Stat Position deriving (Eq, Show)
 data ParamList = ParamList [Param] Position              deriving (Eq, Show)
 data Param     = Param Type Ident Position               deriving (Eq, Show)
-data ArrayElem = ArrayElem Ident [Expr] Position         deriving (Eq, Show)
+data ArrayElem = ArrayElem Ident ArrayIndexes Position   deriving (Eq, Show)
 data Ident     = Ident String Info                       deriving (Eq, Show)
 
 data ScopeErrorType

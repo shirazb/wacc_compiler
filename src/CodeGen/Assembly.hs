@@ -249,7 +249,7 @@ instance Show Instr where
   show (BEQ l)
     = "BEQ " ++ l
   show (LDR s NoIdx op [op'])
-    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ show op'
+    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ "[" ++ show op' ++ "]"
   show (LDR s i op ops)
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (STR s i op ops)
