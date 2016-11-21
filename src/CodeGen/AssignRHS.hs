@@ -32,14 +32,46 @@ instance CodeGen AssignRHS where
         = return []
       moveExprsIntoArray (e : es) offset = do
         evalE         <- codegen e
-        let size      = sizeFromType (typeOfExpr e)
+        let size      = sizeFromType typeSizesSTR (typeOfExpr e)
         let newOffset = offset + exprSize e
         moveRemaining <- moveExprsIntoArray es newOffset
         return $
           evalE ++
           [STR size NoIdx R0 [RegOp R3, ImmI offset]] ++
           moveRemaining
-  codegen NewPairAssign{}
+  codegen (NewPairAssign e e' _) = do
+    exprInstrForHeap <- storeInHeap e
+    exprInstrForHeap' <- storeInHeap e'
+    let callMallocPair = malloc pairSize
+    restoreAddresses <- pop [R1, R2]
+    let storeAddOfFirst = [STR W NoIdx R2 [RegOp R0]]
+    let storeAddOfSecond = [STR W NoIdx R1 [RegOp R0, ImmI pointerSize]]
+    return $
+      exprInstrForHeap   ++
+      exprInstrForHeap'  ++
+      callMallocPair     ++
+      restoreAddresses   ++
+      storeAddOfFirst    ++
+      storeAddOfSecond
+    where
+      storeInHeap :: Expr -> InstructionMonad [Instr]
+      storeInHeap e = do
+        instr1 <- codegen e
+        saveExpr <- push [R0]
+        let callMalloc = malloc (exprSize e)
+        restoreExpr <- pop [R1]
+        let storeExprInMem = [STR (sizeFromType typeSizesSTR $ typeOfExpr e) NoIdx R1 [RegOp R0]]
+        saveAddr1 <- push [R0]
+        return $
+          instr1         ++
+          saveExpr       ++
+          callMalloc     ++
+          restoreExpr    ++
+          storeExprInMem ++
+          saveAddr1
+
+
+  codegen PairElemAssign{}
     = undefined
   codegen (FuncCallAssign ident@(Ident name info) es _) = do
     let FuncT retType paramTypes = typeInfo info
@@ -54,7 +86,9 @@ instance CodeGen AssignRHS where
       pushParam t
         = [STR size Pre R0 [RegOp SP, ImmI (- typeSize t)]]
         where
-          size = sizeFromType t
+          size = sizeFromType typeSizesSTR t
+
+
 
 -- Gens instrs to malloc the given amount
 malloc :: Int -> [Instr]

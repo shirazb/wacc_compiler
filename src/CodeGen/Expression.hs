@@ -30,9 +30,10 @@ instance CodeGen Expr where
   -- we might need two different type size maps
   -- for ldr and str
   codegen (IdentE (Ident name (Info t _)) _) = do
-    let size = sizeFromType t
+    let size = sizeFromType typeSizesLDR t
     (env, _) <- get
     let offset = fromJust (Map.lookup name env)
+    traceM $ "Looking up: " ++ name ++ " The value I got is: " ++ show offset
     return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
   codegen (ExprArray ae _)
     = codegen ae
@@ -52,13 +53,21 @@ instance CodeGen Expr where
     = return [Mov R0 (ImmC c)]
   codegen (UnaryApp Ord e _)
     = codegen e
-  codegen (BinaryApp op@(Logic _) e e' _) = do
+  codegen (BinaryApp op@(Logic _) e@(BoolLit _ _) (BoolLit _ _) _) = do
     firstExpr <- codegen e
     performLogicOp <- chooseBinOp op
     return $ firstExpr ++ performLogicOp
+  codegen(BinaryApp op@(Logic _) e e' _) = do
+    firstExpr <- codegen e
+    performLogicOp <- generateLogicInstr e' op
+    return $ firstExpr ++ performLogicOp
   codegen (BinaryApp op e e' _) = do
     instr     <- codegen e
+    (env, _)  <- get
+    traceM $ "The env before is (generating e): " ++ show env
     saveFirst <- push [R0]
+    (env', _) <- get
+    traceM $ "The env after is (generating e'): " ++ show env'
     instr1    <- codegen e'
     let evaluate = [Mov R1 (RegOp R0)]
     restoreR0 <- pop [R0]
@@ -113,7 +122,7 @@ codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   -- because we areusing lsl we have to divide the size of the type by 2
   let skipToElem   = [ADD NF R4 R4 (Shift R0 LSL (typeSize innerType `div` 2))]
   -- this is the actual storing of the value in LDR r4
-  let dereference  = [LDR (sizeFromType innerType) NoIdx R4 [RegOp R4]]
+  let dereference  = [LDR (sizeFromType typeSizesLDR innerType) NoIdx R4 [RegOp R4]]
   -- and we go again :) yay
   derefInnerArray  <- codeGenArrayElem array is
   return $
@@ -131,6 +140,26 @@ loadIdentAddr r (Ident name info) = do
   let offsetToVar = fromJust (Map.lookup name env) + offsetSP
   return [LDR W NoIdx r [RegOp SP, ImmLDRI offsetToVar]]
 
+generateLogicInstr :: Expr -> BinOp -> InstructionMonad [Instr]
+generateLogicInstr e (Logic op) = do
+  label <- getNextLabel
+  let fstCMP = CMP R0  (ImmOp2 (logicNum op)) : [BEQ label]
+  instr1 <- codegen e
+  let labelJump = [Def label]
+  return $ fstCMP ++ instr1 ++ labelJump
+
+
+logicNum :: LogicalOp -> Int
+logicNum op = case op of
+             AND -> 0
+             OR  -> 1
+
+invertLogicalNum :: Int -> Int
+invertLogicalNum 0
+  = 1
+invertLogicalNum _
+  = 0
+
 chooseBinOp :: BinOp -> InstructionMonad [Instr]
 chooseBinOp (Arith Add)
   = return [ADD S R0 R0 (RegOp2 R1)]
@@ -144,18 +173,10 @@ chooseBinOp (Arith Mul)
    = return [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
 chooseBinOp (Logic op) = do
   label <- getNextLabel
-  let fstCMP = CMP R0  (ImmOp2 logicNum) : [BEQ label]
-  let setFalse = [Mov R0 (ImmI (invertLogicalNum logicNum))]
+  let fstCMP = CMP R0  (ImmOp2 $ logicNum op) : [BEQ label]
+  let setFalse = [Mov R0 (ImmI (invertLogicalNum $ logicNum op))]
   let labelJump = [Def label]
   return $ fstCMP ++ setFalse ++ labelJump
-  where
-    logicNum = case op of
-                 AND -> 0
-                 OR  -> 1
-    invertLogicalNum 0
-      = 1
-    invertLogicalNum _
-      = 0
 chooseBinOp (RelOp op) = do
   let comp = [CMP R0 (RegOp2 R1)]
   instr <- generateRelInstr op

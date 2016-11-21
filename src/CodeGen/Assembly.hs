@@ -7,6 +7,7 @@ import Control.Monad.StateStack
 import qualified Data.Map as Map
 import Control.Monad.State.Strict (get, put, lift, State, runState)
 import Data.Maybe (fromJust)
+import Debug.Trace
 
 {- LOCAL IMPORTS -}
 import Utilities.Definitions hiding (Env)
@@ -55,13 +56,15 @@ getNextLabel = do
 incrementOffset :: Int -> InstructionMonad ()
 incrementOffset n = do
   (env, offset) <- get
-  put (env, offset + n)
+  let newEnv = Map.map (+ n) env
+  put (newEnv, offset + n)
 
 -- Decrements the offset of the stack pointer (to the start of the scope)
 decrementOffset :: Int -> InstructionMonad ()
 decrementOffset n = do
   (env, offset) <- get
-  put (env, offset - n)
+  let newEnv = Map.map (n -) env
+  put (newEnv, offset - n)
 
 -- Assert Ops are registers
 -- Could avoid duplication.
@@ -70,7 +73,9 @@ push []
   = return []
 push (x : xs) = do
   let pushX = [Push x]
+  (env, _) <- get
   incrementOffset 4
+  (env', _) <- get
   pushRest <- push xs
   return $ pushX ++ pushRest
 pop []
@@ -104,7 +109,9 @@ msg n = "msg_" ++ show n ++ ":"
 type Label = String
 
 {- ARM ASSEMBLY DATA TYPES -}
-
+-- we need to change mov to take Op2
+-- instead of op1 but we will change it later
+-- because it dosent make much diffrence now
 data Instr
   = Push Reg
   | Pop Reg
@@ -185,8 +192,17 @@ data Op
 
 {- Map from types to sizes -}
 
-typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, SB),
+-- we meed to have separates ones
+
+typeSizes, typeSizesLDR, typeSizesSTR :: [(Type, Size)]
+typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, B),
              (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W)]
+
+typeSizesLDR = [(BaseT BaseInt, W), (BaseT BaseChar, SB),
+                (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W)]
+
+typeSizesSTR = [(BaseT BaseInt, W), (BaseT BaseChar, B),
+                (BaseT BaseBool, B), (PolyArray, W), (PolyPair, W)]
 
 {- Utility Functions -}
 
@@ -203,6 +219,10 @@ pointerSize :: Int
 pointerSize
   = 4
 
+pairSize :: Int
+pairSize
+  = pointerSize * 2
+
 typeSize :: Type -> Int
 typeSize (BaseT BaseInt)
   = 4
@@ -214,12 +234,14 @@ typeSize (ArrayT _ innerType)
   = pointerSize
 typeSize Pair
   = pointerSize
+typeSize PairT{}
+  = pointerSize
 typeSize t
   = error $ "Cannot call typeSize on type \'" ++ show t ++ "\'"
 
-sizeFromType :: Type -> Size
-sizeFromType
-  = fromJust . flip lookup typeSizes
+sizeFromType :: [(Type, Size)] -> Type -> Size
+sizeFromType ts
+  = fromJust . flip lookup ts
 
 showIndexing :: Indexing -> [Op] -> String
 showIndexing index ops = case index of
@@ -249,7 +271,11 @@ instance Show Instr where
   show (BEQ l)
     = "BEQ " ++ l
   show (LDR s NoIdx op [op'])
-    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ "[" ++ show op' ++ "]"
+    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ opRepresentation
+    where
+      opRepresentation = case op' of
+          RegOp _ -> "[" ++ show op' ++ "]"
+          _       -> show op'
   show (LDR s i op ops)
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (STR s i op ops)
@@ -257,7 +283,7 @@ instance Show Instr where
   show (SUB fl op op' op2)
     = "SUB " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op2
   show (ADD fl op op' op2)
-    = "ADD " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op2
+    = "ADD" ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op2
   show (EOR op op' op'')
     = "EOR " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
   show (RSBS op op' op'')

@@ -22,8 +22,7 @@ instance CodeGen Stat where
     let newOffset = offset - typeSize t
     let newMap = Map.insert name newOffset map'
     put (newMap, newOffset)
-    traceM $ show ("The type is: " ++ show t)
-    let str = [STR (sizeFromType t) NoIdx R0 [RegOp SP, ImmI newOffset]]
+    let str = [STR (sizeFromType typeSizesSTR t) NoIdx R0 [RegOp SP, ImmI newOffset]]
     return $ instr ++ str
   codegen (Block s _)
     = genInNewScope s
@@ -115,11 +114,11 @@ genInNewScope s = do
 -- Returns the Size (word, byte etc.) of an AssignLHS
 sizeOfLHS :: AssignLHS -> Size
 sizeOfLHS (Var (Ident _ (Info t _)) _)
-  = sizeFromType t
+  = sizeFromType typeSizesSTR t
 sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
-  = sizeFromType t
+  = sizeFromType typeSizesSTR t
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
-  = sizeFromType (typeOfExpr expr)
+  = sizeFromType typeSizesSTR (typeOfExpr expr)
 
 -- Shows the correct IO function name to for the type of the expression
 ioFuncType :: Expr -> String
