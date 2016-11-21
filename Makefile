@@ -5,3 +5,4 @@ all:
 
 clean:
 	cabal clean
+	rm *.s

@@ -1,6 +1,7 @@
 import Control.Monad.Writer.Strict
 import System.Environment
 import System.Exit
+import System.IO
 import qualified Data.Map as Map
 import Data.List
 
@@ -18,10 +19,11 @@ import CodeGen.Program
 
 makeInstr :: String -> IO ()
 makeInstr s
-  = putStrLn $ intercalate "\n" (map show $ fst . fst $ genInstruction (genInstrFromAST annotation))
+  = putStrLn assemblyCode
   where
   (Right (Just ((a,b),_))) =  runParser parseProgram s
   annotation = annotateAST a
+  assemblyCode = intercalate "\n" (map show $ fst . fst $ genInstruction (genInstrFromAST annotation))
 
 main = do
   args         <- getArgs
@@ -41,5 +43,5 @@ main = do
   case generateTypeErrorMessages annotatedAST of
     [] -> return ()
     errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
-
+  -- makeInstr contents
   exitSuccess
