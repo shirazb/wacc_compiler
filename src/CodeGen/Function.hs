@@ -29,7 +29,7 @@ instance CodeGen Func where
     restore
     return $ createStackSpace ++ instrs ++ clearStackSpace
 
-addParamsToEnv :: [Param] -> Int -> InstructionMonad ()
+addParamsToEnv :: [Param] -> Int -> CodeGenerator ()
 addParamsToEnv (Param t (Ident name _) _ : ps) offsetToParam = do
   (env, offset)         <- get
   let newEnv            = Map.insert name offsetToParam env

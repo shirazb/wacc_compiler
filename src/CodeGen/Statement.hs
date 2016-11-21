@@ -98,7 +98,7 @@ instance CodeGen Stat where
       [BL ("p_read_" ++ ioFuncType e)]
 
 -- Codegens the statement inside of a new scope
-genInNewScope :: Stat -> InstructionMonad [Instr]
+genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
   save
   let sizeOfScope = scopeSize s

@@ -29,7 +29,7 @@ instance CodeGen AssignRHS where
       [STR W NoIdx R0 [RegOp R3]] ++
       [Mov R0 (RegOp R3)]
     where
-      moveExprsIntoArray :: [Expr] -> Int -> InstructionMonad [Instr]
+      moveExprsIntoArray :: [Expr] -> Int -> CodeGenerator [Instr]
       moveExprsIntoArray [] _
         = return []
       moveExprsIntoArray (e : es) offset = do
@@ -56,7 +56,7 @@ instance CodeGen AssignRHS where
       storeAddOfFirst    ++
       storeAddOfSecond
     where
-      storeInHeap :: Expr -> InstructionMonad [Instr]
+      storeInHeap :: Expr -> CodeGenerator [Instr]
       storeInHeap e = do
         instr1 <- codegen e
         saveExpr <- push [R0]

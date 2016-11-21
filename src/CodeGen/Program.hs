@@ -15,7 +15,7 @@ import CodeGen.Function
 import CodeGen.AssignRHS
 import Utilities.Definitions hiding (Env)
 
-genInstrFromAST :: AST -> InstructionMonad [Instr]
+genInstrFromAST :: AST -> CodeGenerator [Instr]
 genInstrFromAST (Program fs body) = do
   let defMain = [Def "main"]
   pLr <- push [LR]
@@ -31,5 +31,5 @@ genInstrFromAST (Program fs body) = do
            makeRoomStack ++
            instr         ++
            clearSpace    ++
-           succesfulExit ++ 
+           succesfulExit ++
            popPC

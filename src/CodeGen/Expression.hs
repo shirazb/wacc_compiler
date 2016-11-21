@@ -99,7 +99,7 @@ instance CodeGen ArrayElem where
       derefInnerTypes  ++
       restoreR4
 
-codeGenArrayElem :: Type -> [Expr] -> InstructionMonad [Instr]
+codeGenArrayElem :: Type -> [Expr] -> CodeGenerator [Instr]
 -- im guess this base is case in place
 -- when you have no more dereferences
 -- you move the value currently stored in r4 in to r0
@@ -130,13 +130,13 @@ codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
     derefInnerArray
 
 -- Op must be a reg
-loadIdentAddr :: Reg -> Ident -> InstructionMonad [Instr]
+loadIdentAddr :: Reg -> Ident -> CodeGenerator [Instr]
 loadIdentAddr r (Ident name info) = do
   (env, offsetSP) <- get
   let offsetToVar = fromJust (Map.lookup name env) + offsetSP
   return [LDR W NoIdx r [RegOp SP, ImmLDRI offsetToVar]]
 
-generateLogicInstr :: Expr -> BinOp -> InstructionMonad [Instr]
+generateLogicInstr :: Expr -> BinOp -> CodeGenerator [Instr]
 generateLogicInstr e (Logic op) = do
   label <- getNextLabel
   let fstCMP = CMP R0  (ImmOp2 (logicNum op)) : [BEQ label]
@@ -156,7 +156,7 @@ invertLogicalNum 0
 invertLogicalNum _
   = 0
 
-chooseBinOp :: BinOp -> InstructionMonad [Instr]
+chooseBinOp :: BinOp -> CodeGenerator [Instr]
 chooseBinOp (Arith Add)
   = return [ADD S R0 R0 (RegOp2 R1)]
 chooseBinOp (Arith Sub)

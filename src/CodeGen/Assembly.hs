@@ -12,104 +12,27 @@ import Debug.Trace
 {- LOCAL IMPORTS -}
 import Utilities.Definitions hiding (Env)
 
-type DataSegment = String
+type Label = String
+
+type TextSegment = [Instr]
+type DataSegment = [Data]
+type Functions = [AssemblyFunc]
+type Env = Map.Map String Int
+type AssemblyProgram = (DataSegment, TextSegment, Functions)
+type CodeGenerator a = StateStackT (Env, Int) (State Int) a
 
 class CodeGen a where
-  codegen :: a -> InstructionMonad [Instr]
+  codegen :: a -> CodeGenerator AssemblyProgram
 
-type Env = Map.Map String Int
-type InstructionMonad a = StateStackT (Env, Int) (State Int) a
-
-
-getOffset :: Stat -> Int
-getOffset s
-  = scopeSize s - sizeOfFirstType s
-
-sizeOfFirstType :: Stat -> Int
-sizeOfFirstType (Declaration t _ _ _ )
-  = typeSize t
-sizeOfFirstType (Seq (Declaration t _ _ _) _ _)
-  = typeSize t
-sizeOfFirstType (Seq s1 s2 _)
-  = sizeOfFirstType s2
-sizeOfFirstType _
-  = 0
-
--- Updates the next label number with the given number
-updateNextLabelNum :: Int -> InstructionMonad ()
-updateNextLabelNum
-  = lift . put
-
--- Retrieves the next label number
-getNextLabelNum :: InstructionMonad Int
-getNextLabelNum
-  = lift get
-
--- Returns the String "L:" appended with the next label num, and updates the label number
-getNextLabel :: InstructionMonad String
-getNextLabel = do
-  labelNum <- getNextLabelNum
-  updateNextLabelNum (labelNum + 1)
-  return $ "L" ++ show labelNum
-
--- Increments the offset of the stack pointer (to the start of the scope)
-incrementOffset :: Int -> InstructionMonad ()
-incrementOffset n = do
-  (env, offset) <- get
-  let newEnv = Map.map (+ n) env
-  put (newEnv, offset + n)
-
--- Decrements the offset of the stack pointer (to the start of the scope)
-decrementOffset :: Int -> InstructionMonad ()
-decrementOffset n = do
-  (env, offset) <- get
-  let newEnv = Map.map (n -) env
-  put (newEnv, offset - n)
-
--- Assert Ops are registers
--- Could avoid duplication.
-push, pop :: [Reg] -> InstructionMonad [Instr]
-push []
-  = return []
-push (x : xs) = do
-  let pushX = [Push x]
-  incrementOffset 4
-  pushRest <- push xs
-  return $ pushX ++ pushRest
-pop []
-  = return []
-pop (x : xs) = do
-  let popX = [Pop x]
-  decrementOffset 4
-  popRest <- pop xs
-  return $ popX ++ popRest
-
-genInstruction :: InstructionMonad a -> ((a, (Env, Int)), Int)
-genInstruction p = runState (runStateStackT p (Map.empty, 0)) 0
-
-{- ARM ASSEMBLY BOILERPLATE CODE -}
-
-space, spaceX2, text, global, dataLabel, word, ascii :: String
-
-space     = "    "
-spaceX2   = space ++ space
-text      = space ++ ".text"
-global    = space ++ ".global main"
-dataLabel = ".data"
-word      = ".word"
-ascii     = ".ascii"
-
--- POST:    Prints the the ARM Assembly message label and its number
--- EXAMPLE: "msg_0:" "msg_2:"
-msg :: Int -> String
-msg n = "msg_" ++ show n ++ ":"
-
-type Label = String
+genInstruction :: CodeGenerator a -> ((a, (Env, Int)), Int)
+genInstruction p
+  = runState (runStateStackT p (Map.empty, 0)) 0
 
 {- ARM ASSEMBLY DATA TYPES -}
 -- we need to change mov to take Op2
 -- instead of op1 but we will change it later
 -- because it dosent make much diffrence now
+
 data Instr
   = Push Reg
   | Pop Reg
@@ -132,6 +55,12 @@ data Instr
   | MOVGT Reg Op2
   | MOVEQ Reg Op2
   | MOVNE Reg Op2
+
+data Data
+  =  MSG Int String
+
+data AssemblyFunc
+  = FuncA String [Instr]
 
 -- include load immediate instructions
 
@@ -247,8 +176,95 @@ showIndexing index ops = case index of
     Post  -> show (init ops) ++ ", " ++ show (last ops)
     NoIdx -> show ops
 
+getOffset :: Stat -> Int
+getOffset s
+  = scopeSize s - sizeOfFirstType s
+
+sizeOfFirstType :: Stat -> Int
+sizeOfFirstType (Declaration t _ _ _ )
+  = typeSize t
+sizeOfFirstType (Seq (Declaration t _ _ _) _ _)
+  = typeSize t
+sizeOfFirstType (Seq s1 s2 _)
+  = sizeOfFirstType s2
+sizeOfFirstType _
+  = 0
+
+-- Updates the next label number with the given number
+updateNextLabelNum :: Int -> CodeGenerator ()
+updateNextLabelNum
+  = lift . put
+
+-- Retrieves the next label number
+getNextLabelNum :: CodeGenerator Int
+getNextLabelNum
+  = lift get
+
+-- Returns the String "L:" appended with the next label num, and updates the label number
+getNextLabel :: CodeGenerator String
+getNextLabel = do
+  labelNum <- getNextLabelNum
+  updateNextLabelNum (labelNum + 1)
+  return $ "L" ++ show labelNum
+
+-- Increments the offset of the stack pointer (to the start of the scope)
+incrementOffset :: Int -> CodeGenerator ()
+incrementOffset n = do
+  (env, offset) <- get
+  let newEnv = Map.map (+ n) env
+  put (newEnv, offset + n)
+
+-- Decrements the offset of the stack pointer (to the start of the scope)
+decrementOffset :: Int -> CodeGenerator ()
+decrementOffset n = do
+  (env, offset) <- get
+  let newEnv = Map.map (n -) env
+  put (newEnv, offset - n)
+
+-- Assert Ops are registers
+-- Could avoid duplication.
+push, pop :: [Reg] -> CodeGenerator [Instr]
+push []
+  = return []
+push (x : xs) = do
+  let pushX = [Push x]
+  incrementOffset 4
+  pushRest <- push xs
+  return $ pushX ++ pushRest
+pop []
+  = return []
+pop (x : xs) = do
+  let popX = [Pop x]
+  decrementOffset 4
+  popRest <- pop xs
+  return $ popX ++ popRest
+
+-- POST: Returns true iff function is already defined
+checkFuncDefined :: String -> Functions -> Bool
+checkFuncDefined s fs
+  = not $ or [ s == s' | FuncA s' _ <- fs ]
+
+
+
+{- ARM ASSEMBLY BOILERPLATE CODE -}
+
+space, spaceX2, text, global, dataLabel, word, ascii :: String
+
+space     = "    "
+spaceX2   = space ++ space
+text      = space ++ ".text"
+global    = space ++ ".global main"
+dataLabel = ".data"
+word      = ".word"
+ascii     = ".ascii"
 
 {- SHOW INSTANCES -}
+
+instance Show Data where
+  show (MSG i s)
+    = "msg_"  ++ show i   ++ ":\n" ++
+      spaceX2 ++ ".word  " ++ show (length s) ++ "\n" ++
+      spaceX2 ++ ".ascii  " ++ show s
 
 instance Show Size where
   show B = "B"
