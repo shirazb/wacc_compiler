@@ -6,10 +6,12 @@ import Control.Monad.StateStack
 import Control.Monad.State.Strict (get, put, lift)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
+import Debug.Trace
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import CodeGen.Expression
+import CodeGen.PairElem (codegen)
 import Utilities.Definitions
 
 instance CodeGen AssignRHS where
@@ -69,10 +71,14 @@ instance CodeGen AssignRHS where
           restoreExpr    ++
           storeExprInMem ++
           saveAddr1
-
-
-  codegen PairElemAssign{}
-    = undefined
+  -- check for null ptr
+  codegen (PairElemAssign pairElem@(PairElem pos e _)_) = do
+    getPairElemAddr <- codegen pairElem
+    let size        = sizeFromType typeSizesLDR (typeOfPairElem pairElem)
+    let getElem     = [LDR size NoIdx R0 [RegOp R0]]
+    return $
+       getPairElemAddr ++
+       getElem
   codegen (FuncCallAssign ident@(Ident name info) es _) = do
     let FuncT retType paramTypes = typeInfo info
     params <- mapM codegen es
@@ -88,7 +94,14 @@ instance CodeGen AssignRHS where
         where
           size = sizeFromType typeSizesSTR t
 
-
+-- Get type of pair elem elements
+typeOfPairElem :: PairElem -> Type
+typeOfPairElem (PairElem pos e _)
+  = case pos of
+      Fst -> p1
+      Snd -> p2
+  where
+    PairT p1 p2 = typeOfExpr e
 
 -- Gens instrs to malloc the given amount
 malloc :: Int -> [Instr]

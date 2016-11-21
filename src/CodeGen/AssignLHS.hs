@@ -10,6 +10,7 @@ import Data.Maybe (fromJust)
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import CodeGen.Expression
+import CodeGen.PairElem
 import Utilities.Definitions hiding (Env)
 
 instance CodeGen AssignLHS where
@@ -17,3 +18,7 @@ instance CodeGen AssignLHS where
     = loadIdentAddr R0 ident
   codegen (ArrayDeref arrayElem _)
     = codegen arrayElem
+  -- Ask Mark, WTF? Why do you free then malloc instead of overwriting the
+  -- existing address
+  codegen (PairDeref pairElem _)
+    = codegen pairElem

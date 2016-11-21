@@ -63,11 +63,7 @@ instance CodeGen Expr where
     return $ firstExpr ++ performLogicOp
   codegen (BinaryApp op e e' _) = do
     instr     <- codegen e
-    (env, _)  <- get
-    traceM $ "The env before is (generating e): " ++ show env
     saveFirst <- push [R0]
-    (env', _) <- get
-    traceM $ "The env after is (generating e'): " ++ show env'
     instr1    <- codegen e'
     let evaluate = [Mov R1 (RegOp R0)]
     restoreR0 <- pop [R0]

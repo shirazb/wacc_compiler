@@ -73,9 +73,7 @@ push []
   = return []
 push (x : xs) = do
   let pushX = [Push x]
-  (env, _) <- get
   incrementOffset 4
-  (env', _) <- get
   pushRest <- push xs
   return $ pushX ++ pushRest
 pop []
