@@ -59,7 +59,7 @@ main = do
     errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
 
   let instrs = makeInstr annotatedAST
-  writeFile ("./"  ++ (filename ++ ".s")) instrs
+  -- writeFile ("./"  ++ (filename ++ ".s")) instrs
   printInstrs annotatedAST
 
   exitSuccess
