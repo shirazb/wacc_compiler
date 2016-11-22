@@ -158,10 +158,25 @@ invertLogicalNum 1
 invertLogicalNum _
   = error "invertLogicalNum called with a value which is not in [0,1]"
 
+genOverFlowFunction = do
+  msgNum <- getNextMsgNum
+  let genMsg = MSG msgNum "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n"
+  addData genMsg
+  let loadData = [LDR W NoIdx R0 [MsgName msgNum]]
+  let branch = [BL "p_throw_runtime_error"]
+  let newFunc = FuncA "p_throw_overflow_error" (loadData ++ branch)
+  addFunction newFunc
+  return []
+
+-- genPrintString = return
+
 
 chooseBinOp :: BinOp -> CodeGenerator [Instr]
-chooseBinOp (Arith Add)
-  = return [ADD S R0 R0 (RegOp2 R1)]
+chooseBinOp (Arith Add) = do
+  genOverFlowFunction
+  let operation = [ADD S R0 R0 (RegOp2 R1)]
+  let errorHandling = [BL "p_throw_overflow_error"]
+  return $ operation ++ errorHandling
 chooseBinOp (Arith Sub)
   = return [SUB S R0 R0 (RegOp2 R1)]
 chooseBinOp (Arith Div)

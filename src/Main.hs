@@ -23,26 +23,22 @@ printInstrs
 
 makeInstr :: String -> String
 makeInstr s
-  = space ++
-    dataSegment ++
-    "\n" ++
-    text ++ "\n" ++
-    "\n" ++
-    global ++ "\n" ++
-    textInstrs ++ "\n" ++
+  = space ++ dataSegment ++ "\n"   ++
+    text                 ++ "\n\n" ++
+    global               ++ "\n"   ++
+    textInstrs           ++ "\n"   ++
     funcInstrs
   where
     (Right (Just ((a,b),_))) =  runParser parseProgram s
     annotated  = annotateAST a
     ((((textSeg, functions), DataSeg dataSeg _), _), _) = genInstruction (genInstrFromAST annotated)
     textInstrs = showInstrs textSeg
-    dataInstrs = showInstrs dataSeg
-    funcInstrs = concatMap show functions
-    showInstrs :: Show a => [a] -> String
-    showInstrs = intercalate ("\n" ++ space) . map show
+    dataInstrs = intercalate "\n" (map show dataSeg)
+    funcInstrs = space ++ concatMap show functions
+    showInstrs = intercalate "\n" . map showInstr
     dataSegment = case dataInstrs of
                    [] -> ""
-                   _ -> dataLabel ++ "\n" ++ dataInstrs ++ "\n"
+                   _ -> dataLabel ++ "\n\n" ++ dataInstrs ++ "\n"
 
 
 main = do

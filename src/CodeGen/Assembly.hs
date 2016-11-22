@@ -43,6 +43,7 @@ type CodeGenerator a = StateT Functions (StateT DataSegment (StateStackT (Env, I
 --   s `mplus` s' = StateStackT $ unStateStackT s `mplus` unStateStackT s'
 
 
+
 class CodeGen a where
   codegen :: a -> CodeGenerator [Instr]
 
@@ -84,11 +85,17 @@ data Data
 
 data AssemblyFunc
   = FuncA String [Instr]
+-- POST: Produces a correctly indented string representation for an instruction
+showInstr :: Instr -> String
+showInstr label@(Def s)
+  = space ++ show label
+showInstr instr
+  = spaceX2 ++ show instr
 
 instance Show AssemblyFunc where
   show (FuncA name body)
-    = name ++ ":" ++ spaceX2 ++ "\n"
-      ++ space ++ intercalate ("\n" ++ space) (map show body)
+    = name ++ ":" ++ "\n"
+      ++ intercalate "\n" (map showInstr body)
 
 -- include load immediate instructions
 data Size
@@ -231,7 +238,6 @@ addFunction f@(FuncA s _) = do
   fs <- getFunctionInfo
   when (checkFuncDefined s fs) $
     do putFunctionInfo (f : fs)
-       traceM $ "We have added a new function succesffully"
        return ()
 
 getNextMsgNum :: CodeGenerator Int
@@ -340,9 +346,9 @@ ascii     = ".ascii"
 
 instance Show Data where
   show (MSG i s)
-    = "msg_"  ++ show i   ++ ":\n" ++
-      spaceX2 ++ ".word  " ++ show (length s) ++ "\n" ++
-      spaceX2 ++ ".ascii  " ++ show s
+    = space ++ "msg_"  ++ show i   ++ ":\n" ++
+      spaceGen 3 ++ ".word  " ++ show (length s) ++ "\n" ++
+      spaceGen 3 ++ ".ascii  " ++ show s
 
 instance Show Size where
   show B = "B"
