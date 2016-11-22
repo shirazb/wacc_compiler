@@ -23,8 +23,8 @@ printInstrs
 
 makeInstr :: String -> String
 makeInstr s
-  = space ++ dataLabel ++ "\n" ++
-    dataInstrs ++ "\n" ++
+  = space ++
+    dataSegment ++
     "\n" ++
     text ++ "\n" ++
     "\n" ++
@@ -40,6 +40,10 @@ makeInstr s
     funcInstrs = showInstrs functions
     showInstrs :: Show a => [a] -> String
     showInstrs = intercalate ("\n" ++ space) . map show
+    dataSegment = case dataInstrs of
+                   [] -> ""
+                   _ -> dataLabel ++ "\n" ++ dataInstrs ++ "\n"
+
 
 main = do
   args         <- getArgs

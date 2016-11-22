@@ -120,6 +120,7 @@ data Op
   | ImmLDRI Int
   | ImmLDRC Char
   | RegOp Reg
+  | MsgName Int
 
 {- Map from types to sizes -}
 
@@ -127,13 +128,13 @@ data Op
 
 typeSizes, typeSizesLDR, typeSizesSTR :: [(Type, Size)]
 typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, B),
-             (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W)]
+             (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W), (BaseT BaseString, W)]
 
 typeSizesLDR = [(BaseT BaseInt, W), (BaseT BaseChar, SB),
-                (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W)]
+                (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W), (BaseT BaseString, W)]
 
 typeSizesSTR = [(BaseT BaseInt, W), (BaseT BaseChar, B),
-                (BaseT BaseBool, B), (PolyArray, W), (PolyPair, W)]
+                (BaseT BaseBool, B), (PolyArray, W), (PolyPair, W), (BaseT BaseString, W)]
 
 {- Utility Functions -}
 
@@ -167,6 +168,8 @@ typeSize Pair
   = pointerSize
 typeSize PairT{}
   = pointerSize
+typeSize (BaseT BaseString)
+  = pointerSize
 typeSize t
   = error $ "Cannot call typeSize on type \'" ++ show t ++ "\'"
 
@@ -194,11 +197,30 @@ sizeOfFirstType (Seq s1 s2 _)
 sizeOfFirstType _
   = 0
 
-getFunctionInfo :: CodeGenerator ()
+getFunctionInfo :: CodeGenerator Functions
 getFunctionInfo
  = get
 
--- putFunctionInfo :: CodeGenerator
+putFunctionInfo :: Functions -> CodeGenerator ()
+putFunctionInfo
+  = put
+
+getNextMsgNum :: CodeGenerator Int
+getNextMsgNum = do
+  DataSeg ds num <- getData
+  putData (DataSeg ds (num + 1))
+  return num
+
+addData :: Data -> CodeGenerator ()
+addData d = do
+  DataSeg ds num <- getData
+  putData (DataSeg (ds ++ [d]) num)
+
+getData :: CodeGenerator DataSegment
+getData  = lift get
+
+putData :: DataSegment -> CodeGenerator ()
+putData = lift . put
 
 saveStackInfo :: CodeGenerator ()
 saveStackInfo
@@ -363,6 +385,8 @@ instance Show Op where
     = "=" ++ show c
   show (RegOp reg)
     = show reg
+  show (MsgName i)
+    = "=msg_" ++ show i
 
 instance Show Reg where
   show LR

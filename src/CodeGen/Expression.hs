@@ -15,7 +15,11 @@ import CodeGen.Assembly
 import Utilities.Definitions
 
 instance CodeGen Expr where
-  codegen (StringLit s _) = undefined
+  codegen (StringLit s _) = do
+    msgNum <- getNextMsgNum
+    let directive = MSG msgNum s
+    addData directive
+    return [LDR W NoIdx R0 [MsgName msgNum]]
   codegen (IntLit i _)
     = return [LDR W NoIdx R0 [ImmLDRI i]]
   codegen (CharLit c _)
