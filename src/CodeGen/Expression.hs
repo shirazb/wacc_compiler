@@ -30,13 +30,10 @@ instance CodeGen Expr where
       bInt = if b then 1 else 0
   codegen (PairLiteral _)
     = return [Mov R0 (ImmI 0)]
-  -- we might need two different type size maps
-  -- for ldr and str
   codegen (IdentE (Ident name (Info t _)) _) = do
     let size = sizeFromType typeSizesLDR t
     (env, _) <- getStackInfo
     let offset = fromJust (Map.lookup name env)
-    traceM $ "Looking up: " ++ name ++ " The value I got is: " ++ show offset
     return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
   codegen (ExprArray ae _)
     = codegen ae
@@ -52,14 +49,14 @@ instance CodeGen Expr where
     instr <- codegen e
     let getLen = [LDR W NoIdx R0 [RegOp R0]]
     return $ instr ++ getLen
-  codegen (UnaryApp Ord (CharLit c _) _)
-    = return [Mov R0 (ImmC c)]
+  -- codegen (UnaryApp Ord (CharLit c _) _)
+  --   = return [Mov R0 (ImmC c)]
   codegen (UnaryApp Ord e _)
     = codegen e
-  codegen (BinaryApp op@(Logic _) e@(BoolLit _ _) (BoolLit _ _) _) = do
-    firstExpr <- codegen e
-    performLogicOp <- chooseBinOp op
-    return $ firstExpr ++ performLogicOp
+  -- codegen (BinaryApp op@(Logic _) e@(BoolLit b _) (BoolLit b' _) _) = do
+  --   firstExpr <- codegen e
+  --   performLogicOp <- chooseBinOp op
+  --   return $ firstExpr ++ performLogicOp
   codegen(BinaryApp op@(Logic _) e e' _) = do
     firstExpr <- codegen e
     performLogicOp <- generateLogicInstr e' op
@@ -156,8 +153,11 @@ logicNum op = case op of
 invertLogicalNum :: Int -> Int
 invertLogicalNum 0
   = 1
-invertLogicalNum _
+invertLogicalNum 1
   = 0
+invertLogicalNum _
+  = error "invertLogicalNum called with a value which is not in [0,1]"
+
 
 chooseBinOp :: BinOp -> CodeGenerator [Instr]
 chooseBinOp (Arith Add)

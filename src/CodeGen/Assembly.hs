@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
 {- This module provides the ARM Assembly data types, show instances and
 boilerplate code for our code generation output -}
 
@@ -9,6 +11,7 @@ import Control.Monad.State.Strict (get, put, lift, State, runState, StateT (..))
 import Data.Maybe (fromJust)
 import Control.Monad.Writer
 import Control.Monad.Identity
+import Control.Applicative
 import Debug.Trace
 
 {- LOCAL IMPORTS -}
@@ -21,7 +24,22 @@ data DataSegment = DataSeg [Data] Int deriving (Show)
 type Functions = [AssemblyFunc]
 type Env = Map.Map String Int
 -- type AssemblyProgram = (DataSegment, TextSegment, Functions)
+
 type CodeGenerator a = StateT Functions (StateT DataSegment (StateStackT (Env, Int) (State Int))) a
+
+
+-- instance (Monad m, Alternative m, MonadPlus m) => Alternative (StateStackT s m) where
+--   empty = lift empty
+--   s <|> s' = StateStackT $ unStateStackT s <|> unStateStackT s'
+-- --
+-- -- instance (Alternative Identity) => MonadPlus Identity where
+-- --   mzero = empty
+-- --   mplus i i' = i
+-- --
+-- --
+-- instance MonadPlus m => MonadPlus (StateStackT s m) where
+--   mzero = lift mzero
+--   s `mplus` s' = StateStackT $ unStateStackT s `mplus` unStateStackT s'
 
 
 class CodeGen a where
@@ -67,7 +85,6 @@ data AssemblyFunc
   = FuncA String [Instr] deriving (Show)
 
 -- include load immediate instructions
-
 data Size
   = B
   | W
@@ -123,8 +140,6 @@ data Op
   | MsgName Int
 
 {- Map from types to sizes -}
-
--- we meed to have separates ones
 
 typeSizes, typeSizesLDR, typeSizesSTR :: [(Type, Size)]
 typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, B),
@@ -204,6 +219,13 @@ getFunctionInfo
 putFunctionInfo :: Functions -> CodeGenerator ()
 putFunctionInfo
   = put
+
+addFunction :: AssemblyFunc -> CodeGenerator ()
+addFunction f@(FuncA s _) = do
+  fs <- getFunctionInfo
+  when (checkFuncDefined s fs) $
+    do putFunctionInfo (f : fs)
+       return ()
 
 getNextMsgNum :: CodeGenerator Int
 getNextMsgNum = do
