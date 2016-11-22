@@ -3,5 +3,6 @@
 *.hi
 Compiler
 dist/**
-*.wacc
 *.s
+*.wacc
+*.*
