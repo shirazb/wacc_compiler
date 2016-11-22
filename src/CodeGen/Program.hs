@@ -17,6 +17,7 @@ import Utilities.Definitions hiding (Env)
 
 genInstrFromAST :: AST -> CodeGenerator [Instr]
 genInstrFromAST (Program fs body) = do
+  mapM_ codegen fs
   let defMain = [Def "main"]
   pLr <- push [LR]
   let sizeOfscope = scopeSize body

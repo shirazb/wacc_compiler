@@ -12,6 +12,7 @@ import Data.Maybe (fromJust)
 import Control.Monad.Writer
 import Control.Monad.Identity
 import Control.Applicative
+import Data.List
 import Debug.Trace
 
 {- LOCAL IMPORTS -}
@@ -82,7 +83,12 @@ data Data
   =  MSG Int String
 
 data AssemblyFunc
-  = FuncA String [Instr] deriving (Show)
+  = FuncA String [Instr]
+
+instance Show AssemblyFunc where
+  show (FuncA name body)
+    = name ++ ":" ++ spaceX2 ++ "\n"
+      ++ space ++ intercalate ("\n" ++ space) (map show body)
 
 -- include load immediate instructions
 data Size
@@ -225,6 +231,7 @@ addFunction f@(FuncA s _) = do
   fs <- getFunctionInfo
   when (checkFuncDefined s fs) $
     do putFunctionInfo (f : fs)
+       traceM $ "We have added a new function succesffully"
        return ()
 
 getNextMsgNum :: CodeGenerator Int

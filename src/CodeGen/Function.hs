@@ -15,9 +15,12 @@ import Utilities.Definitions
 
 -- TODO: Avoid code duplication with genInNewScope. Only difference
 --       is that this does addParamsToEnv after save.
+-- pretty sure we have fogrgotten a lot of stuff
+-- in the functions
 instance CodeGen Func where
-  codegen (Func t ident (ParamList params _) body _) = do
+  codegen (Func t ident@(Ident name _) (ParamList params _) body _) = do
     saveStackInfo
+    saveLR <- push [LR]
     addParamsToEnv params 0
     let sizeOfScope = scopeSize body
     (env, _) <- getStackInfo
@@ -26,10 +29,16 @@ instance CodeGen Func where
     let createStackSpace = [SUB NF SP SP (ImmOp2 sizeOfScope)]
     instrs <- codegen body
     let clearStackSpace = [ADD NF SP SP (ImmOp2 sizeOfScope)]
+    restorePC <- pop [PC]
+    let listOfInstrs = saveLR ++ createStackSpace ++ instrs ++ clearStackSpace ++ restorePC
+    let newFunc = FuncA name listOfInstrs
+    addFunction newFunc
     restoreStackInfo
-    return $ createStackSpace ++ instrs ++ clearStackSpace
+    return []
 
 addParamsToEnv :: [Param] -> Int -> CodeGenerator ()
+addParamsToEnv [] _
+  = return ()
 addParamsToEnv (Param t (Ident name _) _ : ps) offsetToParam = do
   (env, offset)         <- getStackInfo
   let newEnv            = Map.insert name offsetToParam env

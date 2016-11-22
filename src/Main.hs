@@ -29,7 +29,7 @@ makeInstr s
     text ++ "\n" ++
     "\n" ++
     global ++ "\n" ++
-    textInstrs ++
+    textInstrs ++ "\n" ++
     funcInstrs
   where
     (Right (Just ((a,b),_))) =  runParser parseProgram s
@@ -37,7 +37,7 @@ makeInstr s
     ((((textSeg, functions), DataSeg dataSeg _), _), _) = genInstruction (genInstrFromAST annotated)
     textInstrs = showInstrs textSeg
     dataInstrs = showInstrs dataSeg
-    funcInstrs = showInstrs functions
+    funcInstrs = concatMap show functions
     showInstrs :: Show a => [a] -> String
     showInstrs = intercalate ("\n" ++ space) . map show
     dataSegment = case dataInstrs of
