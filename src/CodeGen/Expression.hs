@@ -167,6 +167,7 @@ genOverFlowFunction = do
   let newFunc = FuncA "p_throw_overflow_error" (loadData ++ branch)
   addFunction newFunc
   genPrintString
+  -- genRunTimeError
   return []
 
 genPrintString = do
@@ -195,7 +196,7 @@ chooseBinOp (Arith Sub)
 chooseBinOp (Arith Div)
   = return $ BL "p_check_divide_by_zero" : [BL "__aeabi_idiv"]
 chooseBinOp (Arith Mod)
-  = return $ BL "p_checK_divide_by_zero" : [BL "__aeabi_idivmod"]
+  = return $ BL "p_check_divide_by_zero" : [BL "__aeabi_idivmod"]
 chooseBinOp (Arith Mul)
    = return [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
 chooseBinOp (Logic op) = do

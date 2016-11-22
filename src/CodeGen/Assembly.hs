@@ -64,7 +64,9 @@ data Instr
   | BT Label   -- branch true, or "B". B constructor already in use.
   | BL Label
   | BEQ Label
+  | BLEQ Label
   | LDR Size Indexing Reg [Op]
+  | LDREQ Size Indexing Reg [Op]
   | STR Size Indexing Reg [Op]
   | SUB Flag Reg Reg Op2
   | ADD Flag Reg Reg Op2
@@ -79,6 +81,7 @@ data Instr
   | MOVGT Reg Op2
   | MOVEQ Reg Op2
   | MOVNE Reg Op2
+
 
 data Data
   =  MSG Int String
@@ -366,6 +369,8 @@ instance Show Instr where
     = "B " ++ l
   show (BL l)
     = "BL " ++ l
+  show (BLEQ l)
+    = "BLEQ " ++ l
   show (BEQ l)
     = "BEQ " ++ l
   show (LDR s NoIdx op [op'])
@@ -374,7 +379,15 @@ instance Show Instr where
       opRepresentation = case op' of
           RegOp _ -> "[" ++ show op' ++ "]"
           _       -> show op'
+  -- TODO: REFACTOR THIS INSANE AMOUNT OF DUPLICATIOn
+  show (LDREQ s NoIdx op [op'])
+    = "LDREQ" ++ show s ++ " " ++ show op ++ ", " ++ opRepresentation
+    where
+      opRepresentation = case op' of
+          RegOp _ -> "[" ++ show op' ++ "]"
   show (LDR s i op ops)
+    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+  show (LDREQ s i op ops)
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (STR s i op ops)
     = "STR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops

@@ -41,6 +41,7 @@ instance CodeGen AssignRHS where
           evalE ++
           [STR size NoIdx R0 [RegOp R3, ImmI offset]] ++
           moveRemaining
+  -- im pretty sure we have to  do a null ptr check?
   codegen (NewPairAssign e e' _) = do
     exprInstrForHeap <- storeInHeap e
     exprInstrForHeap' <- storeInHeap e'
