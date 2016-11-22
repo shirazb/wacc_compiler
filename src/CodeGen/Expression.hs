@@ -166,9 +166,22 @@ genOverFlowFunction = do
   let branch = [BL "p_throw_runtime_error"]
   let newFunc = FuncA "p_throw_overflow_error" (loadData ++ branch)
   addFunction newFunc
+  genPrintString
   return []
 
--- genPrintString = return
+genPrintString = do
+  saveLR <- push [LR]
+  let nextInstr = [LDR W NoIdx R1 [RegOp R0], ADD NF R2 R0 (ImmOp2 4)]
+  msgNum <- getNextMsgNum
+  let createMsg = MSG msgNum "%.*s\0"
+  addData createMsg
+  let loadMsg   = [LDR W NoIdx R0 [MsgName msgNum]]
+  let nextInstr1 = [ADD NF R0 R0 (ImmOp2 4), BL "printf", Mov R0 (ImmI 0), BL "fflush"]
+  restorePC <- pop [PC]
+  let newFunc = FuncA "p_print_string" (saveLR ++ nextInstr ++ loadMsg ++ nextInstr1 ++ restorePC)
+  addFunction newFunc
+  return []
+
 
 
 chooseBinOp :: BinOp -> CodeGenerator [Instr]

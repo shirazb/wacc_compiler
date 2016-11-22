@@ -34,7 +34,7 @@ makeInstr s
     ((((textSeg, functions), DataSeg dataSeg _), _), _) = genInstruction (genInstrFromAST annotated)
     textInstrs = showInstrs textSeg
     dataInstrs = intercalate "\n" (map show dataSeg)
-    funcInstrs = space ++ concatMap show functions
+    funcInstrs = space ++ intercalate ("\n" ++ space) (map show functions)
     showInstrs = intercalate "\n" . map showInstr
     dataSegment = case dataInstrs of
                    [] -> ""
