@@ -4,11 +4,22 @@
 # but do *not* change its name.
 puts "Compiling"
 
+dirname = "."
+
 filename = ARGV[0]
 
-output = `stack exec WACC-HASKELL #{filename}`
+Dir.chdir(dirname)
+
+splitFilename = filename.split("/")
+getFileName   = splitFilename[splitFilename.length - 1]
+file = getFileName.split(".wacc")[0]
+
+output = `stack exec WACC-HASKELL  #{filename}`
 exitCode = $?.exitstatus
 
-puts "Compilation Done"
+out_file = File.new(file + ".s", "w")
+out_file.puts(output)
+out_file.close
+
 
 exit (exitCode)
