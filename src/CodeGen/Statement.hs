@@ -39,16 +39,17 @@ instance CodeGen Stat where
       [BL "free"]
   -- NEEDS TO CALL STR FOR THE CORRECT NUMBER OF BYTES
   codegen (Assignment lhs rhs _) = do
+    --evalRHS <- codegen rhs
+    --saveRHS <- push [R0]
+    --evalLHS <- codegen lhs
+    --getRHS  <- pop [R1]
+    --let size = sizeOfLHS lhs
+    --let doAssignment = [STR size NoIdx R1 [RegOp R0]]
+    --return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
     evalRHS <- codegen rhs
-    saveRHS <- push [R0]
-    evalLHS <- codegen lhs
-    getRHS  <- pop [R1]
     let size = sizeOfLHS lhs
-    let doAssignment = [STR size NoIdx R1 [RegOp R0]]
-    return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
-
-   -- evalRHS <- codegen rhs
-   
+    let store = [STR size NoIdx R0 [RegOp SP]]
+    return $ evalRHS ++ store
 
   codegen (Return expr _)
     = codegen expr
