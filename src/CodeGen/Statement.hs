@@ -46,6 +46,10 @@ instance CodeGen Stat where
     let size = sizeOfLHS lhs
     let doAssignment = [STR size NoIdx R1 [RegOp R0]]
     return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
+
+   -- evalRHS <- codegen rhs
+   
+
   codegen (Return expr _)
     = codegen expr
   codegen (Exit expr _) = do
