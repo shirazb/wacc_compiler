@@ -241,7 +241,7 @@ addFunction :: AssemblyFunc -> CodeGenerator ()
 addFunction f@(FuncA s _) = do
   fs <- getFunctionInfo
   when (checkFuncDefined s fs) $
-    do putFunctionInfo (f : fs)
+    do putFunctionInfo (fs ++ [f])
        return ()
 
 getNextMsgNum :: CodeGenerator Int
