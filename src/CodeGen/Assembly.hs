@@ -215,12 +215,6 @@ sizeFromType :: [(Type, Size)] -> Type -> Size
 sizeFromType ts
   = fromJust . flip lookup ts
 
-showIndexing :: Indexing -> [Op] -> String
-showIndexing index ops = case index of
-    Pre   -> show ops ++ "!"
-    Post  -> show (init ops) ++ ", " ++ show (last ops)
-    NoIdx -> show ops
-
 getOffset :: Stat -> Int
 getOffset s
   = scopeSize s - sizeOfFirstType s
@@ -399,7 +393,8 @@ instance Show Instr where
       opRepresentation = case op' of
           RegOp _ -> "[" ++ show op' ++ "]"
           _       -> show op'
-  -- TODO: REFACTOR THIS INSANE AMOUNT OF DUPLICATIOn
+  -- TODO: REFACTOR THIS INSANE AMOUNT OF DUPLICATION
+
   show (LDREQ s NoIdx op [op'])
     = "LDREQ" ++ show s ++ " " ++ show op ++ ", " ++ opRepresentation
     where
@@ -443,6 +438,13 @@ instance Show Instr where
 
 showSizeIndexingRegOps s i op ops
   = show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+
+
+showIndexing :: Indexing -> [Op] -> String
+showIndexing index ops = case index of
+    Pre   -> show ops ++ "!"
+    Post  -> show (init ops) ++ ", " ++ show (last ops)
+    NoIdx -> show ops
 
 instance Show Flag where
   show S

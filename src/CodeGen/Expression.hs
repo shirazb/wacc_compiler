@@ -89,6 +89,7 @@ instance CodeGen ArrayElem where
     -- you do ldr r4 [sp, someoffset]
     -- its a minor optimisation
     loadIdentIntoR4 <- loadIdentAddr R4 ident
+
     -- now this is where most of the work happens
     -- this is the part of the code that generates the actual dereferences
     derefInnerTypes <- codeGenArrayElem t idxs
@@ -111,6 +112,7 @@ codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   -- now we generate the code to get the expressions
   -- we make the assumption that we store the value in register zero
   calcIdx          <- codegen i
+  errorHandling    <- branchWithFunc genCheckArrayBounds BL
   -- this is where we skip the length of the array
   -- in wacc the lenght of the array is always stored as the
   -- first element in the array
@@ -124,7 +126,7 @@ codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   derefInnerArray  <- codeGenArrayElem array is
   return $
     calcIdx          ++
-    -- check array index in bounds
+    errorHandling    ++ 
     skipDim          ++
     skipToElem       ++
     dereference      ++
@@ -134,8 +136,8 @@ codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
 loadIdentAddr :: Reg -> Ident -> CodeGenerator [Instr]
 loadIdentAddr r (Ident name info) = do
   (env, offsetSP) <- getStackInfo
-  let offsetToVar = fromJust (Map.lookup name env) + offsetSP
-  return [LDR W NoIdx r [RegOp SP, ImmLDRI offsetToVar]]
+  let offsetToVar = fromJust (Map.lookup name env)
+  return [LDR W NoIdx r [RegOp SP, ImmI offsetToVar]]
 
 generateLogicInstr :: Expr -> BinOp -> CodeGenerator [Instr]
 generateLogicInstr e (Logic op) = do
