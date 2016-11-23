@@ -92,19 +92,13 @@ instance CodeGen Stat where
       [CMP R0 (ImmOp2 1)] ++
       [BEQ loopBodyLabel]
   codegen (Print e _) = do
-    evalE  <- codegen e
+    evalE      <- codegen e
     printInstr <- getExprPrintInstr (typeOfExpr e)
-    return $
-      evalE ++
-      printInstr
+    return $ evalE ++ printInstr
   codegen (Println e p) = do
-    printE <- codegen (Print e p)
-    genPrintString
-    genPrintLn
---  printLn <- branchWithFunc genPrintLn BL
-    return $
-      printE ++
-      printLn
+    printE  <- codegen (Print e p)
+    printLn <- branchWithFunc genPrintLn BL
+    return $ printE ++ printLn
   codegen (Read (Var ident _) p) = do
     let e = IdentE ident p
     evalE <- codegen e

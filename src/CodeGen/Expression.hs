@@ -220,7 +220,7 @@ exprSize
 -- Returns type of the expression
 typeOfExpr :: Expr -> Type
 typeOfExpr e = case e of
-  StringLit{}    -> ArrayT 1 (BaseT BaseChar)
+  StringLit{}    -> BaseT BaseString -- ArrayT 1 (BaseT BaseChar)
   CharLit{}      -> BaseT BaseChar
   IntLit{}       -> BaseT BaseInt
   BoolLit{}      -> BaseT BaseBool
