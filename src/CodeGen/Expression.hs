@@ -13,6 +13,7 @@ import Debug.Trace
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import Utilities.Definitions
+import CodeGen.InBuiltFunctions
 
 instance CodeGen Expr where
   codegen (StringLit s _) = do
@@ -157,33 +158,6 @@ invertLogicalNum 1
   = 0
 invertLogicalNum _
   = error "invertLogicalNum called with a value which is not in [0,1]"
-
-genOverFlowFunction = do
-  msgNum <- getNextMsgNum
-  let genMsg = MSG msgNum "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n"
-  addData genMsg
-  let loadData = [LDR W NoIdx R0 [MsgName msgNum]]
-  let branch = [BL "p_throw_runtime_error"]
-  let newFunc = FuncA "p_throw_overflow_error" (loadData ++ branch)
-  addFunction newFunc
-  genPrintString
-  -- genRunTimeError
-  return []
-
-genPrintString = do
-  saveLR <- push [LR]
-  let nextInstr = [LDR W NoIdx R1 [RegOp R0], ADD NF R2 R0 (ImmOp2 4)]
-  msgNum <- getNextMsgNum
-  let createMsg = MSG msgNum "%.*s\0"
-  addData createMsg
-  let loadMsg   = [LDR W NoIdx R0 [MsgName msgNum]]
-  let nextInstr1 = [ADD NF R0 R0 (ImmOp2 4), BL "printf", Mov R0 (ImmI 0), BL "fflush"]
-  restorePC <- pop [PC]
-  let newFunc = FuncA "p_print_string" (saveLR ++ nextInstr ++ loadMsg ++ nextInstr1 ++ restorePC)
-  addFunction newFunc
-  return []
-
-
 
 chooseBinOp :: BinOp -> CodeGenerator [Instr]
 chooseBinOp (Arith Add) = do
