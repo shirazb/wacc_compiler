@@ -257,7 +257,9 @@ getNextMsgNum = do
 addData :: Data -> CodeGenerator ()
 addData d = do
   DataSeg ds num <- getData
-  putData (DataSeg (ds ++ [d]) num)
+  when (checkDataDefined d ds) $
+    do putData (DataSeg (ds ++ [d]) num)
+       return ()
 
 getData :: CodeGenerator DataSegment
 getData  = lift get
@@ -330,12 +332,15 @@ pop (x : xs) = do
   popRest <- pop xs
   return $ popX ++ popRest
 
--- POST: Returns true iff function is already defined
+-- POST: Returns true iff function is not defined
 checkFuncDefined :: String -> Functions -> Bool
 checkFuncDefined s fs
   = not $ or [ s == s' | FuncA s' _ <- fs ]
 
-
+-- POST: Returns true iff message is not defined
+checkDataDefined :: Data -> [Data] -> Bool
+checkDataDefined (MSG _ s) msgs
+  = not $ or [ s == s' | MSG _ s' <- msgs ]
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
 
@@ -395,15 +400,15 @@ instance Show Instr where
       opRepresentation = case op' of
           RegOp _ -> "[" ++ show op' ++ "]"
   show (LDR s i op ops)
-    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+    = "LDR" ++ showSizeIndexingRegOps s i op ops
   show (LDREQ s i op ops)
-    = "LDREQ" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+    = "LDREQ" ++ showSizeIndexingRegOps s i op ops
   show (LDRLT s i op ops)
-    = "LDRLT" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+    = "LDRLT" ++ showSizeIndexingRegOps s i op ops
   show (LDRCS s i op ops)
-    = "LDRCS" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+    = "LDRCS" ++ showSizeIndexingRegOps s i op ops
   show (STR s i op ops)
-    = "STR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+    = "STR" ++ showSizeIndexingRegOps s i op ops
   show (SUB fl op op' op2)
     = "SUB " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op2
   show (ADD fl op op' op2)
@@ -428,6 +433,9 @@ instance Show Instr where
     = "MOVNEQ " ++ show op ++  ", " ++ show op2
   show (Def l)
     = l ++ ":"
+
+showSizeIndexingRegOps s i op ops
+  = show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
 
 instance Show Flag where
   show S
