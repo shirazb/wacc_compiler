@@ -101,7 +101,7 @@ data BaseType
   | BaseChar
   | BaseString
   deriving (Eq)
-  
+
 instance Show BaseType where
   show BaseInt
     = "int"
