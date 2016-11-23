@@ -93,12 +93,12 @@ instance CodeGen Stat where
       printE ++
       [BL "p_print_ln"]
   codegen (Read (Var ident _) p) = do
-    -- what are you doing here?
     let e = IdentE ident p
     evalE <- codegen e
+    readInstr <- getExprReadInstr (typeOfExpr e)
     return $
       evalE ++
-      [BL ("p_read_" ++ ioFuncType e)]
+      readInstr
 
 -- Codegens the statement inside of a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
@@ -123,6 +123,12 @@ sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
   = sizeFromType typeSizesSTR (typeOfExpr expr)
 
+getExprReadInstr :: Type -> CodeGenerator [Instr]
+getExprReadInstr t = case t of
+  BaseT BaseChar   -> do {name <- genReadChar; return [BL name]}
+  BaseT BaseInt    -> do {name <- genReadInt; return [BL name]}
+  _                -> error "Read called with incorrect type in code-gen"
+
 getExprPrintInstr :: Type -> CodeGenerator [Instr]
 getExprPrintInstr t = case t of
   BaseT BaseChar   -> return [BL "putchar"]
@@ -130,16 +136,3 @@ getExprPrintInstr t = case t of
   BaseT BaseBool   -> do {name <- genPrintBool; return [BL name]}
   BaseT BaseString -> do {name <- genPrintString; return [BL name]}
   _                -> do {name <- genPrintReference; return [BL name]}
-
-
-ioFuncType = undefined
--- ioFuncType :: Expr -> CodeGenerator String
--- ioFuncType e = case t of
---   BaseT bt          -> show bt
---   PairT{}           -> do { genPrintReference; return reference}
---   ArrayT{}          -> do { genPrintReference; return reference}
---   Pair              -> do { genPrintReference; return reference}
---   _                 -> error $ "Statement.showPrintType: Cannot use expression of type \'" ++ show t ++ "\'"
---   where
---     t         = typeOfExpr e
---     reference = "reference"
