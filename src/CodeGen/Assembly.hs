@@ -395,6 +395,8 @@ instance Show Instr where
     = "LDRLT" ++ showSingleInstr s reg op'
   show (LDRCS s i reg [op'])
     = "LDRCS" ++ showSingleInstr s reg op'
+  show (LDRNE s o reg [op'])
+    = "LDRNE" ++ showSingleInstr s reg op'
   show (LDR s i reg ops)
     = "LDR" ++ showSizeIndexingRegOps s i reg ops
   show (LDREQ s i reg ops)
@@ -403,6 +405,8 @@ instance Show Instr where
     = "LDRLT" ++ showSizeIndexingRegOps s i reg ops
   show (LDRCS s i reg ops)
     = "LDRCS" ++ showSizeIndexingRegOps s i reg ops
+  show (LDRNE s i reg ops)
+    = "LDRNE" ++ showSizeIndexingRegOps s i reg ops
   show (STR s i reg ops)
     = "STR" ++ showSizeIndexingRegOps s i reg ops
   show (SUB fl reg op' op2)
@@ -426,7 +430,7 @@ instance Show Instr where
   show (MOVEQ reg op2)
     = "MOVEQ " ++ show reg ++ ", " ++ show op2
   show (MOVNE reg op2)
-    = "MOVNEQ " ++ show reg ++  ", " ++ show op2
+    = "MOVNE " ++ show reg ++  ", " ++ show op2
   show (Def l)
     = l ++ ":"
 
