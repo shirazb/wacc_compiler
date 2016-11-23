@@ -42,17 +42,18 @@ instance CodeGen Stat where
   -- NEEDS TO CALL STR FOR THE CORRECT NUMBER OF BYTES
   codegen (Assignment lhs rhs _) = do
     evalRHS <- codegen rhs
-    saveRHS <- push [R0]
     evalLHS <- codegen lhs
-    getRHS  <- pop [R1]
     let size = sizeOfLHS lhs
     let doAssignment = [STR size NoIdx R1 [RegOp R0]]
-    return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
+    return $ evalRHS ++ evalLHS ++ doAssignment
+
   codegen (Return expr _)
     = codegen expr
+
   codegen (Exit expr _) = do
     evalExpr <- codegen expr
     return $ evalExpr ++ [BL "exit"]
+
   codegen (If cond thenStat elseStat _) = do
     let evalCond       = [CMP R0 (ImmOp2 0)]
     elseStatLabel      <- getNextLabel
@@ -90,9 +91,10 @@ instance CodeGen Stat where
       printInstr
   codegen (Println e p) = do
     printE <- codegen (Print e p)
+    printLn <- branchWithFunc genPrintLn BL
     return $
       printE ++
-      [BL "p_print_ln"]
+      printLn
   codegen (Read (Var ident _) p) = do
     let e = IdentE ident p
     evalE <- codegen e
@@ -123,6 +125,8 @@ sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
   = sizeFromType typeSizesSTR t
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
   = sizeFromType typeSizesSTR (typeOfExpr expr)
+sizeOfLHS _
+  = error "are we hitting an error case in sizeoflhs"
 
 getFreeExprInstr :: Type -> CodeGenerator [Instr]
 getFreeExprInstr t = case t of
