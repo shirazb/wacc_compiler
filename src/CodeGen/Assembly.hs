@@ -67,6 +67,7 @@ data Instr
   | BLEQ Label
   | LDR Size Indexing Reg [Op]
   | LDREQ Size Indexing Reg [Op]
+  | LDRNE Size Indexing Reg [Op]
   | STR Size Indexing Reg [Op]
   | SUB Flag Reg Reg Op2
   | ADD Flag Reg Reg Op2
