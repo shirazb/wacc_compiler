@@ -12,6 +12,7 @@ import CodeGen.Assembly
 import CodeGen.Expression
 import CodeGen.AssignLHS
 import CodeGen.AssignRHS
+import CodeGen.InBuiltFunctions
 import Utilities.Definitions
 import Debug.Trace
 
@@ -82,15 +83,17 @@ instance CodeGen Stat where
       [BEQ loopBodyLabel]
   codegen (Print e _) = do
     evalE  <- codegen e
+    printInstr <- getExprPrintInstr (typeOfExpr e)
     return $
       evalE ++
-      [BL ("p_print_" ++ ioFuncType e)]
+      printInstr
   codegen (Println e p) = do
     printE <- codegen (Print e p)
     return $
       printE ++
       [BL "p_print_ln"]
   codegen (Read (Var ident _) p) = do
+    -- what are you doing here?
     let e = IdentE ident p
     evalE <- codegen e
     return $
@@ -120,15 +123,23 @@ sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
   = sizeFromType typeSizesSTR (typeOfExpr expr)
 
--- Shows the correct IO function name to for the type of the expression
-ioFuncType :: Expr -> String
-ioFuncType e = case t of
-  BaseT BaseString  -> reference
-  BaseT bt          -> show bt
-  PairT{}           -> reference
-  ArrayT{}          -> reference
-  Pair              -> reference
-  _                 -> error $ "Statement.showPrintType: Cannot use expression of type \'" ++ show t ++ "\'"
-  where
-    t         = typeOfExpr e
-    reference = "reference"
+getExprPrintInstr :: Type -> CodeGenerator [Instr]
+getExprPrintInstr t = case t of
+  BaseT BaseChar   -> return [BL "putchar"]
+  BaseT BaseInt    -> do {name <- genPrintInt; return [BL name]}
+  BaseT BaseBool   -> do {name <- genPrintBool; return [BL name]}
+  BaseT BaseString -> do {name <- genPrintString; return [BL name]}
+  _                -> do {name <- genPrintReference; return [BL name]}
+
+
+ioFuncType = undefined
+-- ioFuncType :: Expr -> CodeGenerator String
+-- ioFuncType e = case t of
+--   BaseT bt          -> show bt
+--   PairT{}           -> do { genPrintReference; return reference}
+--   ArrayT{}          -> do { genPrintReference; return reference}
+--   Pair              -> do { genPrintReference; return reference}
+--   _                 -> error $ "Statement.showPrintType: Cannot use expression of type \'" ++ show t ++ "\'"
+--   where
+--     t         = typeOfExpr e
+--     reference = "reference"
