@@ -156,6 +156,19 @@ genFreePair = do
     freePair ++
     ret
 
+genCheckDivideByZero :: CodeGenerator ()
+genCheckDivideByZero = do
+  saveLR <- push [LR]
+  msgNum <- genMsg' "DivideByZeroError: divide or modulo by zero\n\0"
+  let compare = [
+        CMP R1 (ImmOp2 0),
+        LDREQ W NoIdx R0 [MsgName negMsgNum],
+        BLEQ "p_throw_runtime_error"]
+  ret <- pop [PC]
+  genFunc "p_check_divide_by_zero" $
+      saveLR  ++
+      compare ++
+      ret
 
 {- Utility Functions -}
 
