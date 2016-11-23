@@ -357,7 +357,7 @@ instance Show Data where
   show (MSG i s)
     = space ++ "msg_"  ++ show i   ++ ":\n" ++
       spaceGen 3 ++ ".word  " ++ show (length s) ++ "\n" ++
-      spaceGen 3 ++ ".ascii  " ++ show s
+      spaceGen 3 ++ ".ascii  " ++ "\"" ++ s ++ "\""
 
 instance Show Size where
   show B = "B"

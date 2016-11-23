@@ -8,7 +8,7 @@ import CodeGen.Assembly
 
 genNullPtrFunc :: CodeGenerator String
 genNullPtrFunc = do
-  msgNum <- genMsg "NullReferenceError: dereference a null reference\n"
+  msgNum <- genMsg "NullReferenceError: dereference a null reference\n\\0"
   saveLR <- push [LR]
   let checkForNullPtr = [CMP R0 (ImmOp2 0)]
   let ldrMsg = [LDREQ W NoIdx R0 [MsgName msgNum], BLEQ "p_throw_runtime_error"]
@@ -45,7 +45,7 @@ genPrintLn = do
 
 genPrintReference :: CodeGenerator String
 genPrintReference = do
-  msgNum <- genMsg "%p"
+  msgNum <- genMsg "%p\\0"
   saveLR <- push [LR]
   let ldrMsg = [Mov R1 (RegOp R0), LDR W NoIdx R0 [MsgName msgNum]]
   restorePC <- pop [PC]
@@ -54,7 +54,7 @@ genPrintReference = do
 
 genPrintInt :: CodeGenerator String
 genPrintInt = do
-  msgNum <- genMsg "%d"
+  msgNum <- genMsg "%d\\0"
   saveLR <- push [LR]
   let ldrMsg = [Mov R1 (RegOp R0), LDR W NoIdx R0 [MsgName msgNum]]
   restoreLR <- pop [PC]
@@ -63,8 +63,8 @@ genPrintInt = do
 
 genPrintBool :: CodeGenerator String
 genPrintBool = do
-  msgNum <-genMsg "true"
-  msgNum' <- genMsg "false"
+  msgNum <-genMsg "true\\0"
+  msgNum' <- genMsg "false\\0"
   saveLR <- push [LR]
   let chooseMsg = [CMP R0 (ImmOp2 0), LDRNE W NoIdx R0 [MsgName msgNum], LDREQ W NoIdx R0 [MsgName msgNum']]
   restoreLR <- pop [PC]
@@ -75,7 +75,7 @@ genPrintString :: CodeGenerator String
 genPrintString = do
   saveLR <- push [LR]
   let nextInstr = [LDR W NoIdx R1 [RegOp R0], ADD NF R2 R0 (ImmOp2 4)]
-  msgNum <- genMsg "%.*s"
+  msgNum <- genMsg "%.*s\\0"
   let loadMsg   = [LDR W NoIdx R0 [MsgName msgNum]]
   restorePC <- pop [PC]
   genFunc "p_print_string" (saveLR ++ nextInstr ++ loadMsg ++ genPrintF ++ genFflush ++ restorePC)
@@ -84,12 +84,12 @@ genPrintString = do
 genCheckArrayBounds :: CodeGenerator String
 genCheckArrayBounds = do
   saveLR    <- push [LR]
-  negMsgNum <- genMsg "ArrayIndexOutOfBoundsError: negative index\n\0"
+  negMsgNum <- genMsg "ArrayIndexOutOfBoundsError: negative index\n\\0"
   let checkTooLow = [
         CMP R0 (ImmOp2 0),
         LDRLT W NoIdx R0 [MsgName negMsgNum],
         BLLT "p_throw_runtime_error"]
-  largeMsgNum <- genMsg "ArrayIndexOutOfBoundsError: index too large\n\0"
+  largeMsgNum <- genMsg "ArrayIndexOutOfBoundsError: index too large\n\\0"
   let checkTooHigh = [
         LDR W NoIdx R1 [RegOp R4], CMP R0 (RegOp2 R1),
         LDRCS W NoIdx R0 [MsgName largeMsgNum],
@@ -120,7 +120,7 @@ genReadInt = do
 genReadChar :: CodeGenerator String
 genReadChar = do
   saveLR <- push [LR]
-  msgNum <- genMsg " %c"
+  msgNum <- genMsg "%c\\0"
   ret    <- pop [PC]
   genFunc "p_read_char" $
       saveLR ++
@@ -167,7 +167,7 @@ genFreePair = do
 genCheckDivideByZero :: CodeGenerator String
 genCheckDivideByZero = do
   saveLR <- push [LR]
-  msgNum <- genMsg "DivideByZeroError: divide or modulo by zero\n\0"
+  msgNum <- genMsg "DivideByZeroError: divide or modulo by zero\n\\0"
   let compare = [
         CMP R1 (ImmOp2 0),
         LDREQ W NoIdx R0 [MsgName msgNum],
