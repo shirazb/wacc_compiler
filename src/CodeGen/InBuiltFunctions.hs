@@ -106,7 +106,7 @@ genCheckArrayBounds = do
 genReadInt :: CodeGenerator String
 genReadInt = do
   saveLR <- push [LR]
-  msgNum <- genMsg "%d"
+  msgNum <- genMsg "%d\\0"
   ret    <- pop [PC]
   genFunc "p_read_int" $
       saveLR ++
