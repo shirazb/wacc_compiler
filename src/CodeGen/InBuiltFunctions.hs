@@ -36,7 +36,7 @@ genOverFlowFunction = do
 
 genPrintLn :: CodeGenerator String
 genPrintLn = do
-  msgNum  <- genMsg ""
+  msgNum  <- genMsg "\\0"
   saveLR <- push [LR]
   let ldrMsg = [LDR W NoIdx R0 [MsgName msgNum]]
   restorePC <- pop [PC]
