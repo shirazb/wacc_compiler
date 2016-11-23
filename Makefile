@@ -1,8 +1,6 @@
 all:
-	cabal update
-	cabal configure
-	cabal build
+	stack build
 
 clean:
-	cabal clean
+	stack clean
 	rm *.s
