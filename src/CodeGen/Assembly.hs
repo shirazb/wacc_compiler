@@ -241,7 +241,7 @@ addFunction :: AssemblyFunc -> CodeGenerator ()
 addFunction f@(FuncA s _) = do
   fs <- getFunctionInfo
   when (checkFuncDefined s fs) $
-    do putFunctionInfo (f : fs)
+    do putFunctionInfo (fs ++ [f]) -- f:fs
        return ()
 
 getNextMsgNum :: CodeGenerator Int
@@ -417,6 +417,8 @@ instance Show Instr where
     = "EOR " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op''
   show (RSBS reg op' op'')
     = "RSBS " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op''
+  show (SMULL r0 r1 r2 r3)
+    = "SMULL " ++ show r0 ++ ", " ++ show r1 ++ ", " ++ show r2 ++ ", " ++ show r3
   show (CMP reg op2)
     = "CMP " ++ show reg ++ ", " ++ show op2
   show (MOVLE reg op2)

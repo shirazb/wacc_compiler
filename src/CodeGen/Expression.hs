@@ -35,7 +35,6 @@ instance CodeGen Expr where
     let size = sizeFromType typeSizesLDR t
     (env, _) <- getStackInfo
     let offset = fromJust (Map.lookup name env)
-    traceM $ "The offset for the variable is " ++ show offset
     return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
   codegen (ExprArray ae _)
     = codegen ae
@@ -45,7 +44,6 @@ instance CodeGen Expr where
     return $ instr ++ notE
   codegen (UnaryApp Neg e _) = do
     instr <- codegen e
-    traceM "do we actually get in to here?"
     let negE = [RSBS R0 R0 (ImmI 0)]
     return $ instr ++ negE
   codegen (UnaryApp Len e _) = do
@@ -66,9 +64,7 @@ instance CodeGen Expr where
     performLogicOp <- generateLogicInstr e' op
     return $ firstExpr ++ performLogicOp
   codegen (BinaryApp op e e' _) = do
-    traceM $ "What is the expression: " ++ show e
     instr     <- codegen e
-    traceM $ "Show the instruction here " ++ show instr
     saveFirst <- push [R0]
     instr1    <- codegen e'
     let evaluate = [Mov R1 (RegOp R0)]

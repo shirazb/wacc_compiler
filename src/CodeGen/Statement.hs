@@ -21,10 +21,8 @@ instance CodeGen Stat where
     instr <- codegen rhs
     (map', offset) <- getStackInfo
     let newOffset = offset - typeSize t
-    traceM $ "The identifier is " ++ name ++ " the offset is: " ++ show newOffset
     let newMap = Map.insert name newOffset map'
     let chckLookUp  = fromJust $ Map.lookup name newMap
-    traceM $ "The offset that is store for " ++ name ++ " offset:" ++ show chckLookUp
     putStackInfo (newMap, newOffset)
     let str = [STR (sizeFromType typeSizesSTR t) NoIdx R0 [RegOp SP, ImmI newOffset]]
     return $ instr ++ str
