@@ -127,6 +127,36 @@ genReadChar = do
       [BL "scanf"] ++
       ret
 
+genFreePair :: CodeGenerator ()
+genFreePair = do
+  saveLR <- push [LR]
+  msgNum <- genMsg' "msg45"
+  let checkNotNull = [
+        CMP R0 (ImmOp2 0),
+        LDREQ W NoIdx R0 [MsgName msgNum],
+        BEQ "p_throw_runtime_error"]
+  savePairAddr <- push [R0]
+  let freeFst = [
+        LDR W NoIdx R0 [RegOp R0],
+        BL "free"]
+  let freeSnd = [
+        LDR W NoIdx R0 [RegOp SP],
+        LDR W NoIdx R0 [RegOp R0, ImmI 4],
+        BL "free"]
+  getPairAddr <- pop [R0]
+  let freePair = [BL "free"]
+  ret    <- pop [PC]
+  genFunc "p_free_pair" $
+    saveLR ++
+    checkNotNull ++
+    savePairAddr ++
+    freeFst ++
+    freeSnd ++
+    getPairAddr ++
+    freePair ++
+    ret
+
+
 {- Utility Functions -}
 
 -- Preferred this instead - Shiraz
