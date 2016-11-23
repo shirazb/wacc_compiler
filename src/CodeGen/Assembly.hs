@@ -394,6 +394,7 @@ instance Show Instr where
     where
       opRepresentation = case op' of
           RegOp _ -> "[" ++ show op' ++ "]"
+          _      -> show op'
   show (LDR s i op ops)
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (LDREQ s i op ops)
