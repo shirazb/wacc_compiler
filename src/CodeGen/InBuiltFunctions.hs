@@ -132,7 +132,7 @@ genReadChar = do
   return "p_read_char"
 
 --  does gen free pair actually generatea
--- what does it actually do?
+--  what does it actually do?
 genFreePair :: CodeGenerator String
 genFreePair = do
   saveLR <- push [LR]
@@ -193,6 +193,11 @@ genFunc :: String -> [Instr] -> CodeGenerator ()
 genFunc name body = do
   let newFunc = FuncA name body
   addFunction newFunc
+
+branchWithFunc :: CodeGenerator String -> (String -> Instr) -> CodeGenerator [Instr]
+branchWithFunc func branch = do
+  name <- func
+  return [branch name]
 
 genPuts, genFflush, genPrintF :: [Instr]
 genPuts

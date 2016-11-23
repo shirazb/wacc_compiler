@@ -67,6 +67,8 @@ data Instr
   | BLEQ Label
   | BLLT Label
   | BLCS Label
+  | BLVS Label
+  | BLNE Label
   | LDR Size Indexing Reg [Op]
   | LDREQ Size Indexing Reg [Op]
   | LDRNE Size Indexing Reg [Op]
@@ -387,6 +389,10 @@ instance Show Instr where
     = "BLLT " ++ show l
   show (BLCS l)
     = "BLCS " ++ show l
+  show (BLNE l)
+    = "BLNE " ++ show l
+  show (BLVS l)
+    = "BLVS " ++ show l
   show (LDR s NoIdx op [op'])
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ opRepresentation
     where

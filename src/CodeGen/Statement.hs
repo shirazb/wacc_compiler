@@ -35,9 +35,10 @@ instance CodeGen Stat where
     = return []
   codegen (Free e _) = do
     evalE <- codegen e
+    freeInstr <- getFreeExprInstr (typeOfExpr e)
     return $
       evalE ++
-      [BL "free"]
+      freeInstr
   -- NEEDS TO CALL STR FOR THE CORRECT NUMBER OF BYTES
   codegen (Assignment lhs rhs _) = do
     evalRHS <- codegen rhs
@@ -123,16 +124,21 @@ sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
   = sizeFromType typeSizesSTR (typeOfExpr expr)
 
+getFreeExprInstr :: Type -> CodeGenerator [Instr]
+getFreeExprInstr t = case t of
+  PairT _ _ -> branchWithFunc genFreePair BL
+  _         -> return [BL "free"]
+
 getExprReadInstr :: Type -> CodeGenerator [Instr]
 getExprReadInstr t = case t of
-  BaseT BaseChar   -> do {name <- genReadChar; return [BL name]}
-  BaseT BaseInt    -> do {name <- genReadInt; return [BL name]}
+  BaseT BaseChar   -> branchWithFunc genReadChar BL
+  BaseT BaseInt    -> branchWithFunc genReadInt BL
   _                -> error "Read called with incorrect type in code-gen"
 
 getExprPrintInstr :: Type -> CodeGenerator [Instr]
 getExprPrintInstr t = case t of
   BaseT BaseChar   -> return [BL "putchar"]
-  BaseT BaseInt    -> do {name <- genPrintInt; return [BL name]}
-  BaseT BaseBool   -> do {name <- genPrintBool; return [BL name]}
-  BaseT BaseString -> do {name <- genPrintString; return [BL name]}
-  _                -> do {name <- genPrintReference; return [BL name]}
+  BaseT BaseInt    -> branchWithFunc genPrintInt BL
+  BaseT BaseBool   -> branchWithFunc genPrintBool BL
+  BaseT BaseString -> branchWithFunc genPrintString BL
+  _                -> branchWithFunc genPrintReference BL
