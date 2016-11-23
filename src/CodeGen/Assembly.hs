@@ -406,7 +406,7 @@ instance Show Instr where
   show (STR s i reg ops)
     = "STR" ++ showSizeIndexingRegOps s i reg ops
   show (SUB fl reg op' op2)
-    = "SUB " ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op2
+    = "SUB" ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op2
   show (ADD fl reg op' op2)
     = "ADD" ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op2
   show (EOR reg op' op'')
