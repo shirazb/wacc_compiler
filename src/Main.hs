@@ -17,9 +17,16 @@ import CodeGen.Statement
 import Parser.Statement
 import CodeGen.Program
 
+boolAssignment = "begin bool b = false ; b = true end"
+
 printInstrs :: AST -> IO ()
 printInstrs
   = putStrLn . makeInstr
+
+debug s = printInstrs ast
+  where
+  ast                       = annotateAST a
+  (Right (Just ((a,b), _))) = runParser parseProgram s
 
 makeInstr :: AST -> String
 makeInstr a

@@ -13,8 +13,7 @@ import CodeGen.InBuiltFunctions
 instance CodeGen PairElem where
   codegen pairElem@(PairElem pos e _) = do
     instr1       <- codegen e
-    genNullPtrFunc
-    let nullptr  = [BL "p_check_null_pointer"]
+    nullptr      <- branchWithFunc genNullPtrFunc BL
     let posInstr = case pos of
                        Fst -> [LDR W NoIdx R0 [RegOp R0]]
                        Snd -> [LDR W NoIdx R0 [RegOp R0, ImmI 4]]

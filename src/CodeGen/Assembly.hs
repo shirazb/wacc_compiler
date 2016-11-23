@@ -67,6 +67,8 @@ data Instr
   | BLEQ Label
   | BLLT Label
   | BLCS Label
+  | BLVS Label
+  | BLNE Label
   | LDR Size Indexing Reg [Op]
   | LDREQ Size Indexing Reg [Op]
   | LDRNE Size Indexing Reg [Op]
@@ -213,12 +215,6 @@ sizeFromType :: [(Type, Size)] -> Type -> Size
 sizeFromType ts
   = fromJust . flip lookup ts
 
-showIndexing :: Indexing -> [Op] -> String
-showIndexing index ops = case index of
-    Pre   -> show ops ++ "!"
-    Post  -> show (init ops) ++ ", " ++ show (last ops)
-    NoIdx -> show ops
-
 getOffset :: Stat -> Int
 getOffset s
   = scopeSize s - sizeOfFirstType s
@@ -257,7 +253,9 @@ getNextMsgNum = do
 addData :: Data -> CodeGenerator ()
 addData d = do
   DataSeg ds num <- getData
-  putData (DataSeg (ds ++ [d]) num)
+  when (checkDataDefined d ds) $
+    do putData (DataSeg (ds ++ [d]) num)
+       return ()
 
 getData :: CodeGenerator DataSegment
 getData  = lift get
@@ -330,12 +328,15 @@ pop (x : xs) = do
   popRest <- pop xs
   return $ popX ++ popRest
 
--- POST: Returns true iff function is already defined
+-- POST: Returns true iff function is not defined
 checkFuncDefined :: String -> Functions -> Bool
 checkFuncDefined s fs
   = not $ or [ s == s' | FuncA s' _ <- fs ]
 
-
+-- POST: Returns true iff message is not defined
+checkDataDefined :: Data -> [Data] -> Bool
+checkDataDefined (MSG _ s) msgs
+  = not $ or [ s == s' | MSG _ s' <- msgs ]
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
 
@@ -382,52 +383,71 @@ instance Show Instr where
     = "BLLT " ++ show l
   show (BLCS l)
     = "BLCS " ++ show l
-  show (LDR s NoIdx op [op'])
-    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ opRepresentation
-    where
-      opRepresentation = case op' of
-          RegOp _ -> "[" ++ show op' ++ "]"
-          _       -> show op'
-  -- TODO: REFACTOR THIS INSANE AMOUNT OF DUPLICATIOn
-  show (LDREQ s NoIdx op [op'])
-    = "LDREQ" ++ show s ++ " " ++ show op ++ ", " ++ opRepresentation
-    where
-      opRepresentation = case op' of
-          RegOp _ -> "[" ++ show op' ++ "]"
-  show (LDR s i op ops)
-    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
-  show (LDREQ s i op ops)
-    = "LDREQ" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
-  show (LDRLT s i op ops)
-    = "LDRLT" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
-  show (LDRCS s i op ops)
-    = "LDRCS" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
-  show (STR s i op ops)
-    = "STR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
-  show (SUB fl op op' op2)
-    = "SUB " ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op2
-  show (ADD fl op op' op2)
-    = "ADD" ++ show fl ++ " " ++ show op ++ ", " ++ show op' ++ ", " ++ show op2
-  show (EOR op op' op'')
-    = "EOR " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
-  show (RSBS op op' op'')
-    = "RSBS " ++ show op ++ ", " ++ show op' ++ ", " ++ show op''
-  show (CMP op op2)
-    = "CMP " ++ show op ++ ", " ++ show op2
-  show (MOVLE op op2)
-    = "MOVLE " ++ show op ++ ", " ++ show op2
-  show (MOVGT op op2)
-    = "MOVGT " ++ show op ++ ", " ++ show op2
-  show (MOVLT op op2)
-    = "MOVLT " ++ show op ++ ", " ++ show op2
-  show (MOVGE op op2)
-    = "MOVGE " ++ show op ++ ", " ++ show op2
-  show (MOVEQ op op2)
-    = "MOVEQ " ++ show op ++ ", " ++ show op2
-  show (MOVNE op op2)
-    = "MOVNEQ " ++ show op ++  ", " ++ show op2
+  show (BLNE l)
+    = "BLNE " ++ show l
+  show (BLVS l)
+    = "BLVS " ++ show l
+  show (LDR s NoIdx reg [op'])
+    = "LDR" ++ showSingleInstr s reg op'
+  show (LDREQ s NoIdx reg [op'])
+    = "LDREQ" ++ showSingleInstr s reg op'
+  show (LDRLT s NoIdx reg [op'])
+    = "LDRLT" ++ showSingleInstr s reg op'
+  show (LDRCS s i reg [op'])
+    = "LDRCS" ++ showSingleInstr s reg op'
+  show (LDR s i reg ops)
+    = "LDR" ++ showSizeIndexingRegOps s i reg ops
+  show (LDREQ s i reg ops)
+    = "LDREQ" ++ showSizeIndexingRegOps s i reg ops
+  show (LDRLT s i reg ops)
+    = "LDRLT" ++ showSizeIndexingRegOps s i reg ops
+  show (LDRCS s i reg ops)
+    = "LDRCS" ++ showSizeIndexingRegOps s i reg ops
+  show (STR s i reg ops)
+    = "STR" ++ showSizeIndexingRegOps s i reg ops
+  show (SUB fl reg op' op2)
+    = "SUB " ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op2
+  show (ADD fl reg op' op2)
+    = "ADD" ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op2
+  show (EOR reg op' op'')
+    = "EOR " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op''
+  show (RSBS reg op' op'')
+    = "RSBS " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op''
+  show (CMP reg op2)
+    = "CMP " ++ show reg ++ ", " ++ show op2
+  show (MOVLE reg op2)
+    = "MOVLE " ++ show reg ++ ", " ++ show op2
+  show (MOVGT reg op2)
+    = "MOVGT " ++ show reg ++ ", " ++ show op2
+  show (MOVLT reg op2)
+    = "MOVLT " ++ show reg ++ ", " ++ show op2
+  show (MOVGE reg op2)
+    = "MOVGE " ++ show reg ++ ", " ++ show op2
+  show (MOVEQ reg op2)
+    = "MOVEQ " ++ show reg ++ ", " ++ show op2
+  show (MOVNE reg op2)
+    = "MOVNEQ " ++ show reg ++  ", " ++ show op2
   show (Def l)
     = l ++ ":"
+
+showSizeIndexingRegOps :: Size -> Indexing -> Reg -> [Op] -> String
+showSizeIndexingRegOps s i reg ops
+  = show s ++ " " ++ show reg ++ ", " ++ showIndexing i ops
+
+showIndexing :: Indexing -> [Op] -> String
+showIndexing index ops = case index of
+    Pre   -> show ops ++ "!"
+    Post  -> show (init ops) ++ ", " ++ show (last ops)
+    NoIdx -> show ops
+
+showSingleInstr :: Size -> Reg -> Op -> String
+showSingleInstr s reg op'
+  = show s ++ " " ++ show reg ++ ", " ++ showSingleOp op'
+
+showSingleOp :: Op -> String
+showSingleOp op = case op of
+  RegOp _ -> "[" ++ show op ++ "]"
+  _       -> show op
 
 instance Show Flag where
   show S

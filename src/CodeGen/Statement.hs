@@ -34,9 +34,10 @@ instance CodeGen Stat where
     = return []
   codegen (Free e _) = do
     evalE <- codegen e
+    freeInstr <- getFreeExprInstr (typeOfExpr e)
     return $
       evalE ++
-      [BL "free"]
+      freeInstr
   -- NEEDS TO CALL STR FOR THE CORRECT NUMBER OF BYTES
   codegen (Assignment lhs rhs _) = do
     --evalRHS <- codegen rhs
@@ -50,12 +51,17 @@ instance CodeGen Stat where
     let size = sizeOfLHS lhs
     let store = [STR size NoIdx R0 [RegOp SP]]
     return $ evalRHS ++ store
+--    evalLHS <- codegen lhs
+--    let doAssignment = [STR size NoIdx R1 [RegOp R0]]
+--    return $ evalRHS ++ evalLHS ++ doAssignment
 
   codegen (Return expr _)
     = codegen expr
+
   codegen (Exit expr _) = do
     evalExpr <- codegen expr
     return $ evalExpr ++ [BL "exit"]
+
   codegen (If cond thenStat elseStat _) = do
     let evalCond       = [CMP R0 (ImmOp2 0)]
     elseStatLabel      <- getNextLabel
@@ -87,22 +93,25 @@ instance CodeGen Stat where
       [BEQ loopBodyLabel]
   codegen (Print e _) = do
     evalE  <- codegen e
+    printInstr <- getExprPrintInstr (typeOfExpr e)
     return $
       evalE ++
-      [BL ("p_print_" ++ ioFuncType e)]
+      printInstr
   codegen (Println e p) = do
     printE <- codegen (Print e p)
     genPrintString
     genPrintLn
+--  printLn <- branchWithFunc genPrintLn BL
     return $
       printE ++
-      [BL "p_print_ln"]
+      printLn
   codegen (Read (Var ident _) p) = do
     let e = IdentE ident p
     evalE <- codegen e
+    readInstr <- getExprReadInstr (typeOfExpr e)
     return $
       evalE ++
-      [BL ("p_read_" ++ ioFuncType e)]
+      readInstr
 
 -- Codegens the statement inside of a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
@@ -126,16 +135,24 @@ sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
   = sizeFromType typeSizesSTR t
 sizeOfLHS (PairDeref (PairElem _ expr _) _)
   = sizeFromType typeSizesSTR (typeOfExpr expr)
+sizeOfLHS _
+  = error "are we hitting an error case in sizeoflhs"
 
--- Shows the correct IO function name to for the type of the expression
-ioFuncType :: Expr -> String
-ioFuncType e = case t of
-  BaseT BaseString  -> reference
-  BaseT bt          -> show bt
-  PairT{}           -> reference
-  ArrayT{}          -> reference
-  Pair              -> reference
-  _                 -> error $ "Statement.showPrintType: Cannot use expression of type \'" ++ show t ++ "\'"
-  where
-    t         = typeOfExpr e
-    reference = "reference"
+getFreeExprInstr :: Type -> CodeGenerator [Instr]
+getFreeExprInstr t = case t of
+  PairT _ _ -> branchWithFunc genFreePair BL
+  _         -> return [BL "free"]
+
+getExprReadInstr :: Type -> CodeGenerator [Instr]
+getExprReadInstr t = case t of
+  BaseT BaseChar   -> branchWithFunc genReadChar BL
+  BaseT BaseInt    -> branchWithFunc genReadInt BL
+  _                -> error "Read called with incorrect type in code-gen"
+
+getExprPrintInstr :: Type -> CodeGenerator [Instr]
+getExprPrintInstr t = case t of
+  BaseT BaseChar   -> return [BL "putchar"]
+  BaseT BaseInt    -> branchWithFunc genPrintInt BL
+  BaseT BaseBool   -> branchWithFunc genPrintBool BL
+  BaseT BaseString -> branchWithFunc genPrintString BL
+  _                -> branchWithFunc genPrintReference BL
