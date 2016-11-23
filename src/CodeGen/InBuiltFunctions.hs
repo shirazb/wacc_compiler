@@ -89,7 +89,7 @@ genCheckArrayBounds = do
         CMP R0 (ImmOp2 0),
         LDRLT W NoIdx R0 [MsgName negMsgNum],
         BLLT "p_throw_runtime_error"]
-  largeMsgNum <- genMsg' "ArrayIndexOutOfBoundsError: idex too large\n\0"
+  largeMsgNum <- genMsg' "ArrayIndexOutOfBoundsError: index too large\n\0"
   let checkTooHigh = [
         LDR W NoIdx R1 [RegOp R4], CMP R0 (RegOp2 R1),
         LDRCS W NoIdx R0 [MsgName largeMsgNum],
