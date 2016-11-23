@@ -17,21 +17,19 @@ import CodeGen.Statement
 import Parser.Statement
 import CodeGen.Program
 
-printInstrs :: String -> IO ()
+printInstrs :: AST -> IO ()
 printInstrs
   = putStrLn . makeInstr
 
-makeInstr :: String -> String
-makeInstr s
+makeInstr :: AST -> String
+makeInstr a
   = space ++ dataSegment ++ "\n"   ++
     text                 ++ "\n\n" ++
     global               ++ "\n"   ++
     textInstrs           ++ "\n"   ++
     funcInstrs
   where
-    (Right (Just ((a,b),_))) =  runParser parseProgram s
-    annotated  = annotateAST a
-    ((((textSeg, functions), DataSeg dataSeg _), _), _) = genInstruction (genInstrFromAST annotated)
+    ((((textSeg, functions), DataSeg dataSeg _), _), _) = genInstruction (genInstrFromAST a)
     textInstrs = showInstrs textSeg
     dataInstrs = intercalate "\n" (map show dataSeg)
     funcInstrs = space ++ intercalate ("\n" ++ space) (map show functions)
@@ -60,5 +58,8 @@ main = do
     [] -> return ()
     errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
 
-  printInstrs contents
+  let instrs = makeInstr annotatedAST
+  -- writeFile ("./"  ++ (filename ++ ".s")) instrs
+  printInstrs annotatedAST
+
   exitSuccess
