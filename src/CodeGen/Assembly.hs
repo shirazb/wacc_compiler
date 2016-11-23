@@ -65,9 +65,13 @@ data Instr
   | BL Label
   | BEQ Label
   | BLEQ Label
+  | BLLT Label
+  | BLCS Label
   | LDR Size Indexing Reg [Op]
   | LDREQ Size Indexing Reg [Op]
   | LDRNE Size Indexing Reg [Op]
+  | LDRLT Size Indexing Reg [Op]
+  | LDRCS Size Indexing Reg [Op]
   | STR Size Indexing Reg [Op]
   | SUB Flag Reg Reg Op2
   | ADD Flag Reg Reg Op2
@@ -374,6 +378,10 @@ instance Show Instr where
     = "BLEQ " ++ l
   show (BEQ l)
     = "BEQ " ++ l
+  show (BLLT l)
+    = "BLLT " ++ show l
+  show (BLCS l)
+    = "BLCS " ++ show l
   show (LDR s NoIdx op [op'])
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ opRepresentation
     where
@@ -389,7 +397,11 @@ instance Show Instr where
   show (LDR s i op ops)
     = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (LDREQ s i op ops)
-    = "LDR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+    = "LDREQ" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+  show (LDRLT s i op ops)
+    = "LDRLT" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
+  show (LDRCS s i op ops)
+    = "LDRCS" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (STR s i op ops)
     = "STR" ++ show s ++ " " ++ show op ++ ", " ++ showIndexing i ops
   show (SUB fl op op' op2)

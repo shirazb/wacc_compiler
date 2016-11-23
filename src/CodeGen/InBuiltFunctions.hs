@@ -81,8 +81,60 @@ genPrintString = do
   restorePC <- pop [PC]
   genFunc "p_print_string" (saveLR ++ nextInstr ++ loadMsg ++ genPrintF ++ genFflush ++ restorePC)
 
+genCheckArrayBounds :: CodeGenerator ()
+genCheckArrayBounds = do
+  saveLR    <- push [LR]
+  negMsgNum <- genMsg' "ArrayIndexOutOfBoundsError: negative index\n\0"
+  let checkTooLow = [
+        CMP R0 (ImmOp2 0),
+        LDRLT W NoIdx R0 [MsgName negMsgNum],
+        BLLT "p_throw_runtime_error"]
+  largeMsgNum <- genMsg' "ArrayIndexOutOfBoundsError: idex too large\n\0"
+  let checkTooHigh = [
+        LDR W NoIdx R1 [RegOp R4], CMP R0 (RegOp2 R1),
+        LDRCS W NoIdx R0 [MsgName largeMsgNum],
+        BLCS "p_throw_runtime_error"]
+  ret <- pop [PC]
+  genFunc "p_check_array_bounds" $
+      saveLR ++
+      checkTooLow ++
+      checkTooHigh ++
+      ret
+
+genReadInt :: CodeGenerator ()
+genReadInt = do
+  saveLR <- push [LR]
+  msgNum <- genMsg' "%d\0"
+  ret    <- pop [PC]
+  genFunc "p_read_int" $
+      saveLR ++
+      [Mov R1 (RegOp R0)] ++
+      [LDR W NoIdx R0 [MsgName msgNum]] ++
+      [ADD NF R0 R0 (ImmOp2 4)] ++
+      [BL "scanf"] ++
+      ret
+
+genReadChar :: CodeGenerator ()
+genReadChar = do
+  saveLR <- push [LR]
+  msgNum <- genMsg' " %c\0"
+  ret    <- pop [PC]
+  genFunc "p_read_char" $
+      saveLR ++
+      [Mov R1 (RegOp R0)] ++
+      [LDR W NoIdx R0 [MsgName msgNum]] ++
+      [ADD NF R0 R0 (ImmOp2 4)] ++
+      [BL "scanf"] ++
+      ret
 
 {- Utility Functions -}
+
+-- Preferred this instead - Shiraz
+genMsg' :: String -> CodeGenerator Int
+genMsg' msg = do
+  msgNum <- getNextMsgNum
+  addData (MSG msgNum msg)
+  return msgNum
 
 -- POST: Adds the given message to the data segment with a unique label.
 genMsg :: String -> CodeGenerator ()
