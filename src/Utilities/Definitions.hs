@@ -100,7 +100,17 @@ data BaseType
   | BaseBool
   | BaseChar
   | BaseString
-  deriving (Eq, Show)
+  deriving (Eq)
+  
+instance Show BaseType where
+  show BaseInt
+    = "int"
+  show BaseBool
+    = "bool"
+  show BaseChar
+    = "char"
+  show BaseString
+    = "string"
 
 data Type
   = BaseT BaseType
