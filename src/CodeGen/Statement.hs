@@ -12,8 +12,8 @@ import CodeGen.Assembly
 import CodeGen.Expression
 import CodeGen.AssignLHS
 import CodeGen.AssignRHS
+import CodeGen.InBuiltFunctions
 import Utilities.Definitions
-import Debug.Trace
 
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
@@ -92,6 +92,8 @@ instance CodeGen Stat where
       [BL ("p_print_" ++ ioFuncType e)]
   codegen (Println e p) = do
     printE <- codegen (Print e p)
+    genPrintString
+    genPrintLn
     return $
       printE ++
       [BL "p_print_ln"]
