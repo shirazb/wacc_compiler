@@ -35,6 +35,7 @@ instance CodeGen Expr where
     let size = sizeFromType typeSizesLDR t
     (env, _) <- getStackInfo
     let offset = fromJust (Map.lookup name env)
+    traceM $ "The offset for the variable is " ++ show offset
     return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
   codegen (ExprArray ae _)
     = codegen ae
@@ -44,10 +45,12 @@ instance CodeGen Expr where
     return $ instr ++ notE
   codegen (UnaryApp Neg e _) = do
     instr <- codegen e
+    traceM "do we actually get in to here?"
     let negE = [RSBS R0 R0 (ImmI 0)]
     return $ instr ++ negE
   codegen (UnaryApp Len e _) = do
     instr <- codegen e
+    traceM "a"
     let getLen = [LDR W NoIdx R0 [RegOp R0]]
     return $ instr ++ getLen
   -- codegen (UnaryApp Ord (CharLit c _) _)
@@ -63,7 +66,9 @@ instance CodeGen Expr where
     performLogicOp <- generateLogicInstr e' op
     return $ firstExpr ++ performLogicOp
   codegen (BinaryApp op e e' _) = do
+    traceM $ "What is the expression: " ++ show e
     instr     <- codegen e
+    traceM $ "Show the instruction here " ++ show instr
     saveFirst <- push [R0]
     instr1    <- codegen e'
     let evaluate = [Mov R1 (RegOp R0)]
@@ -126,7 +131,7 @@ codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   derefInnerArray  <- codeGenArrayElem array is
   return $
     calcIdx          ++
-    errorHandling    ++ 
+    errorHandling    ++
     skipDim          ++
     skipToElem       ++
     dereference      ++
@@ -220,7 +225,7 @@ exprSize
 -- Returns type of the expression
 typeOfExpr :: Expr -> Type
 typeOfExpr e = case e of
-  StringLit{}    -> ArrayT 1 (BaseT BaseChar)
+  StringLit{}    -> BaseT BaseString -- ArrayT 1 (BaseT BaseChar)
   CharLit{}      -> BaseT BaseChar
   IntLit{}       -> BaseT BaseInt
   BoolLit{}      -> BaseT BaseBool

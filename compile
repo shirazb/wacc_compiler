@@ -21,5 +21,6 @@ out_file = File.new(file + ".s", "w")
 out_file.puts(output)
 out_file.close
 
+puts output
 
 exit (exitCode)

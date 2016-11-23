@@ -307,7 +307,7 @@ incrementOffset n = do
 decrementOffset :: Int -> CodeGenerator ()
 decrementOffset n = do
   (env, offset) <- getStackInfo
-  let newEnv = Map.map (n -) env
+  let newEnv = Map.map (\x -> x - n) env
   putStackInfo (newEnv, offset - n)
 
 -- Assert Ops are registers
