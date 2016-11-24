@@ -118,9 +118,8 @@ genInNewScope s = do
   (env, _) <- getStackInfo
   let envWithOffset = Map.map (+ sizeOfScope) env
   putStackInfo (envWithOffset, sizeOfScope)
-  let createStackSpace = [SUB NF SP SP (ImmOp2 sizeOfScope)]
+  (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
   instrs <- codegen s
-  let clearStackSpace = [ADD NF SP SP (ImmOp2 sizeOfScope)]
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
 

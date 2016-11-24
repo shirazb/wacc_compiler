@@ -250,6 +250,14 @@ getNextMsgNum = do
   putData (DataSeg ds (num + 1))
   return num
 
+manageStack :: Int -> CodeGenerator ([Instr], [Instr])
+manageStack offset =  if offset > 1024 then
+  do
+     let  newOffset = offset - 1024
+     (saveStack, clearStack) <- manageStack newOffset
+     return (SUB NF SP SP (ImmOp2 1024) : saveStack, ADD NF SP SP (ImmOp2 1024) : clearStack)
+  else return ([SUB NF SP SP (ImmOp2 offset)], [ADD NF SP SP (ImmOp2 offset)])
+
 addData' :: String -> CodeGenerator Int
 addData' s = do
   DataSeg ds num <- getData
@@ -362,6 +370,7 @@ ascii     = ".ascii"
 
 {- SHOW INSTANCES -}
 
+-- our lengths are going to be slightly off?
 instance Show Data where
   show (MSG i s)
     = space ++ "msg_"  ++ show i   ++ ":\n" ++
