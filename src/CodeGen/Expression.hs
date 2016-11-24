@@ -177,7 +177,7 @@ getBinOpInstr (Arith Div) = do
   return $ errorHandling ++ [BL "__aeabi_idiv"]
 getBinOpInstr (Arith Mod) = do
    errorHandling <- branchWithFunc genCheckDivideByZero BL
-   return $ errorHandling ++ [BL "__aeabi_idivmod"]
+   return $ errorHandling ++ [BL "__aeabi_idivmod", Mov R0 (RegOp R1)]
 getBinOpInstr (Arith Mul) = do
   let operation = [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
   errorHandling <- branchWithFunc genOverFlowFunction BLNE
