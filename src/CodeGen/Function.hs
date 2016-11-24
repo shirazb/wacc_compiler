@@ -26,9 +26,8 @@ instance CodeGen Func where
     (env, _) <- getStackInfo
     let envWithOffset = Map.map (+ sizeOfScope) env
     putStackInfo (envWithOffset, sizeOfScope)
-    let createStackSpace = [SUB NF SP SP (ImmOp2 sizeOfScope)]
+    (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
     instrs <- codegen body
-    let clearStackSpace = [ADD NF SP SP (ImmOp2 sizeOfScope)]
     restorePC <- pop [PC]
     let listOfInstrs = saveLR ++ createStackSpace ++ instrs ++ clearStackSpace ++ restorePC
     let newFunc = FuncA name listOfInstrs

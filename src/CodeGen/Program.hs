@@ -22,9 +22,8 @@ genInstrFromAST (Program fs body) = do
   pLr <- push [LR]
   let sizeOfscope = scopeSize body
   putStackInfo (Map.empty, sizeOfscope)
-  let makeRoomStack = [SUB NF SP SP (ImmOp2 sizeOfscope)]
+  (makeRoomStack, clearSpace) <- manageStack sizeOfscope
   instr <- codegen body
-  let clearSpace = [ADD NF SP SP (ImmOp2 sizeOfscope)]
   let succesfulExit = [Mov R0 (ImmI 0)]
   popPC <- pop [PC]
   return $ [Def "main"]  ++
