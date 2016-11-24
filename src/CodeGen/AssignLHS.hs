@@ -34,7 +34,7 @@ instance CodeGen AssignLHS where
              getElemAddr ++
              movAddrR1 ++
              restoreR0R4 ++
-             store ++ [BL "324234"]
+             store 
 
   codegen pe@(PairDeref pairElem _) = do
     saveRHS <- push [R0]
