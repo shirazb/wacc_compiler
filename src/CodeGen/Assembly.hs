@@ -92,7 +92,7 @@ data Instr
 
 
 data Data
-  =  MSG Int String
+  =  MSG Int String Int
 
 data AssemblyFunc
   = FuncA String [Instr]
@@ -264,16 +264,16 @@ addData' s = do
   DataSeg ds num <- getData
   if checkDataDefined s ds
     then return (getMsgNumData s ds)
-    else do {msgNum <- getNextMsgNum; addData (MSG msgNum s); return msgNum }
+    else do {msgNum <- getNextMsgNum; addData (MSG msgNum s (length s)); return msgNum }
 
 getMsgNumData :: String -> [Data] -> Int
 getMsgNumData s ds
-  = head [ n | MSG n s' <- ds, s == s' ]
+  = head [ n | MSG n s' _ <- ds, s == s' ]
 
 -- POST: Returns true iff message is not defined
 checkDataDefined :: String -> [Data] -> Bool
 checkDataDefined s msgs
-  = or [ s == s' | MSG _ s' <- msgs ]
+  = or [ s == s' | MSG _ s' _ <- msgs ]
 
 addData :: Data -> CodeGenerator ()
 addData d = do
@@ -365,9 +365,9 @@ ascii     = ".ascii"
 
 -- our lengths are going to be slightly off?
 instance Show Data where
-  show (MSG i s)
+  show (MSG i s l)
     = space ++ "msg_"  ++ show i   ++ ":\n" ++
-      spaceGen 3 ++ ".word  " ++ show (length s) ++ "\n" ++
+      spaceGen 3 ++ ".word  " ++ show l ++ "\n" ++
       spaceGen 3 ++ ".ascii  " ++ "\"" ++ s ++ "\""
 
 instance Show Size where

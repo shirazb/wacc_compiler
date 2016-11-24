@@ -8,6 +8,7 @@ import Control.Monad.StateStack
 import Control.Monad.State.Strict (get, put, lift)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
+import Data.Tuple
 import Debug.Trace
 
 {- LOCAL IMPORTS -}
@@ -15,10 +16,21 @@ import CodeGen.Assembly
 import Utilities.Definitions
 import CodeGen.InBuiltFunctions
 
+replaceEscapeChar :: String -> String
+replaceEscapeChar []
+  = []
+replaceEscapeChar (c : cs)
+  | c `elem` escapeChars = '\\' : newChar : replaceEscapeChar cs
+  | otherwise            = c : replaceEscapeChar cs
+  where
+    escapeChars = map snd escapeCharList
+    newChar     = fromJust $ lookup c (map swap escapeCharList)
+
 instance CodeGen Expr where
+  -- move proper escaping to addData and change the inbuilt funcs
   codegen (StringLit s _) = do
     msgNum <- getNextMsgNum
-    let directive = MSG msgNum s
+    let directive = MSG msgNum (replaceEscapeChar s) (length s)
     addData directive
     return [LDR W NoIdx R0 [MsgName msgNum]]
   codegen (IntLit i _)
@@ -91,11 +103,10 @@ instance CodeGen Expr where
 instance CodeGen ArrayElem where
 
   codegen (ArrayElem ident@(Ident name (Info (BaseT BaseString) ctxt)) [i] pos)
-    = (traceM $ "do we call first one") >> codegen (ArrayElem (Ident name (Info (ArrayT 1 (BaseT BaseChar)) ctxt)) [i] pos)
+    = codegen (ArrayElem (Ident name (Info (ArrayT 1 (BaseT BaseChar)) ctxt)) [i] pos)
 
   codegen ae@(ArrayElem ident@(Ident _ info) idxs _) = do
     let t@(ArrayT _ innerType) = typeInfo info
-    traceM $ "Do we call 2nd one"
     loadIdentIntoR4 <- loadIdentAddr R4 ident
 
     derefInnerTypes <- codeGenArrayElem t idxs
@@ -105,20 +116,14 @@ instance CodeGen ArrayElem where
       derefInnerTypes
 -- POST : leaves the address of the element in R4
 codeGenArrayElem :: Type -> [Expr] -> CodeGenerator [Instr]
--- codeGenArrayElem (BaseT BaseString) [i]
---   = codeGenArrayElem (ArrayT 1 (BaseT BaseChar)) [i]
--- Last dereference -- leave the address of the elem in R4, caller will decide what to do.
+
 codeGenArrayElem t [i]
   = loadArrayElemAddr t i
 codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   loadElemAddr <- loadArrayElemAddr array i
-  traceM $ "We get to codeGenArrayElem: " ++ show array
-  -- this is the actual storing of the value in LDR r4
-  -- this should work when we have a[1][2]
-  -- a[1]
- -- in what ever instr
+
   let dereference  = [LDR W NoIdx R4 [RegOp R4]]
-  -- and we go again :) yay
+
   derefInnerArray  <- codeGenArrayElem array is
   return $
     loadElemAddr ++
