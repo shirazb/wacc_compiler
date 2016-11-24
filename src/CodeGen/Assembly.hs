@@ -13,6 +13,7 @@ import Control.Monad.Writer
 import Control.Monad.Identity
 import Control.Applicative
 import Data.List
+import Data.Tuple
 import Debug.Trace
 
 {- LOCAL IMPORTS -}
@@ -273,12 +274,23 @@ getMsgNumData s ds
 -- POST: Returns true iff message is not defined
 checkDataDefined :: String -> [Data] -> Bool
 checkDataDefined s msgs
-  = or [ s == s' | MSG _ s' _ <- msgs ]
+  = or [ replaceEscapeChar s == s' | MSG _ s' _ <- msgs ]
+
+replaceEscapeChar :: String -> String
+replaceEscapeChar []
+  = []
+replaceEscapeChar (c : cs)
+  | c `elem` escapeChars = '\\' : newChar : replaceEscapeChar cs
+  | otherwise            = c : replaceEscapeChar cs
+  where
+    escapeChars = map snd escapeCharList
+    newChar     = fromJust $ lookup c (map swap escapeCharList)
+
 
 addData :: Data -> CodeGenerator ()
-addData d = do
+addData (MSG n s l) = do
   DataSeg ds num <- getData
-  putData (DataSeg (ds ++ [d]) num)
+  putData (DataSeg (ds ++ [MSG n (replaceEscapeChar s) l]) num)
 
 getData :: CodeGenerator DataSegment
 getData  = lift get

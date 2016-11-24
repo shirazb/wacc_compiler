@@ -8,7 +8,6 @@ import Control.Monad.StateStack
 import Control.Monad.State.Strict (get, put, lift)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Data.Tuple
 import Debug.Trace
 
 {- LOCAL IMPORTS -}
@@ -16,21 +15,12 @@ import CodeGen.Assembly
 import Utilities.Definitions
 import CodeGen.InBuiltFunctions
 
-replaceEscapeChar :: String -> String
-replaceEscapeChar []
-  = []
-replaceEscapeChar (c : cs)
-  | c `elem` escapeChars = '\\' : newChar : replaceEscapeChar cs
-  | otherwise            = c : replaceEscapeChar cs
-  where
-    escapeChars = map snd escapeCharList
-    newChar     = fromJust $ lookup c (map swap escapeCharList)
 
 instance CodeGen Expr where
   -- move proper escaping to addData and change the inbuilt funcs
   codegen (StringLit s _) = do
     msgNum <- getNextMsgNum
-    let directive = MSG msgNum (replaceEscapeChar s) (length s)
+    let directive = MSG msgNum s (length s)
     addData directive
     return [LDR W NoIdx R0 [MsgName msgNum]]
   codegen (IntLit i _)
