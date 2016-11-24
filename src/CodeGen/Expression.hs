@@ -145,7 +145,7 @@ loadIdentAddr r (Ident name info) = do
 generateLogicInstr :: Expr -> BinOp -> CodeGenerator [Instr]
 generateLogicInstr e (Logic op) = do
   label <- getNextLabel
-  let fstCMP = CMP R0  (ImmOp2 (logicNum op)) : [BEQ label]
+  let fstCMP = [CMP R0  (ImmOp2 (logicNum op)), BEQ label]
   instr1 <- codegen e
   let labelJump = [Def label]
   return $ fstCMP ++ instr1 ++ labelJump
@@ -186,7 +186,7 @@ getBinOpInstr (Arith Mul) = do
   return $ operation ++ errorHandling
 getBinOpInstr (Logic op) = do
   label <- getNextLabel
-  let fstCMP = CMP R0  (ImmOp2 $ logicNum op) : [BEQ label]
+  let fstCMP = [CMP R0 (ImmOp2 (logicNum op)), BEQ label]
   let setFalse = [Mov R0 (ImmI (invertLogicalNum $ logicNum op))]
   let labelJump = [Def label]
   return $ fstCMP ++ setFalse ++ labelJump

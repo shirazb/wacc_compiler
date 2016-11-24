@@ -66,7 +66,7 @@ instance CodeGen Stat where
   codegen (If cond thenStat elseStat _) = do
     condInstr          <- codegen cond
     elseStatLabel      <- getNextLabel
-    let branchIfFalse  = [BEQ elseStatLabel]
+    let branchIfFalse  = [CMP R0 (ImmOp2 0), BEQ elseStatLabel]
     execThenStat       <- genInNewScope thenStat
     execElseStat       <- genInNewScope elseStat
     afterIfLabel       <- getNextLabel
@@ -85,13 +85,11 @@ instance CodeGen Stat where
     evalCond      <- codegen cond
     execBody      <- genInNewScope stat
     return $
-      [BT loopCondLabel] ++
-      [Def loopBodyLabel] ++
+      [BT loopCondLabel, Def loopBodyLabel] ++
       execBody ++
       [Def loopCondLabel] ++
       evalCond ++
-      [CMP R0 (ImmOp2 1)] ++
-      [BEQ loopBodyLabel]
+      [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
   codegen (Print e _) = do
     evalE      <- codegen e
     printInstr <- getExprPrintInstr (typeOfExpr e)
