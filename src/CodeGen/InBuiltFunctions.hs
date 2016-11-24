@@ -184,10 +184,7 @@ genCheckDivideByZero = do
 
 -- Preferred this instead - Shiraz
 genMsg :: String -> CodeGenerator Int
-genMsg msg = do
-  msgNum <- getNextMsgNum
-  addData (MSG msgNum msg)
-  return msgNum
+genMsg = addData'
 
 genFunc :: String -> [Instr] -> CodeGenerator ()
 genFunc name body = do

@@ -250,12 +250,28 @@ getNextMsgNum = do
   putData (DataSeg ds (num + 1))
   return num
 
+addData' :: String -> CodeGenerator Int
+addData' s = do
+  DataSeg ds num <- getData
+  if checkDataDefined s ds
+    then return (getMsgNumData s ds)
+    else do {msgNum <- getNextMsgNum; addData (MSG msgNum s); return msgNum }
+
+getMsgNumData :: String -> [Data] -> Int
+getMsgNumData s ds
+  = head [ n | MSG n s' <- ds, s == s' ]
+
+-- POST: Returns true iff message is not defined
+checkDataDefined :: String -> [Data] -> Bool
+checkDataDefined s msgs
+  = or [ s == s' | MSG _ s' <- msgs ]
+
+
+
 addData :: Data -> CodeGenerator ()
 addData d = do
   DataSeg ds num <- getData
-  when (checkDataDefined d ds) $
-    do putData (DataSeg (ds ++ [d]) num)
-       return ()
+  putData (DataSeg (ds ++ [d]) num)
 
 getData :: CodeGenerator DataSegment
 getData  = lift get
@@ -332,11 +348,6 @@ pop (x : xs) = do
 checkFuncDefined :: String -> Functions -> Bool
 checkFuncDefined s fs
   = not $ or [ s == s' | FuncA s' _ <- fs ]
-
--- POST: Returns true iff message is not defined
-checkDataDefined :: Data -> [Data] -> Bool
-checkDataDefined (MSG _ s) msgs
-  = not $ or [ s == s' | MSG _ s' <- msgs ]
 
 {- ARM ASSEMBLY BOILERPLATE CODE -}
 
