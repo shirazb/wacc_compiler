@@ -25,36 +25,30 @@ instance CodeGen Stat where
     putStackInfo (newMap, newOffset)
     let str = [STR (sizeFromType typeSizesSTR t) NoIdx R0 [RegOp SP, ImmI newOffset]]
     return $ instr ++ str
+
   codegen (Block s _)
     = genInNewScope s
+
   codegen (Seq s1 s2 _) = do
     instr1 <- codegen s1
     instr2 <- codegen s2
     return $ instr1 ++ instr2
+
   codegen (Skip _)
     = return []
+
   codegen (Free e _) = do
     evalE <- codegen e
     freeInstr <- getFreeExprInstr (typeOfExpr e)
     return $
       evalE ++
       freeInstr
-  -- NEEDS TO CALL STR FOR THE CORRECT NUMBER OF BYTES
+
   codegen (Assignment lhs rhs _) = do
-    --evalRHS <- codegen rhs
-    --saveRHS <- push [R0]
-    --evalLHS <- codegen lhs
-    --getRHS  <- pop [R1]
-    --let size = sizeOfLHS lhs
-    --let doAssignment = [STR size NoIdx R1 [RegOp R0]]
-    --return $ evalRHS ++ saveRHS ++ evalLHS ++ getRHS ++ doAssignment
     evalRHS <- codegen rhs
     let size = sizeOfLHS lhs
     let store = [STR size NoIdx R0 [RegOp SP]]
     return $ evalRHS ++ store
---    evalLHS <- codegen lhs
---    let doAssignment = [STR size NoIdx R1 [RegOp R0]]
---    return $ evalRHS ++ evalLHS ++ doAssignment
 
   codegen (Return expr _)
     = codegen expr
@@ -78,6 +72,7 @@ instance CodeGen Stat where
               [Def elseStatLabel] ++
               execElseStat ++
               [Def afterIfLabel]
+
   codegen (While cond stat _) = do
     loopBodyLabel <- getNextLabel
     loopCondLabel <- getNextLabel
@@ -90,14 +85,17 @@ instance CodeGen Stat where
       [Def loopCondLabel] ++
       evalCond ++
       [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
+
   codegen (Print e _) = do
     evalE      <- codegen e
     printInstr <- getExprPrintInstr (typeOfExpr e)
     return $ evalE ++ printInstr
+
   codegen (Println e p) = do
     printE  <- codegen (Print e p)
     printLn <- branchWithFunc genPrintLn BL
     return $ printE ++ printLn
+
   codegen (Read (Var ident@(Ident name _) _) p) = do
     let e = IdentE ident p
     (map', _) <- getStackInfo

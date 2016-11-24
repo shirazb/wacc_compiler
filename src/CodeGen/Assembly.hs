@@ -398,13 +398,13 @@ instance Show Instr where
   show (BEQ l)
     = "BEQ " ++ l
   show (BLLT l)
-    = "BLLT " ++ show l
+    = "BLLT " ++ l
   show (BLCS l)
-    = "BLCS " ++ show l
+    = "BLCS " ++ l
   show (BLNE l)
-    = "BLNE " ++ show l
+    = "BLNE " ++ l
   show (BLVS l)
-    = "BLVS " ++ show l
+    = "BLVS " ++ l
   show (LDR s NoIdx reg [op'])
     = "LDR" ++ showSingleInstr s reg op'
   show (LDREQ s NoIdx reg [op'])
