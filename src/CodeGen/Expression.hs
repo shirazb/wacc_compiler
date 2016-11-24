@@ -39,12 +39,13 @@ instance CodeGen Expr where
     let offset = fromJust (Map.lookup name env)
     return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
   codegen expr@(ExprArray ae _) = do
-    saveR4          <- push [R4]
+    saveR4     <- push [R4]
     loadAddrR4 <- codegen ae
-    let size = sizeFromType typeSizesLDR $ typeOfExpr expr
+    let size = sizeFromType typeSizesLDR (typeOfExpr expr)
     let loadElem = [LDR size NoIdx R4 [RegOp R4], Mov R0 (RegOp R4)]
     restoreR4       <- pop [R4]
-    return $ loadAddrR4 ++
+    return $ saveR4     ++
+             loadAddrR4 ++
              loadElem   ++
              restoreR4
   codegen (UnaryApp Not e _) = do
@@ -88,60 +89,29 @@ instance CodeGen Expr where
 
 instance CodeGen ArrayElem where
 
-  -- this is not where this happens
---   -- so the real question is can we use the same code for strings that we use for ArrayLitAssign
---
---   codegen (ArrayElem ident@(Ident name (Info (BaseT BaseString) ctxt)) [i] pos) = do
---     saveR4R0 <- push [R4, R0]
---     loadIdentIntoR4 <- loadIdentAddr R4 ident
---     calcIdx          <- codegen i
---     errorHandling    <- branchWithFunc genCheckArrayBounds BL
---     let skipDim      = [ADD NF R4 R4 (ImmOp2 4)]
---     let skipToElem   = [ADD NF R4 R4 (RegOp2 R0)]
---     let doMov        = [Mov R1 (RegOp R4)]
---     restoreR4R0 <- pop [R4, R0]
---     let store = [STR B NoIdx R0 [RegOp R1]]
---     return $ saveR4R0 ++
---              loadIdentIntoR4 ++
---              calcIdx ++
---              errorHandling ++
---              skipDim ++
---              skipToElem ++
---              doMov ++
---              restoreR4R0 ++
---              store
--- -----------------
---
---
---
---
---
--- ----- the array elem does not store its the actual ting
---
---
---
--- ------------
-  codegen (ArrayElem ident@(Ident name info) idxs _) = do
+  codegen (ArrayElem ident@(Ident name (Info (BaseT BaseString) ctxt)) [i] pos)
+    = (traceM $ "do we call first one") >> codegen (ArrayElem (Ident name (Info (ArrayT 1 (BaseT BaseChar)) ctxt)) [i] pos)
+
+  codegen ae@(ArrayElem ident@(Ident _ info) idxs _) = do
     let t@(ArrayT _ innerType) = typeInfo info
-
-
+    traceM $ "Do we call 2nd one"
     loadIdentIntoR4 <- loadIdentAddr R4 ident
 
     derefInnerTypes <- codeGenArrayElem t idxs
-
 
     return $
       loadIdentIntoR4  ++
       derefInnerTypes
 -- POST : leaves the address of the element in R4
 codeGenArrayElem :: Type -> [Expr] -> CodeGenerator [Instr]
-codeGenArrayElem (BaseT BaseString) [i]
-  = codeGenArrayElem (ArrayT 1 (BaseT BaseChar)) [i]
+-- codeGenArrayElem (BaseT BaseString) [i]
+--   = codeGenArrayElem (ArrayT 1 (BaseT BaseChar)) [i]
 -- Last dereference -- leave the address of the elem in R4, caller will decide what to do.
 codeGenArrayElem t [i]
   = loadArrayElemAddr t i
 codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   loadElemAddr <- loadArrayElemAddr array i
+  traceM $ "We get to codeGenArrayElem: " ++ show array
   -- this is the actual storing of the value in LDR r4
   -- this should work when we have a[1][2]
   -- a[1]
@@ -278,12 +248,17 @@ typeOfExpr e = case e of
   BinaryApp binOp _ _ _  -> typeOfBinOp binOp
 
 typeOfArrayElem :: ArrayElem -> Type
+typeOfArrayElem (ArrayElem (Ident _ (Info (BaseT BaseString) _)) idxs _)
+  = BaseT BaseChar
 typeOfArrayElem (ArrayElem (Ident _ info) idxs _)
   | derefDim == 0  = innerType
   | otherwise      = ArrayT derefDim innerType
   where
     ArrayT dim innerType = typeInfo info
     derefDim             = dim - length idxs
+typeOfArrayElem ae
+  = error $ "CodeGen.Expression.typeOfArrayElem. Calling on ArrayElem: "
+            ++ show ae
 
 typeOfUnOp :: UnOp -> Type
 typeOfUnOp unOp = case unOp of

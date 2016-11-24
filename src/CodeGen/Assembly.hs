@@ -90,6 +90,7 @@ data Instr
   | MOVNE Reg Op2
 
 
+
 data Data
   =  MSG Int String
 
