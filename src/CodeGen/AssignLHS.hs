@@ -25,7 +25,6 @@ instance CodeGen AssignLHS where
   codegen ad@(ArrayDeref arrayElem@(ArrayElem ident idxs _) _) = do
     saveR0R4 <- push [R0, R4]
     getElemAddr <- codegen arrayElem
-    traceM $ "We get here is arrayElem: " ++ show ad
     let movAddrR1 = [Mov R1 (RegOp R4)]
     restoreR0R4 <- pop [R0, R4]
     let size = sizeOfLHS ad
@@ -34,7 +33,7 @@ instance CodeGen AssignLHS where
              getElemAddr ++
              movAddrR1 ++
              restoreR0R4 ++
-             store 
+             store
 
   codegen pe@(PairDeref pairElem _) = do
     saveRHS <- push [R0]

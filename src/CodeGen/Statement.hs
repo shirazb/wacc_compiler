@@ -106,6 +106,12 @@ instance CodeGen Stat where
     readInstr <- getExprReadInstr (typeOfExpr e)
     return $ loadAddr ++ readInstr
 
+  codegen (Read lhs _) = do
+    genRunTimeError
+
+  codegen s
+    = error $ "CodeGen.Statement.codegen: Attempting to codegen the statement: "
+      ++ "\n    " ++ show s
 -- Codegens the statement inside of a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
