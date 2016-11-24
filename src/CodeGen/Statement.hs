@@ -48,10 +48,10 @@ instance CodeGen Stat where
   codegen (Assignment lhs rhs _) = do
     evalRHS <- codegen rhs
     evalLHS <- codegen lhs
-    let size = sizeOfLHS lhs
-    let store = [STR size NoIdx R0 [RegOp SP]]
-    return $ evalRHS ++ evalLHS ++ store
-    
+    -- let size = sizeOfLHS lhs
+    -- let store = [STR size NoIdx R0 [RegOp SP]]
+    return $ evalRHS ++ evalLHS 
+
   codegen (Return expr _)
     = codegen expr
 
@@ -119,16 +119,7 @@ genInNewScope s = do
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
 
--- Returns the Size (word, byte etc.) of an AssignLHS
-sizeOfLHS :: AssignLHS -> Size
-sizeOfLHS (Var (Ident _ (Info t _)) _)
-  = sizeFromType typeSizesSTR t
-sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
-  = sizeFromType typeSizesSTR t
-sizeOfLHS (PairDeref (PairElem _ expr _) _)
-  = sizeFromType typeSizesSTR (typeOfExpr expr)
-sizeOfLHS _
-  = error "are we hitting an error case in sizeoflhs"
+
 
 getFreeExprInstr :: Type -> CodeGenerator [Instr]
 getFreeExprInstr t = case t of

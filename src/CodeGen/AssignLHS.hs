@@ -15,8 +15,12 @@ import CodeGen.PairElem
 import Utilities.Definitions hiding (Env)
 
 instance CodeGen AssignLHS where
-  codegen (Var ident _)
-    = loadIdentAddr R0 ident
+  codegen lhs@(Var ident@(Ident name info) _) = do
+    (env, _) <- getStackInfo
+    let offset = fromJust $ Map.lookup name env
+    let size = sizeOfLHS lhs
+    return [STR size NoIdx R0 [RegOp SP, ImmI offset]]
+
 
   -- what should this be doing???
   codegen (ArrayDeref arrayElem _) = do
@@ -27,3 +31,13 @@ instance CodeGen AssignLHS where
   -- existing address
   codegen (PairDeref pairElem _)
     = codegen pairElem
+-- Returns the Size (word, byte etc.) of an AssignLHS
+sizeOfLHS :: AssignLHS -> Size
+sizeOfLHS (Var (Ident _ (Info t _)) _)
+  = sizeFromType typeSizesSTR t
+sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
+  = sizeFromType typeSizesSTR t
+sizeOfLHS (PairDeref (PairElem _ expr _) _)
+  = sizeFromType typeSizesSTR (typeOfExpr expr)
+sizeOfLHS _
+  = error "are we hitting an error case in sizeoflhs"
