@@ -24,8 +24,8 @@ instance CodeGen Expr where
   codegen (IntLit i _)
     = return [LDR W NoIdx R0 [ImmLDRI i]]
   codegen (CharLit c _)
-    = if c == '\0' 
-        then return [Mov R0 (ImmI 0)] 
+    = if c == '\0'
+        then return [Mov R0 (ImmI 0)]
         else return [Mov R0 (ImmC c)]
   codegen (BoolLit b _)
     = return [Mov R0 (ImmI bInt)]
@@ -50,7 +50,6 @@ instance CodeGen Expr where
     return $ instr ++ negE
   codegen (UnaryApp Len e _) = do
     instr <- codegen e
-    traceM "a"
     let getLen = [LDR W NoIdx R0 [RegOp R0]]
     return $ instr ++ getLen
   -- codegen (UnaryApp Ord (CharLit c _) _)
@@ -80,6 +79,12 @@ instance CodeGen Expr where
              binOpInstr
 
 instance CodeGen ArrayElem where
+  -- so the real question is can we use the same code for strings that we use for ArrayLitAssign
+
+  codegen (ArrayElem ident@(Ident name (Info (BaseT BaseString) ctxt)) idxs pos)
+    = codegen (ArrayElem modifiedInfo idxs pos)
+    where
+      modifiedInfo = Ident name (Info (ArrayT 1 (BaseT BaseChar)) ctxt)
   codegen (ArrayElem ident@(Ident name info) idxs _) = do
     let t@(ArrayT _ innerType) = typeInfo info
     -- this is saving r4 because we are going to use it
@@ -111,6 +116,8 @@ codeGenArrayElem :: Type -> [Expr] -> CodeGenerator [Instr]
 -- as demonstrated by the reference compiler
 codeGenArrayElem t []
   = return [Mov R0 (RegOp R4)]
+codeGenArrayElem (BaseT BaseString) idxs
+  = codeGenArrayElem (ArrayT 1 (BaseT BaseChar)) idxs
 codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   -- now we generate the code to get the expressions
   -- we make the assumption that we store the value in register zero

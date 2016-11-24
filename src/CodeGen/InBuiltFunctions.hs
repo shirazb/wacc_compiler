@@ -8,7 +8,7 @@ import CodeGen.Assembly
 
 genNullPtrFunc :: CodeGenerator String
 genNullPtrFunc = do
-  msgNum <- genMsg "NullReferenceError: dereference a null reference\n\\0"
+  msgNum <- genMsg "NullReferenceError: dereference a null reference\\n\\0"
   saveLR <- push [LR]
   let checkForNullPtr = [CMP R0 (ImmOp2 0)]
   let ldrMsg = [LDREQ W NoIdx R0 [MsgName msgNum], BLEQ "p_throw_runtime_error"]
@@ -26,7 +26,7 @@ genRunTimeError = do
 
 genOverFlowFunction :: CodeGenerator String
 genOverFlowFunction = do
-  msgNum <- genMsg "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n"
+  msgNum <- genMsg "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n"
   let loadData = [LDR W NoIdx R0 [MsgName msgNum]]
   let branch = [BL "p_throw_runtime_error"]
   genFunc "p_throw_overflow_error" (loadData ++ branch)
@@ -84,12 +84,12 @@ genPrintString = do
 genCheckArrayBounds :: CodeGenerator String
 genCheckArrayBounds = do
   saveLR    <- push [LR]
-  negMsgNum <- genMsg "ArrayIndexOutOfBoundsError: negative index\n\\0"
+  negMsgNum <- genMsg "ArrayIndexOutOfBoundsError: negative index\\n\\0"
   let checkTooLow = [
         CMP R0 (ImmOp2 0),
         LDRLT W NoIdx R0 [MsgName negMsgNum],
         BLLT "p_throw_runtime_error"]
-  largeMsgNum <- genMsg "ArrayIndexOutOfBoundsError: index too large\n\\0"
+  largeMsgNum <- genMsg "ArrayIndexOutOfBoundsError: index too large\\n\\0"
   let checkTooHigh = [
         LDR W NoIdx R1 [RegOp R4], CMP R0 (RegOp2 R1),
         LDRCS W NoIdx R0 [MsgName largeMsgNum],
@@ -167,7 +167,7 @@ genFreePair = do
 genCheckDivideByZero :: CodeGenerator String
 genCheckDivideByZero = do
   saveLR <- push [LR]
-  msgNum <- genMsg "DivideByZeroError: divide or modulo by zero\n\\0"
+  msgNum <- genMsg "DivideByZeroError: divide or modulo by zero\\n\\0"
   let compare = [
         CMP R1 (ImmOp2 0),
         LDREQ W NoIdx R0 [MsgName msgNum],

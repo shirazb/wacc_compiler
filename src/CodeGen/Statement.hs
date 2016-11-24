@@ -6,6 +6,7 @@ import Control.Monad.StateStack
 import Control.Monad.State.Strict ( lift )
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
+import Debug.Trace
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
@@ -50,7 +51,7 @@ instance CodeGen Stat where
     let size = sizeOfLHS lhs
     let store = [STR size NoIdx R0 [RegOp SP]]
     return $ evalRHS ++ evalLHS ++ store
-
+    
   codegen (Return expr _)
     = codegen expr
 
