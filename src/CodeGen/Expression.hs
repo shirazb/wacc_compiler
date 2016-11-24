@@ -206,14 +206,12 @@ getBinOpInstr (RelOp op) = do
 getBinOpInstr (EquOp op) = do
   let comp = [CMP R0 (RegOp2 R1)]
   instr <- generateEqualityInstr op
-  return $ comp ++ instr
+  return $ comp ++ instr ++ [CMP R0 (ImmOp2 0)]
   where
     generateEqualityInstr EQ
       = return [MOVEQ R0 (ImmOp2 1), MOVNE R0 (ImmOp2 0)]
     generateEqualityInstr NEQ
       = return [MOVNE R0 (ImmOp2 1), MOVEQ R0 (ImmOp2 0)]
-
-
 
 -- Returns number of bytes an expression occupies
 exprSize :: Expr -> Int

@@ -65,7 +65,6 @@ instance CodeGen Stat where
 
   codegen (If cond thenStat elseStat _) = do
     condInstr          <- codegen cond
-    let evalCond       = [CMP R0 (RegOp2 R1)]
     elseStatLabel      <- getNextLabel
     let branchIfFalse  = [BEQ elseStatLabel]
     execThenStat       <- genInNewScope thenStat
@@ -73,7 +72,6 @@ instance CodeGen Stat where
     afterIfLabel       <- getNextLabel
     let branchAfterIf  = [BT afterIfLabel]
     return $  condInstr ++
-              evalCond ++
               branchIfFalse ++
               execThenStat ++
               branchAfterIf ++
