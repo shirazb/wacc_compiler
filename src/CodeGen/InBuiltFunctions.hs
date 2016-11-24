@@ -15,6 +15,7 @@ genNullPtrFunc = do
   restorePC <- pop [PC]
   genFunc "p_check_null_pointer" (saveLR ++ checkForNullPtr ++ ldrMsg ++ restorePC)
   genPrintString
+  genRunTimeError
   return "p_check_null_pointer"
 
 genRunTimeError :: CodeGenerator String
