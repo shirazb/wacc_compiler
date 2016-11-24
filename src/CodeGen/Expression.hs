@@ -38,8 +38,15 @@ instance CodeGen Expr where
     (env, _) <- getStackInfo
     let offset = fromJust (Map.lookup name env)
     return [LDR size NoIdx R0 [RegOp SP, ImmI offset]]
-  codegen (ExprArray ae _)
-    = codegen ae
+  codegen expr@(ExprArray ae _) = do
+    saveR4          <- push [R4]
+    loadAddrR4 <- codegen ae
+    let size = sizeFromType typeSizesLDR $ typeOfExpr expr
+    let loadElem = [LDR size NoIdx R4 [RegOp R4], Mov R0 (RegOp R4)]
+    restoreR4       <- pop [R4]
+    return $ loadAddrR4 ++
+             loadElem   ++
+             restoreR4
   codegen (UnaryApp Not e _) = do
     instr <- codegen e
     let notE = [EOR R0 R0 (ImmI 1)]
@@ -48,6 +55,7 @@ instance CodeGen Expr where
     instr <- codegen e
     let negE = [RSBS R0 R0 (ImmI 0)]
     return $ instr ++ negE
+  -- len does not work like this
   codegen (UnaryApp Len e _) = do
     instr <- codegen e
     let getLen = [LDR W NoIdx R0 [RegOp R0]]
@@ -79,49 +87,82 @@ instance CodeGen Expr where
              binOpInstr
 
 instance CodeGen ArrayElem where
-  -- so the real question is can we use the same code for strings that we use for ArrayLitAssign
 
-  codegen (ArrayElem ident@(Ident name (Info (BaseT BaseString) ctxt)) idxs pos)
-    = codegen (ArrayElem modifiedInfo idxs pos)
-    where
-      modifiedInfo = Ident name (Info (ArrayT 1 (BaseT BaseChar)) ctxt)
+  -- this is not where this happens
+--   -- so the real question is can we use the same code for strings that we use for ArrayLitAssign
+--
+--   codegen (ArrayElem ident@(Ident name (Info (BaseT BaseString) ctxt)) [i] pos) = do
+--     saveR4R0 <- push [R4, R0]
+--     loadIdentIntoR4 <- loadIdentAddr R4 ident
+--     calcIdx          <- codegen i
+--     errorHandling    <- branchWithFunc genCheckArrayBounds BL
+--     let skipDim      = [ADD NF R4 R4 (ImmOp2 4)]
+--     let skipToElem   = [ADD NF R4 R4 (RegOp2 R0)]
+--     let doMov        = [Mov R1 (RegOp R4)]
+--     restoreR4R0 <- pop [R4, R0]
+--     let store = [STR B NoIdx R0 [RegOp R1]]
+--     return $ saveR4R0 ++
+--              loadIdentIntoR4 ++
+--              calcIdx ++
+--              errorHandling ++
+--              skipDim ++
+--              skipToElem ++
+--              doMov ++
+--              restoreR4R0 ++
+--              store
+-- -----------------
+--
+--
+--
+--
+--
+-- ----- the array elem does not store its the actual ting
+--
+--
+--
+-- ------------
   codegen (ArrayElem ident@(Ident name info) idxs _) = do
     let t@(ArrayT _ innerType) = typeInfo info
-    -- this is saving r4 because we are going to use it
-    saveR4          <- push [R4]
-    -- this line is going to generate the code
-    -- to load the ident direcitly in to the register r4
-    -- instead of doing
-    -- LDR r0 [sp, some offset]
-    -- mov r4, r0
-    -- you do ldr r4 [sp, someoffset]
-    -- its a minor optimisation
+
+
     loadIdentIntoR4 <- loadIdentAddr R4 ident
 
-    -- now this is where most of the work happens
-    -- this is the part of the code that generates the actual dereferences
     derefInnerTypes <- codeGenArrayElem t idxs
-    -- this is where we restore r4
-    restoreR4       <- pop [R4]
-    return $
-      saveR4           ++
-      loadIdentIntoR4  ++
-      derefInnerTypes  ++
-      restoreR4
 
+
+    return $
+      loadIdentIntoR4  ++
+      derefInnerTypes
+-- POST : leaves the address of the element in R4
 codeGenArrayElem :: Type -> [Expr] -> CodeGenerator [Instr]
--- im guess this base is case in place
--- when you have no more dereferences
--- you move the value currently stored in r4 in to r0
--- as demonstrated by the reference compiler
-codeGenArrayElem t []
-  = return [Mov R0 (RegOp R4)]
-codeGenArrayElem (BaseT BaseString) idxs
-  = codeGenArrayElem (ArrayT 1 (BaseT BaseChar)) idxs
+codeGenArrayElem (BaseT BaseString) [i]
+  = codeGenArrayElem (ArrayT 1 (BaseT BaseChar)) [i]
+-- Last dereference -- leave the address of the elem in R4, caller will decide what to do.
+codeGenArrayElem t [i]
+  = loadArrayElemAddr t i
 codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
+  loadElemAddr <- loadArrayElemAddr array i
+  -- this is the actual storing of the value in LDR r4
+  -- this should work when we have a[1][2]
+  -- a[1]
+ -- in what ever instr
+  let dereference  = [LDR W NoIdx R4 [RegOp R4]]
+  -- and we go again :) yay
+  derefInnerArray  <- codeGenArrayElem array is
+  return $
+    loadElemAddr ++
+    dereference  ++
+    derefInnerArray
+codeGenArrayElem t is
+  = error $ "Error in codeGenArrayElem: Did not match any case.\n" ++
+            "Type:     " ++ show t ++ "\n" ++
+            "Indexes:  " ++ show is ++ "\n"
+
+loadArrayElemAddr :: Type -> Expr -> CodeGenerator [Instr]
+loadArrayElemAddr (ArrayT dim innerType) idx = do
   -- now we generate the code to get the expressions
   -- we make the assumption that we store the value in register zero
-  calcIdx          <- codegen i
+  calcIdx          <- codegen idx
   errorHandling    <- branchWithFunc genCheckArrayBounds BL
   -- this is where we skip the length of the array
   -- in wacc the lenght of the array is always stored as the
@@ -130,17 +171,15 @@ codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   -- this is where we skip to the correct element
   -- because we areusing lsl we have to divide the size of the type by 2
   let skipToElem   = [ADD NF R4 R4 (Shift R0 LSL (typeSize innerType `div` 2))]
-  -- this is the actual storing of the value in LDR r4
-  let dereference  = [LDR (sizeFromType typeSizesLDR innerType) NoIdx R4 [RegOp R4]]
-  -- and we go again :) yay
-  derefInnerArray  <- codeGenArrayElem array is
   return $
-    calcIdx          ++
-    errorHandling    ++
-    skipDim          ++
-    skipToElem       ++
-    dereference      ++
-    derefInnerArray
+      calcIdx ++
+      errorHandling ++
+      skipDim ++
+      skipToElem
+loadArrayElemAddr t e
+  = error $ "Error in CodeGen.Expression.loadArrayElemAddr: Calling with non array type.\n" ++
+            "Type: " ++ show t ++ "\n" ++
+            "Idx:  " ++ show e ++ "\n"
 
 -- Op must be a reg
 loadIdentAddr :: Reg -> Ident -> CodeGenerator [Instr]
@@ -233,10 +272,18 @@ typeOfExpr e = case e of
   IntLit{}       -> BaseT BaseInt
   BoolLit{}      -> BaseT BaseBool
   PairLiteral{}  -> Pair
-  IdentE (Ident _ info) _                    -> typeInfo info
-  ExprArray (ArrayElem (Ident _ info) _ _) _ -> typeInfo info
+  IdentE (Ident _ info) _    -> typeInfo info
+  ExprArray ae@ArrayElem{} _ -> typeOfArrayElem ae
   UnaryApp unOp _ _      -> typeOfUnOp unOp
   BinaryApp binOp _ _ _  -> typeOfBinOp binOp
+
+typeOfArrayElem :: ArrayElem -> Type
+typeOfArrayElem (ArrayElem (Ident _ info) idxs _)
+  | derefDim == 0  = innerType
+  | otherwise      = ArrayT derefDim innerType
+  where
+    ArrayT dim innerType = typeInfo info
+    derefDim             = dim - length idxs
 
 typeOfUnOp :: UnOp -> Type
 typeOfUnOp unOp = case unOp of

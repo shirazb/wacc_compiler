@@ -21,23 +21,33 @@ instance CodeGen AssignLHS where
     let size = sizeOfLHS lhs
     return [STR size NoIdx R0 [RegOp SP, ImmI offset]]
 
-
   -- what should this be doing???
-  codegen (ArrayDeref arrayElem _) = do
-    traceM "We are in the evaluation of the lhs for arrays"
-    traceM $ "The arrayElem is: " ++ show arrayElem
-    codegen arrayElem
-  -- Ask Mark? Why do you free then malloc instead of overwriting the
-  -- existing address
+  codegen ad@(ArrayDeref arrayElem@(ArrayElem ident idxs _) _) = do
+    saveR0R4 <- push [R0, R4]
+    getElemAddr <- codegen arrayElem
+    let movAddrR1 = [Mov R1 (RegOp R4)]
+    restoreR0R4 <- pop [R0, R4]
+    let size = sizeOfLHS ad
+    let store = [STR size NoIdx R0 [RegOp R1]]
+    return $ saveR0R4 ++
+             getElemAddr ++
+             movAddrR1 ++
+             restoreR0R4 ++
+             store
+
   codegen (PairDeref pairElem _)
     = codegen pairElem
+
 -- Returns the Size (word, byte etc.) of an AssignLHS
 sizeOfLHS :: AssignLHS -> Size
 sizeOfLHS (Var (Ident _ (Info t _)) _)
   = sizeFromType typeSizesSTR t
-sizeOfLHS (ArrayDeref (ArrayElem (Ident _ (Info t _)) _ _) _)
-  = sizeFromType typeSizesSTR t
-sizeOfLHS (PairDeref (PairElem _ expr _) _)
-  = sizeFromType typeSizesSTR (typeOfExpr expr)
-sizeOfLHS _
-  = error "are we hitting an error case in sizeoflhs"
+sizeOfLHS (ArrayDeref ae@ArrayElem{} _)
+  = sizeFromType typeSizesSTR (typeOfArrayElem ae)
+sizeOfLHS (PairDeref (PairElem selector expr _) _)
+  = sizeFromType typeSizesSTR pt
+  where
+    PairT t t' = typeOfExpr expr
+    pt         = case selector of
+                    Fst -> t
+                    Snd -> t'

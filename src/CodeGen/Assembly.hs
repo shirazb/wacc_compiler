@@ -58,8 +58,8 @@ genInstruction p
 -- because it dosent make much diffrence now
 
 data Instr
-  = Push Reg
-  | Pop Reg
+  = Push [Reg]
+  | Pop [Reg]
   | Mov Reg Op
   | BT Label   -- branch true, or "B". B constructor already in use.
   | BL Label
@@ -335,20 +335,12 @@ decrementOffset n = do
 -- Assert Ops are registers
 -- Could avoid duplication.
 push, pop :: [Reg] -> CodeGenerator [Instr]
-push []
-  = return []
-push (x : xs) = do
-  let pushX = [Push x]
-  incrementOffset 4
-  pushRest <- push xs
-  return $ pushX ++ pushRest
-pop []
-  = return []
-pop (x : xs) = do
-  let popX = [Pop x]
-  decrementOffset 4
-  popRest <- pop xs
-  return $ popX ++ popRest
+push rs = do
+  incrementOffset (4 * length rs)
+  return [Push rs]
+pop rs = do
+  decrementOffset (4 * length rs)
+  return [Pop rs]
 
 -- POST: Returns true iff function is not defined
 checkFuncDefined :: String -> Functions -> Bool
@@ -384,9 +376,9 @@ instance Show Size where
 
 instance Show Instr where
   show (Push r)
-    = "PUSH {" ++ show r ++ "}"
+    = "PUSH {" ++ intercalate ", " (map show r) ++ "}"
   show (Pop r)
-    = "POP {" ++ show r ++ "}"
+    = "POP {" ++ intercalate ", " (map show r) ++ "}"
   show (Mov op op')
     = "MOV " ++ show op ++ ", " ++ show op'
   show (BT l)
