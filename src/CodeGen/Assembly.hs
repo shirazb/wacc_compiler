@@ -266,8 +266,6 @@ checkDataDefined :: String -> [Data] -> Bool
 checkDataDefined s msgs
   = or [ s == s' | MSG _ s' <- msgs ]
 
-
-
 addData :: Data -> CodeGenerator ()
 addData d = do
   DataSeg ds num <- getData

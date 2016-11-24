@@ -53,7 +53,7 @@ instance CodeGen Expr where
     return $ instr ++ getLen
   -- codegen (UnaryApp Ord (CharLit c _) _)
   --   = return [Mov R0 (ImmC c)]
-  codegen (UnaryApp Ord e _)
+  codegen (UnaryApp _ e _)
     = codegen e
   -- codegen (BinaryApp op@(Logic _) e@(BoolLit b _) (BoolLit b' _) _) = do
   --   firstExpr <- codegen e
