@@ -263,8 +263,9 @@ manageStack offset =  if offset > 1024 then
 addData' :: String -> CodeGenerator Int
 addData' s = do
   DataSeg ds num <- getData
-  if checkDataDefined s ds
-    then return (getMsgNumData s ds)
+  let escapedString = replaceEscapeChar s
+  if checkDataDefined escapedString ds
+    then return (getMsgNumData escapedString ds)
     else do {msgNum <- getNextMsgNum; addData (MSG msgNum s (length s)); return msgNum }
 
 getMsgNumData :: String -> [Data] -> Int
@@ -274,7 +275,7 @@ getMsgNumData s ds
 -- POST: Returns true iff message is not defined
 checkDataDefined :: String -> [Data] -> Bool
 checkDataDefined s msgs
-  = or [ replaceEscapeChar s == s' | MSG _ s' _ <- msgs ]
+  = or [s == s' | MSG _ s' _ <- msgs ]
 
 replaceEscapeChar :: String -> String
 replaceEscapeChar []
