@@ -24,7 +24,9 @@ instance CodeGen Expr where
   codegen (IntLit i _)
     = return [LDR W NoIdx R0 [ImmLDRI i]]
   codegen (CharLit c _)
-    = return [Mov R0 (ImmC c)]
+    = if c == '\0' 
+        then return [Mov R0 (ImmI 0)] 
+        else return [Mov R0 (ImmC c)]
   codegen (BoolLit b _)
     = return [Mov R0 (ImmI bInt)]
     where

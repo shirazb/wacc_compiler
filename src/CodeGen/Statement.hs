@@ -100,13 +100,13 @@ instance CodeGen Stat where
     printE  <- codegen (Print e p)
     printLn <- branchWithFunc genPrintLn BL
     return $ printE ++ printLn
-  codegen (Read (Var ident _) p) = do
+  codegen (Read (Var ident@(Ident name _) _) p) = do
     let e = IdentE ident p
-    evalE <- codegen e
+    (map', _) <- getStackInfo
+    let offset = fromJust $ Map.lookup name map'
+    let loadAddr = [ADD NF R0 SP (ImmOp2 offset)]
     readInstr <- getExprReadInstr (typeOfExpr e)
-    return $
-      evalE ++
-      readInstr
+    return $ loadAddr ++ readInstr
 
 -- Codegens the statement inside of a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
