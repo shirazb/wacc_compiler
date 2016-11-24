@@ -79,6 +79,7 @@ instance CodeGen Expr where
     instr1    <- codegen e'
     let evaluate = [Mov R1 (RegOp R0)]
     restoreR0 <- pop [R0]
+    traceM "We get to this binary case?"
     binOpInstr <- getBinOpInstr op
     return $ instr      ++
              saveFirst  ++
@@ -219,10 +220,12 @@ getBinOpInstr (RelOp op) = do
       = return [MOVGE R0 (ImmOp2 1), MOVLT R0 (ImmOp2 0)]
     generateRelInstr GT
       = return [MOVGT R0 (ImmOp2 1), MOVLE R0 (ImmOp2 0)]
+
+-- we should check taht removing this ++ [CMP R0 (ImmOp2 0)] didnt break anything
 getBinOpInstr (EquOp op) = do
   let comp = [CMP R0 (RegOp2 R1)]
   instr <- generateEqualityInstr op
-  return $ comp ++ instr ++ [CMP R0 (ImmOp2 0)]
+  return $ comp ++ instr
   where
     generateEqualityInstr EQ
       = return [MOVEQ R0 (ImmOp2 1), MOVNE R0 (ImmOp2 0)]

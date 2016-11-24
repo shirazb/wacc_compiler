@@ -76,8 +76,10 @@ instance CodeGen Stat where
   codegen (While cond stat _) = do
     loopBodyLabel <- getNextLabel
     loopCondLabel <- getNextLabel
-    -- does order of these two matter?
+    -- does order of these two matter
+
     evalCond      <- codegen cond
+
     execBody      <- genInNewScope stat
     return $
       [BT loopCondLabel, Def loopBodyLabel] ++

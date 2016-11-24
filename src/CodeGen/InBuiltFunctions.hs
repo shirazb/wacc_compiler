@@ -120,7 +120,7 @@ genReadInt = do
 genReadChar :: CodeGenerator String
 genReadChar = do
   saveLR <- push [LR]
-  msgNum <- genMsg "%c\\0"
+  msgNum <- genMsg " %c\\0"
   ret    <- pop [PC]
   genFunc "p_read_char" $
       saveLR ++
