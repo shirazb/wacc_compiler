@@ -95,15 +95,13 @@ genCheckArrayBounds :: CodeGenerator String
 genCheckArrayBounds = do
   saveLR          <- push [LR]
   negMsgNum       <- genMsg "ArrayIndexOutOfBoundsError: negative index\n\0"
-  let checkTooLow  = [
-    CMP R0 (ImmOp2 0),
-    LDRLT W NoIdx R0 [MsgName negMsgNum],
-    BLLT "p_throw_runtime_error"]
+  let checkTooLow  = [CMP R0 (ImmOp2 0),
+                      LDRLT W NoIdx R0 [MsgName negMsgNum],
+                      BLLT "p_throw_runtime_error"]
   largeMsgNum <- genMsg "ArrayIndexOutOfBoundsError: index too large\n\0"
-  let checkTooHigh = [
-    LDR W NoIdx R1 [RegOp R4], CMP R0 (RegOp2 R1),
-    LDRCS W NoIdx R0 [MsgName largeMsgNum],
-    BLCS "p_throw_runtime_error"]
+  let checkTooHigh = [LDR W NoIdx R1 [RegOp R4], CMP R0 (RegOp2 R1),
+                      LDRCS W NoIdx R0 [MsgName largeMsgNum],
+                      BLCS "p_throw_runtime_error"]
   ret             <- pop [PC]
   genRunTimeError
   genFunc "p_check_array_bounds" $
@@ -145,18 +143,14 @@ genFreePair :: CodeGenerator String
 genFreePair         = do
   saveLR           <- push [LR]
   msgNum           <- genMsg "msg45"
-  let checkNotNull  = [
-    CMP R0 (ImmOp2 0),
-    LDREQ W NoIdx R0 [MsgName msgNum],
-    BEQ "p_throw_runtime_error"]
+  let checkNotNull  = [CMP R0 (ImmOp2 0),
+                       LDREQ W NoIdx R0 [MsgName msgNum],
+                       BEQ "p_throw_runtime_error"]
   savePairAddr     <- push [R0]
-  let freeFst       = [
-    LDR W NoIdx R0 [RegOp R0],
-    BL "free"]
-  let freeSnd       = [
-    LDR W NoIdx R0 [RegOp SP],
-    LDR W NoIdx R0 [RegOp R0, ImmI 4],
-    BL "free"]
+  let freeFst       = [LDR W NoIdx R0 [RegOp R0], BL "free"]
+  let freeSnd       = [LDR W NoIdx R0 [RegOp SP],
+                       LDR W NoIdx R0 [RegOp R0, ImmI 4],
+                       BL "free"]
   getPairAddr      <- pop [R0]
   let freePair      = [BL "free"]
   ret              <- pop [PC]
@@ -176,10 +170,9 @@ genCheckDivideByZero :: CodeGenerator String
 genCheckDivideByZero = do
   saveLR      <- push [LR]
   msgNum      <- genMsg "DivideByZeroError: divide or modulo by zero\n\0"
-  let compare  = [
-    CMP R1 (ImmOp2 0),
-    LDREQ W NoIdx R0 [MsgName msgNum],
-    BLEQ "p_throw_runtime_error"]
+  let compare  = [CMP R1 (ImmOp2 0),
+                  LDREQ W NoIdx R0 [MsgName msgNum],
+                  BLEQ "p_throw_runtime_error"]
   ret         <- pop [PC]
   genRunTimeError
   genFunc "p_check_divide_by_zero" $
@@ -198,7 +191,8 @@ genFunc name body = do
   let newFunc = FuncA name body
   addFunction newFunc
 
-branchWithFunc :: CodeGenerator String -> (String -> Instr) -> CodeGenerator [Instr]
+branchWithFunc :: CodeGenerator String -> (String -> Instr) ->
+                  CodeGenerator [Instr]
 branchWithFunc func branch = do
   name <- func
   return [branch name]

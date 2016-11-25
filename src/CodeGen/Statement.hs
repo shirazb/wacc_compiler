@@ -141,8 +141,8 @@ getReadIntoLHS lhs = case t of
 getExprPrintInstr :: Type -> CodeGenerator [Instr]
 getExprPrintInstr t = case t of
   BaseT BaseChar            -> return [BL "putchar"]
-  BaseT BaseInt             -> branchWithFunc genPrintInt BL
-  BaseT BaseBool            -> branchWithFunc genPrintBool BL
-  BaseT BaseString          -> branchWithFunc genPrintString BL
-  ArrayT 1 (BaseT BaseChar) -> branchWithFunc genPrintString BL
+  BaseT BaseInt             -> branchWithFunc genPrintInt       BL
+  BaseT BaseBool            -> branchWithFunc genPrintBool      BL
+  BaseT BaseString          -> branchWithFunc genPrintString    BL
+  ArrayT 1 (BaseT BaseChar) -> branchWithFunc genPrintString    BL
   _                         -> branchWithFunc genPrintReference BL
