@@ -13,7 +13,11 @@ import CodeGen.Expression
 import CodeGen.Statement
 import Utilities.Definitions
 
-{- CodeGenFunc -}
+{- CodeGenFunc generates assembly for statements within a function body.
+   We cannot use the code gen for statements within the main body because
+   return statements can appear within a function. Ensures that if a return
+   statement is hit within a function body then the stack frame is cleared
+   and the correct address is loaded in to the PC. -}
 
 -- POST: Generates assembly code for statements in a function body
 codeGenFunc :: Int -> Stat -> CodeGenerator [Instr]
