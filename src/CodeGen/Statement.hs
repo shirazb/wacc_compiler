@@ -98,20 +98,15 @@ instance CodeGen Stat where
     printLn <- branchWithFunc genPrintLn BL
     return $ printE ++ printLn
 
-  codegen (Read (Var ident@(Ident name _) _) p) = do
-    let e = IdentE ident p
-    (map', _) <- getStackInfo
-    let offset = fromJust $ Map.lookup name map'
-    let loadAddr = [ADD NF R0 SP (ImmOp2 offset)]
-    readInstr <- getExprReadInstr (typeOfExpr e)
-    return $ loadAddr ++ readInstr
-
   codegen (Read lhs _) = do
-    genRunTimeError
+    calcAddrToReadInto <- readLHS lhs
+    readIntoLHS        <- getReadIntoLHS lhs
+    return $ calcAddrToReadInto ++ readIntoLHS
 
   codegen s
     = error $ "CodeGen.Statement.codegen: Attempting to codegen the statement: "
       ++ "\n    " ++ show s
+
 -- Codegens the statement inside of a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
@@ -125,18 +120,22 @@ genInNewScope s = do
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
 
-
-
 getFreeExprInstr :: Type -> CodeGenerator [Instr]
 getFreeExprInstr t = case t of
   PairT _ _ -> branchWithFunc genFreePair BL
   _         -> return [BL "free"]
 
-getExprReadInstr :: Type -> CodeGenerator [Instr]
-getExprReadInstr t = case t of
+getReadIntoLHS :: AssignLHS -> CodeGenerator [Instr]
+getReadIntoLHS lhs = case t of
   BaseT BaseChar   -> branchWithFunc genReadChar BL
-  BaseT BaseInt    -> branchWithFunc genReadInt BL
-  _                -> error "Read called with incorrect type in code-gen"
+  BaseT BaseInt    -> branchWithFunc genReadInt  BL
+  _                -> error $ "Assertion failed in \
+                        \CodeGen.Statement.genReadLHSInstr: Called with lhs of \
+                        \incorrect type. \n\
+                        \  AssignLHS: " ++ show lhs ++ "\n\
+                        \  Type:" ++ show t
+  where
+    t = typeOfLHS lhs
 
 getExprPrintInstr :: Type -> CodeGenerator [Instr]
 getExprPrintInstr t = case t of

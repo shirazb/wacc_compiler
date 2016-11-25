@@ -110,22 +110,22 @@ codeGenArrayElem :: Type -> [Expr] -> CodeGenerator [Instr]
 codeGenArrayElem t [i]
   = loadArrayElemAddr t i
 codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
-  loadElemAddr <- loadArrayElemAddr array i
+  calcAddrOfElem <- calcAddrOfElem array i
 
   let dereference  = [LDR W NoIdx R4 [RegOp R4]]
 
   derefInnerArray  <- codeGenArrayElem array is
   return $
-    loadElemAddr ++
-    dereference  ++
+    calcAddrOfElem  ++
+    dereference     ++
     derefInnerArray
 codeGenArrayElem t is
   = error $ "Error in codeGenArrayElem: Did not match any case.\n" ++
             "Type:     " ++ show t ++ "\n" ++
             "Indexes:  " ++ show is ++ "\n"
 
-loadArrayElemAddr :: Type -> Expr -> CodeGenerator [Instr]
-loadArrayElemAddr (ArrayT dim innerType) idx = do
+calcAddrOfElem :: Type -> Expr -> CodeGenerator [Instr]
+calcAddrOfElem (ArrayT dim innerType) idx = do
   -- now we generate the code to get the expressions
   -- we make the assumption that we store the value in register zero
   calcIdx          <- codegen idx

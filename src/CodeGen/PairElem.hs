@@ -1,7 +1,8 @@
 {- CodeGen for PairElem. Returns the address of the element. -}
 
 module CodeGen.PairElem (
-  codegen
+  codegen,
+  typeOfPairElem
 ) where
 
 {- Local imports -}
@@ -21,3 +22,10 @@ instance CodeGen PairElem where
         instr1  ++
         nullptr ++
         posInstr
+
+typeOfPairElem :: PairElem -> Type
+typeOfPairElem (PairElem selector expr _)
+  = let PairT t t' = typeOfExpr expr in
+      case selector of
+        Fst -> t
+        Snd -> t'
