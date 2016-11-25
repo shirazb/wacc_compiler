@@ -108,7 +108,7 @@ instance CodeGen ArrayElem where
 codeGenArrayElem :: Type -> [Expr] -> CodeGenerator [Instr]
 
 codeGenArrayElem t [i]
-  = loadArrayElemAddr t i
+  = calcAddrOfElem t i
 codeGenArrayElem array@(ArrayT dim innerType) (i : is) = do
   calcAddrOfElem <- calcAddrOfElem array i
 
@@ -142,7 +142,7 @@ calcAddrOfElem (ArrayT dim innerType) idx = do
       errorHandling ++
       skipDim ++
       skipToElem
-loadArrayElemAddr t e
+calcAddrOfElem t e
   = error $ "Error in CodeGen.Expression.loadArrayElemAddr: Calling with non array type.\n" ++
             "Type: " ++ show t ++ "\n" ++
             "Idx:  " ++ show e ++ "\n"
