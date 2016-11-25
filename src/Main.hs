@@ -6,67 +6,44 @@ import qualified Data.Map as Map
 import Data.List
 
 {- LOCAL IMPORTS -}
+import CodeGen.AssemblyGenerator
+import Parser.Statement
 import Parser.Program
 import Parser.BasicCombinators
 import Semantics.Annotators.AST
 import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
-import CodeGen.Assembly
-import CodeGen.Statement
-import Parser.Statement
-import CodeGen.Program
-
-boolAssignment = "begin bool b = false ; b = true end"
-
-printInstrs :: AST -> IO ()
-printInstrs
-  = putStrLn . makeInstr
-
-debug s = printInstrs ast
-  where
-  ast                       = annotateAST a
-  (Right (Just ((a,b), _))) = runParser parseProgram s
-
-makeInstr :: AST -> String
-makeInstr a
-  = space ++ dataSegment ++ "\n"   ++
-    text                 ++ "\n\n" ++
-    global               ++ "\n"   ++
-    textInstrs           ++ "\n"   ++
-    funcInstrs
-  where
-    ((((textSeg, functions), DataSeg dataSeg _), _), _) = genInstruction (genInstrFromAST a)
-    textInstrs = showInstrs textSeg
-    dataInstrs = intercalate "\n" (map show dataSeg)
-    funcInstrs = space ++ intercalate ("\n" ++ space) (map show functions)
-    showInstrs = intercalate "\n" . map showInstr
-    dataSegment = case dataInstrs of
-                   [] -> ""
-                   _ -> dataLabel ++ "\n\n" ++ dataInstrs ++ "\n"
-
 
 main = do
+  -- Reads in file from command line
   args         <- getArgs
-  let filename = head args
+  let filename  = head args
   contents     <- readFile filename
 
+  -- Parses the source file and either generates an AST or exits with a syntax
+  -- error
   let ast      = runParser parseProgram contents
   a <- case ast of
          Right (Just ((a,b),_))  -> return a
          Left err                -> do {print err; exitWith (ExitFailure 100)}
 
+  -- Annotation enriches the AST with type and scope error information
   let annotatedAST = annotateAST a
+  -- Traverses the AST, prints any scope errors found and exits the program if
+  -- any errors are found
   case scopeCheckProgram annotatedAST of
     [] -> return ()
     errors -> do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
 
+  -- Traverses the AST and type checks the program. If any type errors are
+  -- found they are printed and the program terminates
   case generateTypeErrorMessages annotatedAST of
     [] -> return ()
     errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
 
-  let instrs = makeInstr annotatedAST
-  -- writeFile ("./"  ++ (filename ++ ".s")) instrs
-  printInstrs annotatedAST
+  -- Generates ARM11 Assembly code from the AST and prints to stdout
+  -- Compile script pipes this in to a file and generates the assembly file.
+  putStrLn (makeInstr annotatedAST)
 
   exitSuccess

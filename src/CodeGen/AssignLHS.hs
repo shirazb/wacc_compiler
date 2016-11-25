@@ -13,6 +13,7 @@ import CodeGen.Expression
 import CodeGen.PairElem
 import Utilities.Definitions hiding (Env)
 
+-- POST: Generates code for AssignLHS
 instance CodeGen AssignLHS where
   codegen var@(Var ident _) = do
     offset   <- spToVarOffset ident

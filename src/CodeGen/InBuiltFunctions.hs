@@ -184,7 +184,7 @@ genCheckDivideByZero = do
 {- Utility Functions -}
 
 genMsg :: String -> CodeGenerator Int
-genMsg = addData'
+genMsg = addUniqueData
 
 genFunc :: String -> [Instr] -> CodeGenerator ()
 genFunc name body = do

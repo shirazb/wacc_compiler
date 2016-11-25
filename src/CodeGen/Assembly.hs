@@ -23,12 +23,21 @@ class CodeGen a where
   codegen :: a -> CodeGenerator [Instr]
 
 genInstruction :: CodeGenerator a -> ((((a, Functions), DataSegment),
-                  (Env, Int)), Int)
+                  (Env, StackOffset)), LabelNumber)
 genInstruction p
-  = runState (runStateStackT (runStateT (runStateT p []) (DataSeg mzero 0))
-    (Map.empty, 0)) 0
+  = runState (runStateStackT (runStateT (runStateT p [])
+    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) startLabelNum
+  where
+  startMsgNum          = 0
+  startOffset          = 0
+  startLabelNum        = 0
+
+{- TYPE AND DATA INSTANCES -}
 
 type Label           = String
+type LabelNumber     = Int
+type StackOffset     = Int
+type MsgNumber       = Int
 type TextSegment     = [Instr]
 type Functions       = [AssemblyFunc]
 type Env             = Map.Map String Int
@@ -36,7 +45,7 @@ type CodeGenerator a = StateT Functions (StateT DataSegment (StateStackT
                        (Env, Int) (State Int))) a
 
 data DataSegment
-  = DataSeg [Data] Int
+  = DataSeg [Data] MsgNumber
   deriving (Show)
 
 data Instr
@@ -132,7 +141,7 @@ data Op
   | RegOp Reg
   | MsgName Int
 
-{- MAPPING FROM TYPES TO SIZES -}
+{- MAPPING FROM TYPES TO SIZES DEPENDENT ON THE INSTRUCTION -}
 
 typeSizes, typeSizesLDR, typeSizesSTR :: [(Type, Size)]
 typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, B),
@@ -147,9 +156,9 @@ typeSizesSTR = [(BaseT BaseInt, W), (BaseT BaseChar, B),
                 (BaseT BaseBool, B), (PolyArray, W), (PolyPair, W),
                 (BaseT BaseString, W)]
 
-{- UTILITY FUNCTIONS -}
+{- FUNCTIONS TO CALCULATE SIZE IN BYTES -}
 
--- Returns the size of a scope
+-- POST: Returns size of variables declared at the top level
 scopeSize :: Stat -> Int
 scopeSize (Declaration t _ _ _)
   = typeSize t
@@ -158,14 +167,17 @@ scopeSize (Seq s1 s2 _)
 scopeSize _
   = 0
 
+-- POST: Returns the size of a pointer
 pointerSize :: Int
 pointerSize
   = 4
 
-pairSize :: Int
-pairSize
+-- POST: Returns the size of a pointer to a pair
+pairSizeHeap :: Int
+pairSizeHeap
   = pointerSize * 2
 
+-- POST: Returns the size of a type
 typeSize :: Type -> Int
 typeSize (BaseT BaseInt)
   = 4
@@ -184,72 +196,92 @@ typeSize (BaseT BaseString)
 typeSize t
   = error $ "Cannot call typeSize on type \'" ++ show t ++ "\'"
 
+-- POST: Given a mapping for a kind of instruction, returns the appropriate
+--       size of a type
 sizeFromType :: [(Type, Size)] -> Type -> Size
 sizeFromType ts
   = fromJust . flip lookup ts
 
-getOffset :: Stat -> Int
-getOffset s
-  = scopeSize s - sizeOfFirstType s
+{- UTILITY FUNCTIONS FOR INTERACTING WITH THE MONAD STACK -}
 
-sizeOfFirstType :: Stat -> Int
-sizeOfFirstType (Declaration t _ _ _ )
-  = typeSize t
-sizeOfFirstType (Seq (Declaration t _ _ _) _ _)
-  = typeSize t
-sizeOfFirstType (Seq s1 s2 _)
-  = sizeOfFirstType s2
-sizeOfFirstType _
-  = 0
-
+-- POST: Returns the list of defined functions
 getFunctionInfo :: CodeGenerator Functions
 getFunctionInfo
  = get
 
+-- POST: Replaces the list of functions
 putFunctionInfo :: Functions -> CodeGenerator ()
 putFunctionInfo
   = put
 
+-- POST: Adds a new function definition to the list of functions iff it is not
+--       already defined
 addFunction :: AssemblyFunc -> CodeGenerator ()
 addFunction f@(FuncA s _) = do
   fs <- getFunctionInfo
   when (checkFuncDefined s fs) $
-    do putFunctionInfo (fs ++ [f]) -- f:fs
+    do putFunctionInfo (fs ++ [f])
        return ()
 
+-- POST: Returns the next available message number and increments the message
+--       counter
 getNextMsgNum :: CodeGenerator Int
 getNextMsgNum = do
   DataSeg ds num <- getData
   putData (DataSeg ds (num + 1))
   return num
 
+-- POST: Returns pairs of instructions to allocate and deallocate stack space
 manageStack :: Int -> CodeGenerator ([Instr], [Instr])
-manageStack offset =  if offset > 1024 then
+manageStack offset =  if offset > maxStackAlloc then
   do
-     let  newOffset = offset - 1024
+     let  newOffset = offset - maxStackAlloc
      (saveStack, clearStack) <- manageStack newOffset
-     return (SUB NF SP SP (ImmOp2 1024) : saveStack,
-             ADD NF SP SP (ImmOp2 1024) : clearStack)
+     return (SUB NF SP SP (ImmOp2 maxStackAlloc) : saveStack,
+             ADD NF SP SP (ImmOp2 maxStackAlloc) : clearStack)
   else return ([SUB NF SP SP (ImmOp2 offset)], [ADD NF SP SP (ImmOp2 offset)])
+  where
+    maxStackAlloc = 1024
 
-addData' :: String -> CodeGenerator Int
-addData' s = do
+-- POST: Adds given string to data segment iff not already
+--       defined, returns numer of definition.
+addUniqueData :: String -> CodeGenerator Int
+addUniqueData s = do
+  DataSeg ds num    <- getData
+  if checkDataDefined s ds
+    then return (getMsgNumData s ds)
+    else addData s
+
+-- POST: Adds given data to the data segment unconditionally, returns the
+--       message number
+addData :: String -> CodeGenerator Int
+addData s = do
+  -- Generates new data using the supplied string, replacing all escaped
+  -- chars to ensure they are actually escaped and not consumed by haskell
+  msgNum         <- getNextMsgNum
+  let msg         = [MSG msgNum (replaceEscapeChar s) (length s)]
+  -- Adds the generated data to the data segment
   DataSeg ds num <- getData
-  let escapedString = replaceEscapeChar s
-  if checkDataDefined escapedString ds
-    then return (getMsgNumData escapedString ds)
-    else do {msgNum <- getNextMsgNum; addData
-            (MSG msgNum s (length s)); return msgNum }
+  putData (DataSeg (ds ++ msg) num)
+  return msgNum
 
+-- PRE:  String is already defined and has been assigned to a number
+-- POST: Returns the definition number of the supplied string
 getMsgNumData :: String -> [Data] -> Int
 getMsgNumData s ds
-  = head [ n | MSG n s' _ <- ds, s == s' ]
+  = head [ n | MSG n s' _ <- ds, escapedString == s' ]
+  where
+    escapedString = replaceEscapeChar s
 
 -- POST: Returns true iff message is not defined
 checkDataDefined :: String -> [Data] -> Bool
 checkDataDefined s msgs
-  = or [s == s' | MSG _ s' _ <- msgs ]
+  = or [escapedString == s' | MSG _ s' _ <- msgs ]
+  where
+    escapedString = replaceEscapeChar s
 
+-- POST: Properly escapes all escape chars found in string
+--       ensuring it is not consumed by haskell.
 replaceEscapeChar :: String -> String
 replaceEscapeChar []
   = []
@@ -260,26 +292,26 @@ replaceEscapeChar (c : cs)
     escapeChars = map snd escapeCharList
     newChar     = fromJust $ lookup c (map swap escapeCharList)
 
-addData :: Data -> CodeGenerator ()
-addData (MSG n s l) = do
-  DataSeg ds num <- getData
-  putData (DataSeg (ds ++ [MSG n (replaceEscapeChar s) l]) num)
-
+-- POST: Returns the data segment
 getData :: CodeGenerator DataSegment
 getData  = lift get
 
+-- POST: Replaces the data segment with the supplied data segment
 putData :: DataSegment -> CodeGenerator ()
 putData = lift . put
 
+-- POST: Pushes the current state on the stack
 saveStackInfo :: CodeGenerator ()
 saveStackInfo
   = lift (lift save)
 
+-- POST: Pops the state of the stack
 restoreStackInfo :: CodeGenerator ()
 restoreStackInfo
   = lift (lift restore)
 
--- POST: Updates the next label number with the given number
+-- POST:    Updates the next label number with the given number
+-- EXAMPLE: Do you even lift?
 updateNextLabelNum :: Int -> CodeGenerator ()
 updateNextLabelNum
   = lift . lift . lift . put
@@ -297,28 +329,31 @@ getNextLabel = do
   updateNextLabelNum (labelNum + 1)
   return $ "L" ++ show labelNum
 
+-- POST: Replaces the state at the top of the stack.
 putStackInfo :: (Env, Int) -> CodeGenerator ()
 putStackInfo
   = lift . lift . put
 
+-- POST: Gets the state at the top of the stack
 getStackInfo :: CodeGenerator (Env, Int)
 getStackInfo
   = lift (lift get)
 
--- POST: Increments the offset of the stack pointer (to the start of the scope)
+-- POST: Increments the stack pointer and modifys the variable mappings
 incrementOffset :: Int -> CodeGenerator ()
 incrementOffset n = do
   (env, offset) <- getStackInfo
   let newEnv = Map.map (+ n) env
   putStackInfo (newEnv, offset + n)
 
--- POST: Decrements the offset of the stack pointer (to the start of the scope)
+-- POST: Decrements the stack pointer and modifys the variable mappings
 decrementOffset :: Int -> CodeGenerator ()
 decrementOffset n = do
   (env, offset) <- getStackInfo
   let newEnv = Map.map (\x -> x - n) env
   putStackInfo (newEnv, offset - n)
 
+-- POST: Generates push and pop instructions and modifies the variable mappings.
 push, pop :: [Reg] -> CodeGenerator [Instr]
 push rs = do
   incrementOffset (4 * length rs)
@@ -336,7 +371,8 @@ checkFuncDefined s fs
 
 space, spaceX2, text, global, dataLabel, word, ascii :: String
 spaceGen :: Int -> String
-spaceGen n = concat $ replicate n space
+spaceGen n
+  = concat $ replicate n space
 space     = "    "
 spaceX2   = space ++ space
 text      = space ++ ".text"
@@ -346,13 +382,6 @@ word      = ".word"
 ascii     = ".ascii"
 
 {- SHOW INSTANCES -}
-
--- POST: Produces a correctly indented string representation for an instruction
-showInstr :: Instr -> String
-showInstr label@(Def s)
-  = space ++ show label
-showInstr instr
-  = spaceX2 ++ show instr
 
 instance Show AssemblyFunc where
   show (FuncA name body)
@@ -447,25 +476,6 @@ instance Show Instr where
   show LTORG
      = ".ltorg"
 
-showSizeIndexingRegOps :: Size -> Indexing -> Reg -> [Op] -> String
-showSizeIndexingRegOps s i reg ops
-  = show s ++ " " ++ show reg ++ ", " ++ showIndexing i ops
-
-showIndexing :: Indexing -> [Op] -> String
-showIndexing index ops = case index of
-    Pre   -> show ops ++ "!"
-    Post  -> show (init ops) ++ ", " ++ show (last ops)
-    NoIdx -> show ops
-
-showSingleInstr :: Size -> Reg -> Op -> String
-showSingleInstr s reg op'
-  = show s ++ " " ++ show reg ++ ", " ++ showSingleOp op'
-
-showSingleOp :: Op -> String
-showSingleOp op = case op of
-  RegOp _ -> "[" ++ show op ++ "]"
-  _       -> show op
-
 instance Show Flag where
   show S
     = "S"
@@ -527,3 +537,37 @@ instance Show Op2 where
     = show shift ++ " " ++ show reg
   show (Shift reg shift amount)
     = show reg ++ ", " ++ show shift ++ " #" ++ show amount
+
+{- UTILITY FUNCTIONS FOR SHOW INSTANCES -}
+
+-- POST: Produces a string which shows a size, index, reg and list of operands
+showSizeIndexingRegOps :: Size -> Indexing -> Reg -> [Op] -> String
+showSizeIndexingRegOps s i reg ops
+  = show s ++ " " ++ show reg ++ ", " ++ showIndexing i ops
+
+-- POST: Produces the correct string representation depending on the type of
+--       indexing
+showIndexing :: Indexing -> [Op] -> String
+showIndexing index ops = case index of
+  Pre   -> show ops ++ "!"
+  Post  -> show (init ops) ++ ", " ++ show (last ops)
+  NoIdx -> show ops
+
+-- POST: Produces a string for load and store instructions which have a
+--       singleton operand list
+showSingleInstr :: Size -> Reg -> Op -> String
+showSingleInstr s reg op'
+  = show s ++ " " ++ show reg ++ ", " ++ showSingleOp op'
+
+-- POST: Produces a string which shows a single operand
+showSingleOp :: Op -> String
+showSingleOp op = case op of
+  RegOp _ -> "[" ++ show op ++ "]"
+  _       -> show op
+
+-- POST: Produces a correctly indented string representation for an instruction
+showInstr :: Instr -> String
+showInstr label@(Def s)
+  = space ++ show label
+showInstr instr
+  = spaceX2 ++ show instr

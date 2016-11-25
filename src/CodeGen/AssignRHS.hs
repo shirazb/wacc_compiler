@@ -13,6 +13,7 @@ import CodeGen.Expression
 import CodeGen.PairElem           (codegen)
 import Utilities.Definitions
 
+-- POST: Generates code for AssignRHS
 instance CodeGen AssignRHS where
   codegen (ExprAssign e _)
     = codegen e
@@ -45,7 +46,7 @@ instance CodeGen AssignRHS where
   codegen (NewPairAssign e e' _) = do
     exprInstrForHeap     <- storeInHeap e
     exprInstrForHeap'    <- storeInHeap e'
-    let callMallocPair    = malloc pairSize
+    let callMallocPair    = malloc pairSizeHeap
     restoreAddresses     <- pop [R1, R2]
     let storeAddOfFirst   = [STR W NoIdx R2 [RegOp R0]]
     let storeAddOfSecond  = [STR W NoIdx R1 [RegOp R0, ImmI pointerSize]]
@@ -90,12 +91,16 @@ instance CodeGen AssignRHS where
     decrementOffset paramSpace
     return $ pushParams ++ callFunc ++ clearParams
 
+-- POST: Generates an instruction to push a parameter for a function onto the
+--       stack
 pushParam :: Type -> [Instr]
 pushParam t
   = [STR size Pre R0 [RegOp SP, ImmI (- typeSize t)]]
   where
     size = sizeFromType typeSizesSTR t
 
+-- POST: Generates assembly code for the parameters of a function and pushes
+--       them onto the stack in the correct order
 codeGenParams :: Expr -> CodeGenerator [Instr]
 codeGenParams e = do
   (env, _)    <- getStackInfo
@@ -105,6 +110,7 @@ codeGenParams e = do
   (env' , _ ) <- getStackInfo
   return $ instr ++ pushP
 
+-- POST: Returns the type of an element of a pair
 typeOfPairElem :: PairElem -> Type
 typeOfPairElem (PairElem pos e _)
   = case pos of

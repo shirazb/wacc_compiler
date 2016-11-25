@@ -14,11 +14,10 @@ import CodeGen.Assembly
 import CodeGen.InBuiltFunctions
 import Utilities.Definitions
 
+-- POST: generates ARM11 Assembly code for expressions
 instance CodeGen Expr where
   codegen (StringLit s _) = do
-    msgNum        <- getNextMsgNum
-    let directive  = MSG msgNum s (length s)
-    addData directive
+    msgNum <- addData s
     return [LDR W NoIdx R0 [MsgName msgNum]]
 
   codegen (IntLit i _)
@@ -105,7 +104,8 @@ instance CodeGen ArrayElem where
     derefInnerTypes            <- codeGenArrayElem t idxs
     return $ loadIdentIntoR4 ++ derefInnerTypes
 
--- POST: Leaves the address of the element in R4
+-- POST: Retrieves the address of an element of an array and leaves the result
+--       in register R4
 codeGenArrayElem :: Type -> [Expr] -> CodeGenerator [Instr]
 codeGenArrayElem t [i]
   = calcAddrOfElem t i
@@ -122,6 +122,7 @@ codeGenArrayElem t is
       "Type:     " ++ show t  ++ "\n" ++
       "Indexes:  " ++ show is ++ "\n"
 
+-- POST: Returns a pointer to the address of the given array element
 calcAddrOfElem :: Type -> Expr -> CodeGenerator [Instr]
 calcAddrOfElem (ArrayT dim innerType) idx = do
   -- Now we generate the code to get the expressions.
@@ -147,13 +148,15 @@ calcAddrOfElem t e
             "Type: "   ++ show t ++ "\n" ++
             "Index:  " ++ show e ++ "\n"
 
--- PRE: Op must be a reg
+-- PRE:  Op must be a reg
+-- POST: Loads identifier into register R4
 loadIdentAddr :: Reg -> Ident -> CodeGenerator [Instr]
 loadIdentAddr r (Ident name info) = do
   (env, offsetSP) <- getStackInfo
   let offsetToVar  = fromJust (Map.lookup name env)
   return [LDR W NoIdx r [RegOp SP, ImmI offsetToVar]]
 
+-- POST: Generates assembly instructions for the given logical binary operator
 generateLogicInstr :: Expr -> BinOp -> CodeGenerator [Instr]
 generateLogicInstr e (Logic op) = do
   label         <- getNextLabel
@@ -161,12 +164,12 @@ generateLogicInstr e (Logic op) = do
   instr1        <- codegen e
   let labelJump  = [Def label]
   return $ fstCMP ++ instr1 ++ labelJump
+  where
+    logicNum op = case op of
+                    AND -> 0
+                    OR  -> 1
 
-logicNum :: LogicalOp -> Int
-logicNum op = case op of
-                AND -> 0
-                OR  -> 1
-
+-- POST: Takes a boolean represenation of a number and inverts it
 invertLogicalNum :: Int -> Int
 invertLogicalNum 0
   = 1
@@ -175,11 +178,8 @@ invertLogicalNum 1
 invertLogicalNum _
   = error "invertLogicalNum called with a value which is not in [0,1]"
 
-getAdditiveOpInstr op = do
-  let operation  = [op S R0 R0 (RegOp2 R1)]
-  errorHandling <- branchWithFunc genOverFlowFunction BLVS
-  return $ operation ++ errorHandling
-
+-- POST: Generates the correct assembly code for the supplied binary operator
+--       excluding logical operators.
 getBinOpInstr :: BinOp -> CodeGenerator [Instr]
 getBinOpInstr (Arith Add)
   = getAdditiveOpInstr ADD
@@ -200,12 +200,12 @@ getBinOpInstr (Arith Mul) = do
   errorHandling <- branchWithFunc genOverFlowFunction BLNE
   return $ operation ++ errorHandling
 
-getBinOpInstr (Logic op) = do
-  label         <- getNextLabel
-  let fstCMP     = [CMP R0 (ImmOp2 (logicNum op)), BEQ label]
-  let setFalse   = [Mov R0 (ImmI (invertLogicalNum $ logicNum op))]
-  let labelJump  = [Def label]
-  return $ fstCMP ++ setFalse ++ labelJump
+-- getBinOpInstr (Logic op) = do
+--   label         <- getNextLabel
+--   let fstCMP     = [CMP R0 (ImmOp2 (logicNum op)), BEQ label]
+--   let setFalse   = [Mov R0 (ImmI (invertLogicalNum $ logicNum op))]
+--   let labelJump  = [Def label]
+--   return $ fstCMP ++ setFalse ++ labelJump
 
 getBinOpInstr (RelOp op) = do
   let comp  = [CMP R0 (RegOp2 R1)]
@@ -230,6 +230,14 @@ getBinOpInstr (EquOp op) = do
       = return [MOVEQ R0 (ImmOp2 1), MOVNE R0 (ImmOp2 0)]
     generateEqualityInstr NEQ
       = return [MOVNE R0 (ImmOp2 1), MOVEQ R0 (ImmOp2 0)]
+
+-- POST: Generates assembly code for additive oprators and adds overflow check
+getAdditiveOpInstr :: (Flag -> Reg -> Reg -> Op2 -> Instr) ->
+                      CodeGenerator [Instr]
+getAdditiveOpInstr op = do
+  let operation  = [op S R0 R0 (RegOp2 R1)]
+  errorHandling <- branchWithFunc genOverFlowFunction BLVS
+  return $ operation ++ errorHandling
 
 -- POST: Returns number of bytes an expression occupies
 exprSize :: Expr -> Int
