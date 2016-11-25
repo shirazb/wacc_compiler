@@ -7,8 +7,8 @@ import CodeGen.Assembly
 
 genNullPtrFunc :: CodeGenerator String
 genNullPtrFunc = do
-  msgNum              <- genMsg "NullReferenceError: dereference" ++
-                                " a null reference\n\0"
+  msgNum              <- genMsg ("NullReferenceError: dereference" ++
+                                " a null reference\n\0")
   saveLR              <- push [LR]
   let checkForNullPtr  = [CMP R0 (ImmOp2 0)]
   let ldrMsg           = [LDREQ W NoIdx R0 [MsgName msgNum],
@@ -30,8 +30,8 @@ genRunTimeError = do
 
 genOverFlowFunction :: CodeGenerator String
 genOverFlowFunction = do
-  msgNum       <- genMsg "OverflowError: the result is too small/large" ++
-                   " to store in a 4-byte signed-integer.\n"
+  msgNum       <- genMsg ("OverflowError: the result is too small/large" ++
+                          " to store in a 4-byte signed-integer.\n")
   let loadData  = [LDR W NoIdx R0 [MsgName msgNum]]
   let branch    = [BL "p_throw_runtime_error"]
   genFunc "p_throw_overflow_error" (loadData ++ branch)
@@ -70,7 +70,7 @@ genPrintInt   = do
 
 genPrintBool :: CodeGenerator String
 genPrintBool = do
-  msgNum        <-genMsg "true\0"
+  msgNum        <- genMsg "true\0"
   msgNum'       <- genMsg "false\0"
   saveLR        <- push [LR]
   let chooseMsg  = [CMP R0 (ImmOp2 0), LDRNE W NoIdx R0 [MsgName msgNum],
