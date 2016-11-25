@@ -22,9 +22,9 @@ import Utilities.Definitions hiding (Env)
 class CodeGen a where
   codegen :: a -> CodeGenerator [Instr]
 
-genInstruction :: CodeGenerator a -> ((((a, Functions), DataSegment),
+runGenerator :: CodeGenerator a -> ((((a, Functions), DataSegment),
                   (Env, StackOffset)), LabelNumber)
-genInstruction p
+runGenerator p
   = runState (runStateStackT (runStateT (runStateT p [])
     (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) startLabelNum
   where

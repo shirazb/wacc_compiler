@@ -15,22 +15,17 @@ import CodeGen.AssignRHS
 import Utilities.Definitions hiding (Env)
 
 -- POST: Generates assembly code for entire program using the AST
-genInstrFromAST :: AST -> CodeGenerator [Instr]
-genInstrFromAST (Program fs body) = do
+instrsFromAST :: AST -> CodeGenerator [Instr]
+instrsFromAST (Program fs body) = do
   mapM_ codegen fs
-  let defMain                  = [Def "main"]
-  pLr                         <- push [LR]
-  let sizeOfscope              = scopeSize body
-  putStackInfo (Map.empty, sizeOfscope)
-  (makeRoomStack, clearSpace) <- manageStack sizeOfscope
-  instr                       <- codegen body
-  let succesfulExit            = [Mov R0 (ImmI 0)]
-  popPC                       <- pop [PC]
+  let defMain  = [Def "main"]
+  saveLR       <- push [LR]
+  instructions <- genInNewScope body
+  let succesfulExit = [Mov R0 (ImmI 0)]
+  restorePC    <- pop [PC]
   return $
     [Def "main"]  ++
-    pLr           ++
-    makeRoomStack ++
-    instr         ++
-    clearSpace    ++
+    saveLR        ++
+    instructions  ++
     succesfulExit ++
-    popPC
+    restorePC
