@@ -71,9 +71,10 @@ import Utilities.Definitions
 instance CodeGen Func where
   codegen (Func t ident@(Ident name _) (ParamList params _) body _) = do
     saveStackInfo
+    -- add the function parameters to variable mappings starting with offset zero
     addParamsToEnv params 0
-    saveLR            <- push [LR]
 
+    saveLR            <- push [LR]
     instrs            <- genInNewScope body
 
     {-let sizeOfScope    = scopeSize body-}

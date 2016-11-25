@@ -19,6 +19,9 @@ instance CodeGen AssignRHS where
     = codegen e
 
   codegen (ArrayLitAssign exprs _) = do
+    -- Allocates space on the heap for the array
+    -- then moves the elements of the array in to
+    -- correct locations on the heap one by one.
     let sizeArrayObj  = 4 + sum (map exprSize exprs)
     let mallocArray   = malloc sizeArrayObj
     populateArray    <- moveExprsIntoArray exprs 4
@@ -83,6 +86,8 @@ instance CodeGen AssignRHS where
 
   codegen (FuncCallAssign ident@(Ident name info) es _) = do
     let FuncT retType paramTypes  = typeInfo info
+    -- Generates code to evalaute parameters to the function
+    -- and push them on the stack in reverse order
     params                       <- mapM codeGenParams (reverse es)
     let pushParams                = concat params
     let callFunc                  = [BL ("f_" ++ name)]
