@@ -143,9 +143,10 @@ calcAddrOfElem (ArrayT dim innerType) idx = do
       skipDim ++
       skipToElem
 calcAddrOfElem t e
-  = error $ "Error in CodeGen.Expression.loadArrayElemAddr: Calling with non array type.\n" ++
+  = error $ "Error in CodeGen.Expression.calcAddrOfElem: Calling with non array\
+                \ type.\n" ++
             "Type: " ++ show t ++ "\n" ++
-            "Idx:  " ++ show e ++ "\n"
+            "Index:  " ++ show e ++ "\n"
 
 -- Op must be a reg
 loadIdentAddr :: Reg -> Ident -> CodeGenerator [Instr]
