@@ -50,5 +50,6 @@ executable WACC-HASKELL
                        src/Semantics/Annotators,
                        src/Semantics,
                        src/Parser,
-                       src/Utilities
+                       src/Utilities,
+                       src/CodeGen
   default-language:    Haskell2010

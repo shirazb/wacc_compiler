@@ -13,6 +13,9 @@ import CodeGen.Expression
 import CodeGen.Statement
 import Utilities.Definitions
 
+{- CodeGenFunc -}
+
+-- POST: Generates assembly code for statements in a function body
 codeGenFunc :: Int -> Stat -> CodeGenerator [Instr]
 codeGenFunc sizeOfScope ifStat@(If cond thenStat elseStat _) = do
   condInstr          <- codegen cond
@@ -78,6 +81,7 @@ instance CodeGen Func where
     restoreStackInfo
     return []
 
+-- POST: Adds the parameters of a function to the variable mappings
 addParamsToEnv :: [Param] -> Int -> CodeGenerator ()
 addParamsToEnv [] _
   = return ()
@@ -88,6 +92,8 @@ addParamsToEnv (Param t (Ident name _) _ : ps) offsetToParam = do
   putStackInfo (newEnv, offset)
   addParamsToEnv ps offsetToNextParam
 
+-- POST: Generates assembly for the supplied statement in a new scope
+--       using the codeGenFunc method
 genInNewScopeFunc :: Int -> Stat -> CodeGenerator [Instr]
 genInNewScopeFunc outerScopeSize s = do
   (createStackSpace, clearStackSpace) <- prepareScope s

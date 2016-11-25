@@ -257,6 +257,7 @@ typeOfExpr e = case e of
   UnaryApp unOp _ _          -> typeOfUnOp unOp
   BinaryApp binOp _ _ _      -> typeOfBinOp binOp
 
+-- POST: Returns the type of an array.
 typeOfArrayElem :: ArrayElem -> Type
 typeOfArrayElem (ArrayElem (Ident _ (Info (BaseT BaseString) _)) idxs _)
   = BaseT BaseChar
@@ -272,6 +273,7 @@ typeOfArrayElem ae
   = error $ "CodeGen.Expression.typeOfArrayElem. Calling on ArrayElem: "
             ++ show ae
 
+-- POST: Returns the result type of a unary operator
 typeOfUnOp :: UnOp -> Type
 typeOfUnOp unOp
   = case unOp of
@@ -281,6 +283,7 @@ typeOfUnOp unOp
       Ord -> BaseT BaseInt
       Chr -> BaseT BaseChar
 
+-- POST: Returns the result type of a binary operator
 typeOfBinOp :: BinOp -> Type
 typeOfBinOp binOp
   = case binOp of
