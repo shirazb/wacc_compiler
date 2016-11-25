@@ -20,8 +20,8 @@ import Utilities.Definitions
 instance CodeGen Func where
   codegen (Func t ident@(Ident name _) (ParamList params _) body _) = do
     saveStackInfo
-    saveLR <- push [LR]
     addParamsToEnv params 0
+    saveLR <- push [LR]
     let sizeOfScope = scopeSize body
     (env, _) <- getStackInfo
     let envWithOffset = Map.map (+ sizeOfScope) env
