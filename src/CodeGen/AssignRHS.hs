@@ -89,6 +89,9 @@ instance CodeGen AssignRHS where
     let clearParams = [ADD NF SP SP (ImmOp2 paramSpace)]
     return $ pushParams ++ callFunc ++ clearParams
     where
+      -- FIXME: DOES NOT CHANGE OFFSETS IN ENVIRONMENT.
+      -- Possibly hange STR / LDR Size to be a function that manages env,
+      -- like push and pop.
       pushParam :: Type -> [Instr]
       pushParam t
         = [STR size Pre R0 [RegOp SP, ImmI (- typeSize t)]]
