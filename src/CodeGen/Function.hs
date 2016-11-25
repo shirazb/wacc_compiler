@@ -73,15 +73,13 @@ instance CodeGen Func where
     saveStackInfo
     addParamsToEnv params 0
     saveLR            <- push [LR]
-
-    instrs            <- genInNewScope body
-
-    {-let sizeOfScope    = scopeSize body-}
-    {-(env, _)          <- getStackInfo-}
-    {-let envWithOffset  = Map.map (+ sizeOfScope) env-}
-    {-putStackInfo (envWithOffset, sizeOfScope)-}
-    {-(createStackSpace, clearStackSpace) <- manageStack sizeOfScope-}
-    {-instrs            <- codegen body-}
+    let sizeOfScope    = scopeSize body
+    insertScopeSizeToEnv sizeOfScope
+    (env, _)          <- getStackInfo
+    let envWithOffset  = Map.map (+ sizeOfScope) env
+    putStackInfo (envWithOffset, sizeOfScope)
+    (createStackSpace, _) <- manageStack sizeOfScope
+    instrs            <- codegen body
 
     let listOfInstrs   = saveLR ++ instrs ++ [LTORG]
     let newFunc        = FuncA ("f_" ++ name) listOfInstrs
@@ -99,12 +97,3 @@ addParamsToEnv (Param t (Ident name _) _ : ps) offsetToParam = do
   let offsetToNextParam  = offsetToParam + typeSize t
   putStackInfo (newEnv, offset)
   addParamsToEnv ps offsetToNextParam
-
--- POST: Generates assembly for the supplied statement in a new scope
---       using the codeGenFunc method
-{-genInNewScopeFunc :: Int -> Stat -> CodeGenerator [Instr]-}
-{-genInNewScopeFunc outerScopeSize s = do-}
-  {-(createStackSpace, clearStackSpace) <- prepareScope s-}
-  {-instrs <- codegen outerScopeSize s-}
-  {-restoreStackInfo-}
-  {-return $ createStackSpace ++ instrs ++ clearStackSpace-}
