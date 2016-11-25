@@ -82,7 +82,6 @@ instance CodeGen Expr where
     instr1    <- codegen e'
     let evaluate = [Mov R1 (RegOp R0)]
     restoreR0 <- pop [R0]
-    traceM "We get to this binary case?"
     binOpInstr <- getBinOpInstr op
     return $ instr      ++
              saveFirst  ++

@@ -89,6 +89,7 @@ data Instr
   | MOVGT Reg Op2
   | MOVEQ Reg Op2
   | MOVNE Reg Op2
+  | LTORG
 
 
 
@@ -459,6 +460,8 @@ instance Show Instr where
     = "MOVNE " ++ show reg ++  ", " ++ show op2
   show (Def l)
     = l ++ ":"
+  show LTORG
+     = ".ltorg"
 
 showSizeIndexingRegOps :: Size -> Indexing -> Reg -> [Op] -> String
 showSizeIndexingRegOps s i reg ops

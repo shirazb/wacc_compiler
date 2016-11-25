@@ -49,7 +49,9 @@ instance CodeGen Stat where
     evalRHS <- codegen rhs
     evalLHS <- codegen lhs
     return $ evalRHS ++ evalLHS
-
+  -- when you do a return
+  -- you need to clear the stack
+  -- and pop pc
   codegen (Return expr _)
     = codegen expr
 
@@ -107,15 +109,22 @@ instance CodeGen Stat where
     = error $ "CodeGen.Statement.codegen: Attempting to codegen the statement: "
       ++ "\n    " ++ show s
 
--- Codegens the statement inside of a new scope
-genInNewScope :: Stat -> CodeGenerator [Instr]
-genInNewScope s = do
+-- we have to do a check for a return
+
+prepareScope :: Stat -> CodeGenerator ([Instr] , [Instr])
+prepareScope s = do
   saveStackInfo
   let sizeOfScope = scopeSize s
   (env, _) <- getStackInfo
   let envWithOffset = Map.map (+ sizeOfScope) env
   putStackInfo (envWithOffset, sizeOfScope)
   (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
+  return (createStackSpace, clearStackSpace)
+
+-- Codegens the statement inside of a new scope
+genInNewScope :: Stat -> CodeGenerator [Instr]
+genInNewScope s = do
+  (createStackSpace, clearStackSpace) <- prepareScope s
   instrs <- codegen s
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
