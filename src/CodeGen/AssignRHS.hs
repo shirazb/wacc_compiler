@@ -5,13 +5,12 @@ module CodeGen.AssignRHS where
 import Control.Monad.StateStack
 import Control.Monad.State.Strict (get, put, lift)
 import qualified Data.Map as Map
-import Data.Maybe (fromJust)
-import Debug.Trace
+import Data.Maybe                 (fromJust)
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import CodeGen.Expression
-import CodeGen.PairElem (codegen)
+import CodeGen.PairElem           (codegen)
 import Utilities.Definitions
 
 instance CodeGen AssignRHS where
@@ -66,7 +65,7 @@ instance CodeGen AssignRHS where
         restoreExpr        <- pop [R1]
         let storeExprInMem  = [STR (sizeFromType typeSizesSTR $ typeOfExpr e)
                                NoIdx R1 [RegOp R0]]
-        saveAddr1 <- push [R0]
+        saveAddr1          <- push [R0]
         return $
           instr1         ++
           saveExpr       ++
@@ -77,27 +76,35 @@ instance CodeGen AssignRHS where
 
   codegen (PairElemAssign pairElem@(PairElem pos e _)_) = do
     getPairElemAddr <- codegen pairElem
-    let size         = sizeFromType typeSizesLDR (typeOfPairElem pairElem)
-    let getElem      = [LDR size NoIdx R0 [RegOp R0]]
+    let size        = sizeFromType typeSizesLDR (typeOfPairElem pairElem)
+    let getElem     = [LDR size NoIdx R0 [RegOp R0]]
     return $ getPairElemAddr ++ getElem
 
   codegen (FuncCallAssign ident@(Ident name info) es _) = do
-    let FuncT retType paramTypes = typeInfo info
-    params                      <- mapM codegen es
-    let pushParams               = concat $ reverse $ zipWith (\p t -> p ++
-                                   pushParam t) params paramTypes
-    let callFunc                 = [BL ("f_" ++ name)]
-    let paramSpace               = sum (map typeSize paramTypes)
-    let clearParams              = [ADD NF SP SP (ImmOp2 paramSpace)]
+    let FuncT retType paramTypes  = typeInfo info
+    params                       <- mapM codeGenParams (reverse es)
+    let pushParams                = concat params
+    let callFunc                  = [BL ("f_" ++ name)]
+    let paramSpace                = sum (map typeSize paramTypes)
+    let clearParams               = [ADD NF SP SP (ImmOp2 paramSpace)]
+    decrementOffset paramSpace
     return $ pushParams ++ callFunc ++ clearParams
-    where
-      pushParam :: Type -> [Instr]
-      pushParam t
-        = [STR size Pre R0 [RegOp SP, ImmI (- typeSize t)]]
-        where
-          size = sizeFromType typeSizesSTR t
 
--- POST: Retrieves the type of pair elem elements
+pushParam :: Type -> [Instr]
+pushParam t
+  = [STR size Pre R0 [RegOp SP, ImmI (- typeSize t)]]
+  where
+    size = sizeFromType typeSizesSTR t
+
+codeGenParams :: Expr -> CodeGenerator [Instr]
+codeGenParams e = do
+  (env, _)    <- getStackInfo
+  instr       <- codegen e
+  let pushP    = pushParam (typeOfExpr e)
+  incrementOffset (typeSize $ typeOfExpr e)
+  (env' , _ ) <- getStackInfo
+  return $ instr ++ pushP
+
 typeOfPairElem :: PairElem -> Type
 typeOfPairElem (PairElem pos e _)
   = case pos of

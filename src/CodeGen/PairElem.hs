@@ -9,8 +9,8 @@ module CodeGen.PairElem (
 {- Local imports -}
 import CodeGen.Assembly
 import CodeGen.Expression
-import Utilities.Definitions
 import CodeGen.InBuiltFunctions
+import Utilities.Definitions
 
 instance CodeGen PairElem where
   codegen pairElem@(PairElem pos e _) = do

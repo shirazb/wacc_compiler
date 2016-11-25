@@ -3,9 +3,9 @@
 module CodeGen.Statement where
 
 import Control.Monad.StateStack
-import Control.Monad.State.Strict ( lift )
+import Control.Monad.State.Strict (lift)
 import qualified Data.Map as Map
-import Data.Maybe (fromJust)
+import Data.Maybe                 (fromJust)
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly

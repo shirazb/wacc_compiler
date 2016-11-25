@@ -3,9 +3,9 @@
 module CodeGen.Function where
 
 import Control.Monad.StateStack
-import Control.Monad.State(get, put, lift)
+import Control.Monad.State       (get, put, lift)
 import qualified Data.Map as Map
-import Data.Maybe (fromJust)
+import Data.Maybe                (fromJust)
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
@@ -14,36 +14,6 @@ import CodeGen.Statement
 import Utilities.Definitions
 
 codeGenFunc :: Int -> Stat -> CodeGenerator [Instr]
-codeGenFunc sizeOfScope (Skip _)
-  = return []
-
-codeGenFunc sizeOfScope dec@Declaration{}
-  = codegen dec
-
-codeGenFunc sizeOfScope assignment@Assignment{}
-  = codegen assignment
-
-codeGenFunc sizeOfScope rd@Read{}
-  = codegen rd
-
-codeGenFunc sizeOfScope free@Free{}
-  = codegen free
-
-codeGenFunc sizeOfScope ret@Return{} = do
-  instr          <- codegen ret
-  let clearStack  = [ADD NF SP SP (ImmOp2 sizeOfScope)]
-  restorePC      <- pop [PC]
-  return $ instr ++ clearStack ++ restorePC
-
-codeGenFunc sizeOfScope exit@Exit{}
-  = codegen exit
-
-codeGenFunc sizeOfScope print@Print{}
-  = codegen print
-
-codeGenFunc sizeOfScope println@Println{}
-  = codegen println
-
 codeGenFunc sizeOfScope ifStat@(If cond thenStat elseStat _) = do
   condInstr          <- codegen cond
   elseStatLabel      <- getNextLabel
@@ -81,12 +51,14 @@ codeGenFunc sizeOfScope while@(While cond st _) = do
 codeGenFunc sizeOfScope blk@(Block s _)
   = genInNewScopeFunc sizeOfScope s
 
-genInNewScopeFunc :: Int -> Stat -> CodeGenerator [Instr]
-genInNewScopeFunc outerScopeSize s = do
-  (createStackSpace, clearStackSpace) <- prepareScope s
-  instrs                              <- codeGenFunc outerScopeSize s
-  restoreStackInfo
-  return $ createStackSpace ++ instrs ++ clearStackSpace
+codeGenFunc sizeOfScope ret@Return{} = do
+  instr <- codegen ret
+  let clearStack = [ADD NF SP SP (ImmOp2 sizeOfScope)]
+  restorePC <- pop [PC]
+  return $ instr ++ clearStack ++ restorePC
+
+codeGenFunc sizeOfScope s
+  = codegen s
 
 instance CodeGen Func where
   codegen (Func t ident@(Ident name _) (ParamList params _) body _) = do
@@ -115,3 +87,10 @@ addParamsToEnv (Param t (Ident name _) _ : ps) offsetToParam = do
   let offsetToNextParam  = offsetToParam + typeSize t
   putStackInfo (newEnv, offset)
   addParamsToEnv ps offsetToNextParam
+
+genInNewScopeFunc :: Int -> Stat -> CodeGenerator [Instr]
+genInNewScopeFunc outerScopeSize s = do
+  (createStackSpace, clearStackSpace) <- prepareScope s
+  instrs <- codeGenFunc outerScopeSize s
+  restoreStackInfo
+  return $ createStackSpace ++ instrs ++ clearStackSpace

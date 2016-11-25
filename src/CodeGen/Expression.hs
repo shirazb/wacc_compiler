@@ -11,8 +11,8 @@ import Data.Maybe (fromJust)
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
-import Utilities.Definitions
 import CodeGen.InBuiltFunctions
+import Utilities.Definitions
 
 instance CodeGen Expr where
   codegen (StringLit s _) = do

@@ -9,13 +9,12 @@ module CodeGen.Assembly where
 import Control.Monad.StateStack
 import qualified Data.Map as Map
 import Control.Monad.State.Strict (get, put, lift, State, runState, StateT (..))
-import Data.Maybe (fromJust)
+import Data.Maybe                 (fromJust)
 import Control.Monad.Writer
 import Control.Monad.Identity
 import Control.Applicative
 import Data.List
 import Data.Tuple
-import Debug.Trace
 
 {- LOCAL IMPORTS -}
 import Utilities.Definitions hiding (Env)

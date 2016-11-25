@@ -5,7 +5,6 @@ module CodeGen.Program where
 import Control.Monad.StateStack
 import qualified Data.Map as Map
 import Control.Monad.State.Strict (get, put, lift)
-import Debug.Trace
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
