@@ -339,17 +339,6 @@ getStackInfo :: CodeGenerator (Env, Int)
 getStackInfo
   = lift (lift get)
 
-insertScopeSizeToEnv :: Int -> CodeGenerator ()
-insertScopeSizeToEnv n = do
-  (env, offset) <- getStackInfo
-  let newEnv = Map.insert "$scopeSize" n env
-  putStackInfo (newEnv, offset)
-
-readScopeSizeFromEnv :: CodeGenerator Int
-readScopeSizeFromEnv = do
-  (env, _) <- getStackInfo
-  return $ fromJust $ Map.lookup "$scopeSize" env 
-
 -- POST: Increments the stack pointer and modifys the variable mappings
 incrementOffset :: Int -> CodeGenerator ()
 incrementOffset n = do

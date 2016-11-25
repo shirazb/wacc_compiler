@@ -83,9 +83,8 @@ instance CodeGen Func where
     putStackInfo (envWithOffset, sizeOfScope)
     (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
 
-
     instrs            <- codeGenFunc sizeOfScope body
-    restorePC         <- pop [PC]
+
     let listOfInstrs   = saveLR ++ createStackSpace ++ instrs ++ [LTORG]
     let newFunc        = FuncA ("f_" ++ name) listOfInstrs
     addFunction newFunc
