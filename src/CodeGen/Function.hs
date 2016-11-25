@@ -30,7 +30,7 @@ instance CodeGen Func where
     instrs <- codegen body
     restorePC <- pop [PC]
     let listOfInstrs = saveLR ++ createStackSpace ++ instrs ++ clearStackSpace ++ restorePC
-    let newFunc = FuncA name listOfInstrs
+    let newFunc = FuncA ("f_" ++ name) listOfInstrs
     addFunction newFunc
     restoreStackInfo
     return []
