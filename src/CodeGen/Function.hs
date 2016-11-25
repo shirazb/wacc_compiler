@@ -73,6 +73,7 @@ instance CodeGen Func where
     saveStackInfo
     addParamsToEnv params 0
     saveLR            <- push [LR]
+
     let sizeOfScope    = scopeSize body
     insertScopeSizeToEnv sizeOfScope
     (env, _)          <- getStackInfo
@@ -81,7 +82,7 @@ instance CodeGen Func where
     (createStackSpace, _) <- manageStack sizeOfScope
     instrs            <- codegen body
 
-    let listOfInstrs   = saveLR ++ instrs ++ [LTORG]
+    let listOfInstrs   = saveLR ++ createStackSpace ++ instrs ++ [LTORG]
     let newFunc        = FuncA ("f_" ++ name) listOfInstrs
     addFunction newFunc
     restoreStackInfo
