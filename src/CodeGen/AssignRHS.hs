@@ -80,24 +80,51 @@ instance CodeGen AssignRHS where
     return $
        getPairElemAddr ++
        getElem
+
+  -- everytime we actually do a push we are going to have
+
   codegen (FuncCallAssign ident@(Ident name info) es _) = do
     let FuncT retType paramTypes = typeInfo info
-    params <- mapM codegen es
-    let pushParams = concat $ reverse $ zipWith (\p t -> p ++ pushParam t) params paramTypes
+    traceM $ "The parameters to the function are: " ++ show es
+    params <- mapM codeGenParams (reverse es)
+    traceM $ "Before the revese the functions are:  " ++ show params
+    let pushParams = concat params
+    -- let pushParams = concat $ reverse $ zipWith (\p t -> p ++ pushParam t) params paramTypes
     let callFunc = [BL ("f_" ++ name)]
     let paramSpace  = sum (map typeSize paramTypes)
     let clearParams = [ADD NF SP SP (ImmOp2 paramSpace)]
+    decrementOffset paramSpace
     return $ pushParams ++ callFunc ++ clearParams
-    where
+
       -- FIXME: DOES NOT CHANGE OFFSETS IN ENVIRONMENT.
       -- Possibly hange STR / LDR Size to be a function that manages env,
       -- like push and pop.
-      pushParam :: Type -> [Instr]
-      pushParam t
-        = [STR size Pre R0 [RegOp SP, ImmI (- typeSize t)]]
-        where
-          size = sizeFromType typeSizesSTR t
+pushParam :: Type -> [Instr]
+pushParam t
+  = [STR size Pre R0 [RegOp SP, ImmI (- typeSize t)]]
+  where
+    size = sizeFromType typeSizesSTR t
 
+codeGenParams :: Expr -> CodeGenerator [Instr]
+codeGenParams e = do
+  (env, _) <- getStackInfo
+  traceM $ "The offset before codegenin params: " ++ show env
+  instr <- codegen e
+  let pushP = pushParam (typeOfExpr e)
+  incrementOffset (typeSize $ typeOfExpr e)
+  (env' , _ ) <- getStackInfo
+  traceM $ "The offset after codegening params: " ++ show env'
+  return $ instr ++ pushP
+
+-- autoIndexer :: Type -> CodeGenerator ()
+-- autoIndexer t
+--   = incrementOffset (typeSize t)
+--
+-- codeGenParams :: Expr -> CodeGenerator [Instr]
+-- codeGenParams e = do
+--   instr <- codegen e
+--   autoIndexer (typeOfExpr e)
+--   return instr
 -- Get type of pair elem elements
 typeOfPairElem :: PairElem -> Type
 typeOfPairElem (PairElem pos e _)
