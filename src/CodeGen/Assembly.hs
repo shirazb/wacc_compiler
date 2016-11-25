@@ -243,8 +243,8 @@ manageStack offset =  if offset > maxStackAlloc then
   where
     maxStackAlloc = 1024
 
--- POST: Adds given string to data segment iff not already
---       defined, returns numer of definition.
+-- POST: Adds given string to data segment iff not already defined, returns
+--       number of definition
 addUniqueData :: String -> CodeGenerator Int
 addUniqueData s = do
   DataSeg ds num    <- getData

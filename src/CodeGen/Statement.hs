@@ -15,6 +15,7 @@ import CodeGen.AssignRHS
 import CodeGen.InBuiltFunctions
 import Utilities.Definitions
 
+-- POST: Generates assembly code for statements
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
     instr          <- codegen rhs
@@ -103,6 +104,8 @@ instance CodeGen Stat where
     = error $ "CodeGen.Statement.codegen: Attempting to codegen the statement: "
       ++ "\n    " ++ show s
 
+-- POST: Generates assembly to enter a new scope by modifying variable mappings
+--       and producing instructions to allocate and deallocate on the stack
 prepareScope :: Stat -> CodeGenerator ([Instr] , [Instr])
 prepareScope s = do
   saveStackInfo
@@ -113,7 +116,7 @@ prepareScope s = do
   (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
   return (createStackSpace, clearStackSpace)
 
--- POST: Codegens the statement inside of a new scope
+-- POST: Generates assembly code for the given statement within a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
   (createStackSpace, clearStackSpace) <- prepareScope s
@@ -121,11 +124,15 @@ genInNewScope s = do
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
 
+-- POST: Generates a branch to the correct subroutine for freeing the given
+--       type
 getFreeExprInstr :: Type -> CodeGenerator [Instr]
 getFreeExprInstr t = case t of
    PairT _ _ -> branchWithFunc genFreePair BL
    _         -> return [BL "free"]
 
+-- POST: Generates correct read function based on type and returns branch with
+--       link to that function
 getReadIntoLHS :: AssignLHS -> CodeGenerator [Instr]
 getReadIntoLHS lhs = case t of
   BaseT BaseChar   -> branchWithFunc genReadChar BL
@@ -138,6 +145,8 @@ getReadIntoLHS lhs = case t of
   where
     t = typeOfLHS lhs
 
+-- POST: Generates correct print function based on type and returns branch with
+--       link to that function
 getExprPrintInstr :: Type -> CodeGenerator [Instr]
 getExprPrintInstr t = case t of
   BaseT BaseChar            -> return [BL "putchar"]

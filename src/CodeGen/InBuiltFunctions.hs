@@ -5,6 +5,7 @@ module CodeGen.InBuiltFunctions where
 {- Local Imports-}
 import CodeGen.Assembly
 
+-- POST: Generates assembly code for p_check_null_pointer
 genNullPtrFunc :: CodeGenerator String
 genNullPtrFunc = do
   msgNum              <- genMsg ("NullReferenceError: dereference" ++
@@ -20,6 +21,7 @@ genNullPtrFunc = do
   genRunTimeError
   return "p_check_null_pointer"
 
+-- POST: Generates assembly code for p_throw_runtime_error
 genRunTimeError :: CodeGenerator String
 genRunTimeError = do
   genPrintString
@@ -28,6 +30,7 @@ genRunTimeError = do
           ([BL "p_print_string"] ++ setExitCode ++ [BL "exit"])
   return "p_throw_runtime_error"
 
+-- POST: Generates assembly code for p_throw_overflow_error
 genOverFlowFunction :: CodeGenerator String
 genOverFlowFunction = do
   msgNum       <- genMsg ("OverflowError: the result is too small/large" ++
@@ -39,6 +42,7 @@ genOverFlowFunction = do
   genPrintString
   return "p_throw_overflow_error"
 
+-- POST: Generates assembly code for p_print_ln
 genPrintLn :: CodeGenerator String
 genPrintLn    = do
   msgNum     <- genMsg "\0"
@@ -48,6 +52,7 @@ genPrintLn    = do
   genFunc "p_print_ln" (saveLR ++ ldrMsg ++ genPuts ++ genFflush ++ restorePC)
   return "p_print_ln"
 
+-- POST: Generates assembly code for p_print_reference
 genPrintReference :: CodeGenerator String
 genPrintReference = do
   msgNum     <- genMsg "%p\0"
@@ -58,6 +63,7 @@ genPrintReference = do
           (saveLR ++ ldrMsg ++ genPrintF ++ genFflush ++ restorePC)
   return "p_print_reference"
 
+-- POST: Generates assembly code for p_print_int
 genPrintInt :: CodeGenerator String
 genPrintInt   = do
   msgNum     <- genMsg "%d\0"
@@ -68,6 +74,7 @@ genPrintInt   = do
           (saveLR ++ ldrMsg ++ genPrintF ++ genFflush ++ restoreLR)
   return "p_print_int"
 
+-- POST: Generates assembly code for p_print_bool
 genPrintBool :: CodeGenerator String
 genPrintBool = do
   msgNum        <- genMsg "true\0"
@@ -80,6 +87,7 @@ genPrintBool = do
           (saveLR ++ chooseMsg ++ genPrintF ++ genFflush ++ restoreLR)
   return "p_print_bool"
 
+-- POST: Generates assembly code for p_print_string
 genPrintString :: CodeGenerator String
 genPrintString = do
   saveLR        <- push [LR]
@@ -91,6 +99,7 @@ genPrintString = do
                             genFflush ++ restorePC)
   return "p_print_string"
 
+-- POST: Generates assembly code for p_check_array_bounds
 genCheckArrayBounds :: CodeGenerator String
 genCheckArrayBounds = do
   saveLR          <- push [LR]
@@ -111,9 +120,10 @@ genCheckArrayBounds = do
     ret
   return "p_check_array_bounds"
 
+-- POST: Generates assembly code for p_read_int
 genReadInt :: CodeGenerator String
 genReadInt = do
-  saveLR <- push [LR]-- Preferred this instead - Shiraz
+  saveLR <- push [LR]
   msgNum <- genMsg "%d\0"
   ret    <- pop [PC]
   genFunc "p_read_int" $
@@ -125,6 +135,7 @@ genReadInt = do
     ret
   return "p_read_int"
 
+-- POST: Generates assembly code for p_read_char
 genReadChar :: CodeGenerator String
 genReadChar = do
   saveLR <- push [LR]
@@ -139,6 +150,7 @@ genReadChar = do
     ret
   return "p_read_char"
 
+-- POST: Generates assembly code for p_free_pair
 genFreePair :: CodeGenerator String
 genFreePair         = do
   saveLR           <- push [LR]
@@ -166,6 +178,7 @@ genFreePair         = do
     ret
   return "p_free_pair"
 
+-- POST: Generates assembly code for p_check_divide_by_zero
 genCheckDivideByZero :: CodeGenerator String
 genCheckDivideByZero = do
   saveLR      <- push [LR]
@@ -183,20 +196,27 @@ genCheckDivideByZero = do
 
 {- Utility Functions -}
 
+-- POST: Adds given string to data segment iff not already defined, returns
+--       number of definition
 genMsg :: String -> CodeGenerator Int
 genMsg = addUniqueData
 
+-- POST: Creates function using given string and list of instructions and adds
+--       to the list of functions iff it's not defined
 genFunc :: String -> [Instr] -> CodeGenerator ()
 genFunc name body = do
   let newFunc = FuncA name body
   addFunction newFunc
 
+-- POST: Generates a branch instruction to the supplied function and also
+--       generates the assembly code for that function
 branchWithFunc :: CodeGenerator String -> (String -> Instr) ->
                   CodeGenerator [Instr]
 branchWithFunc func branch = do
   name <- func
   return [branch name]
 
+-- POST: Generates basic calls to assembly routines
 genPuts, genFflush, genPrintF :: [Instr]
 genPuts
   = [ADD NF R0 R0 (ImmOp2 4), BL "puts"]

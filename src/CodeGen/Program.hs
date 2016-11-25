@@ -14,6 +14,7 @@ import CodeGen.Function
 import CodeGen.AssignRHS
 import Utilities.Definitions hiding (Env)
 
+-- POST: Generates assembly code for entire program using the AST
 genInstrFromAST :: AST -> CodeGenerator [Instr]
 genInstrFromAST (Program fs body) = do
   mapM_ codegen fs

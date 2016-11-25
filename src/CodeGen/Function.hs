@@ -49,7 +49,6 @@ codeGenFunc sizeOfScope while@(While cond st _) = do
   evalCond      <- codegen cond
   execBody      <- genInNewScopeFunc sizeOfScope st
   return $
-    [BT loopCondLabel, Def loopBodyLabel]  ++
     execBody                               ++
     [Def loopCondLabel]                    ++
     evalCond                               ++
@@ -67,6 +66,7 @@ codeGenFunc sizeOfScope ret@Return{} = do
 codeGenFunc sizeOfScope s
   = codegen s
 
+-- POST: Generates assembly code for functions
 instance CodeGen Func where
   codegen (Func t ident@(Ident name _) (ParamList params _) body _) = do
     saveStackInfo
