@@ -55,9 +55,10 @@ instance CodeGen Expr where
     let notE = [EOR R0 R0 (ImmI 1)]
     return $ instr ++ notE
   codegen (UnaryApp Neg e _) = do
-    instr <- codegen e
-    let negE = [RSBS R0 R0 (ImmI 0)]
-    return $ instr ++ negE
+    instr         <- codegen e
+    let negE      = [RSBS R0 R0 (ImmI 0)]
+    checkOverflow <- branchWithFunc genOverFlowFunction BLVS
+    return $ instr ++ negE ++ checkOverflow
   -- len does not work like this
   codegen (UnaryApp Len e _) = do
     instr <- codegen e
