@@ -1,4 +1,5 @@
-{- CodeGen for PairElem. Returns the address of the element. -}
+{- This module generates ARM11 Assembly code for PairElem. It returns the
+address of the element -}
 
 module CodeGen.PairElem (
   codegen,
@@ -15,13 +16,10 @@ instance CodeGen PairElem where
   codegen pairElem@(PairElem pos e _) = do
     instr1       <- codegen e
     nullptr      <- branchWithFunc genNullPtrFunc BL
-    let posInstr = case pos of
-                       Fst -> [LDR W NoIdx R0 [RegOp R0]]
-                       Snd -> [LDR W NoIdx R0 [RegOp R0, ImmI 4]]
-    return $
-        instr1  ++
-        nullptr ++
-        posInstr
+    let posInstr  = case pos of
+                      Fst -> [LDR W NoIdx R0 [RegOp R0]]
+                      Snd -> [LDR W NoIdx R0 [RegOp R0, ImmI 4]]
+    return $ instr1 ++ nullptr ++ posInstr
 
 typeOfPairElem :: PairElem -> Type
 typeOfPairElem (PairElem selector expr _)

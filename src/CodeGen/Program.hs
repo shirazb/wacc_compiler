@@ -1,4 +1,4 @@
-{- This module produces ARM code for our program -}
+{- This module generates ARM11 code for our program -}
 
 module CodeGen.Program where
 
@@ -18,18 +18,19 @@ import Utilities.Definitions hiding (Env)
 genInstrFromAST :: AST -> CodeGenerator [Instr]
 genInstrFromAST (Program fs body) = do
   mapM_ codegen fs
-  let defMain = [Def "main"]
-  pLr <- push [LR]
-  let sizeOfscope = scopeSize body
+  let defMain                  = [Def "main"]
+  pLr                         <- push [LR]
+  let sizeOfscope              = scopeSize body
   putStackInfo (Map.empty, sizeOfscope)
   (makeRoomStack, clearSpace) <- manageStack sizeOfscope
-  instr <- codegen body
-  let succesfulExit = [Mov R0 (ImmI 0)]
-  popPC <- pop [PC]
-  return $ [Def "main"]  ++
-           pLr           ++
-           makeRoomStack ++
-           instr         ++
-           clearSpace    ++
-           succesfulExit ++
-           popPC
+  instr                       <- codegen body
+  let succesfulExit            = [Mov R0 (ImmI 0)]
+  popPC                       <- pop [PC]
+  return $
+    [Def "main"]  ++
+    pLr           ++
+    makeRoomStack ++
+    instr         ++
+    clearSpace    ++
+    succesfulExit ++
+    popPC

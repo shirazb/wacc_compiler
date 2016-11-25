@@ -1,7 +1,8 @@
+{- This module provides the ARM11 Assembly data types, show instances and
+boilerplate code for our code generation output -}
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
-{- This module provides the ARM Assembly data types, show instances and
-boilerplate code for our code generation output -}
 
 module CodeGen.Assembly where
 
@@ -19,50 +20,31 @@ import Debug.Trace
 {- LOCAL IMPORTS -}
 import Utilities.Definitions hiding (Env)
 
-type Label = String
-
-type TextSegment = [Instr]
-data DataSegment = DataSeg [Data] Int deriving (Show)
-type Functions = [AssemblyFunc]
-type Env = Map.Map String Int
--- type AssemblyProgram = (DataSegment, TextSegment, Functions)
-
-type CodeGenerator a = StateT Functions (StateT DataSegment (StateStackT (Env, Int) (State Int))) a
-
-
--- instance (Monad m, Alternative m, MonadPlus m) => Alternative (StateStackT s m) where
---   empty = lift empty
---   s <|> s' = StateStackT $ unStateStackT s <|> unStateStackT s'
--- --
--- -- instance (Alternative Identity) => MonadPlus Identity where
--- --   mzero = empty
--- --   mplus i i' = i
--- --
--- --
--- instance MonadPlus m => MonadPlus (StateStackT s m) where
---   mzero = lift mzero
---   s `mplus` s' = StateStackT $ unStateStackT s `mplus` unStateStackT s'
-
-
-
 class CodeGen a where
   codegen :: a -> CodeGenerator [Instr]
 
--- genInstruction :: CodeGenerator a -> ((a, (Env, Int)), Int)
-genInstruction :: CodeGenerator a -> ((((a, Functions), DataSegment), (Env, Int)), Int)
+genInstruction :: CodeGenerator a -> ((((a, Functions), DataSegment),
+                  (Env, Int)), Int)
 genInstruction p
-  = runState (runStateStackT (runStateT (runStateT p []) (DataSeg mzero 0)) (Map.empty, 0)) 0
+  = runState (runStateStackT (runStateT (runStateT p []) (DataSeg mzero 0))
+    (Map.empty, 0)) 0
 
-{- ARM ASSEMBLY DATA TYPES -}
--- we need to change mov to take Op2
--- instead of op1 but we will change it later
--- because it dosent make much diffrence now
+type Label           = String
+type TextSegment     = [Instr]
+type Functions       = [AssemblyFunc]
+type Env             = Map.Map String Int
+type CodeGenerator a = StateT Functions (StateT DataSegment (StateStackT
+                       (Env, Int) (State Int))) a
+
+data DataSegment
+  = DataSeg [Data] Int
+  deriving (Show)
 
 data Instr
   = Push [Reg]
   | Pop [Reg]
   | Mov Reg Op
-  | BT Label   -- branch true, or "B". B constructor already in use.
+  | BT Label
   | BL Label
   | BEQ Label
   | BLEQ Label
@@ -91,26 +73,12 @@ data Instr
   | MOVNE Reg Op2
   | LTORG
 
-
-
 data Data
   =  MSG Int String Int
 
 data AssemblyFunc
   = FuncA String [Instr]
--- POST: Produces a correctly indented string representation for an instruction
-showInstr :: Instr -> String
-showInstr label@(Def s)
-  = space ++ show label
-showInstr instr
-  = spaceX2 ++ show instr
 
-instance Show AssemblyFunc where
-  show (FuncA name body)
-    = name ++ ":" ++ "\n"
-      ++ intercalate "\n" (map showInstr body)
-
--- include load immediate instructions
 data Size
   = B
   | W
@@ -165,19 +133,22 @@ data Op
   | RegOp Reg
   | MsgName Int
 
-{- Map from types to sizes -}
+{- MAPPING FROM TYPES TO SIZES -}
 
 typeSizes, typeSizesLDR, typeSizesSTR :: [(Type, Size)]
 typeSizes = [(BaseT BaseInt, W), (BaseT BaseChar, B),
-             (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W), (BaseT BaseString, W)]
+             (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W),
+             (BaseT BaseString, W)]
 
 typeSizesLDR = [(BaseT BaseInt, W), (BaseT BaseChar, SB),
-                (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W), (BaseT BaseString, W)]
+                (BaseT BaseBool, SB), (PolyArray, W), (PolyPair, W),
+                (BaseT BaseString, W)]
 
 typeSizesSTR = [(BaseT BaseInt, W), (BaseT BaseChar, B),
-                (BaseT BaseBool, B), (PolyArray, W), (PolyPair, W), (BaseT BaseString, W)]
+                (BaseT BaseBool, B), (PolyArray, W), (PolyPair, W),
+                (BaseT BaseString, W)]
 
-{- Utility Functions -}
+{- UTILITY FUNCTIONS -}
 
 -- Returns the size of a scope
 scopeSize :: Stat -> Int
@@ -258,7 +229,8 @@ manageStack offset =  if offset > 1024 then
   do
      let  newOffset = offset - 1024
      (saveStack, clearStack) <- manageStack newOffset
-     return (SUB NF SP SP (ImmOp2 1024) : saveStack, ADD NF SP SP (ImmOp2 1024) : clearStack)
+     return (SUB NF SP SP (ImmOp2 1024) : saveStack,
+             ADD NF SP SP (ImmOp2 1024) : clearStack)
   else return ([SUB NF SP SP (ImmOp2 offset)], [ADD NF SP SP (ImmOp2 offset)])
 
 addData' :: String -> CodeGenerator Int
@@ -267,7 +239,8 @@ addData' s = do
   let escapedString = replaceEscapeChar s
   if checkDataDefined escapedString ds
     then return (getMsgNumData escapedString ds)
-    else do {msgNum <- getNextMsgNum; addData (MSG msgNum s (length s)); return msgNum }
+    else do {msgNum <- getNextMsgNum; addData
+            (MSG msgNum s (length s)); return msgNum }
 
 getMsgNumData :: String -> [Data] -> Int
 getMsgNumData s ds
@@ -288,7 +261,6 @@ replaceEscapeChar (c : cs)
     escapeChars = map snd escapeCharList
     newChar     = fromJust $ lookup c (map swap escapeCharList)
 
-
 addData :: Data -> CodeGenerator ()
 addData (MSG n s l) = do
   DataSeg ds num <- getData
@@ -308,17 +280,18 @@ restoreStackInfo :: CodeGenerator ()
 restoreStackInfo
   = lift (lift restore)
 
--- Updates the next label number with the given number
+-- POST: Updates the next label number with the given number
 updateNextLabelNum :: Int -> CodeGenerator ()
 updateNextLabelNum
   = lift . lift . lift . put
 
--- Retrieves the next label number
+-- POST: Retrieves the next label number
 getNextLabelNum :: CodeGenerator Int
 getNextLabelNum
   = lift . lift . lift $ get
 
--- Returns the String "L:" appended with the next label num, and updates the label number
+-- POST: Returns the String "L:" appended with the next label num, and updates
+--       the label number
 getNextLabel :: CodeGenerator String
 getNextLabel = do
   labelNum <- getNextLabelNum
@@ -333,22 +306,20 @@ getStackInfo :: CodeGenerator (Env, Int)
 getStackInfo
   = lift (lift get)
 
--- Increments the offset of the stack pointer (to the start of the scope)
+-- POST: Increments the offset of the stack pointer (to the start of the scope)
 incrementOffset :: Int -> CodeGenerator ()
 incrementOffset n = do
   (env, offset) <- getStackInfo
   let newEnv = Map.map (+ n) env
   putStackInfo (newEnv, offset + n)
 
--- Decrements the offset of the stack pointer (to the start of the scope)
+-- POST: Decrements the offset of the stack pointer (to the start of the scope)
 decrementOffset :: Int -> CodeGenerator ()
 decrementOffset n = do
   (env, offset) <- getStackInfo
   let newEnv = Map.map (\x -> x - n) env
   putStackInfo (newEnv, offset - n)
 
--- Assert Ops are registers
--- Could avoid duplication.
 push, pop :: [Reg] -> CodeGenerator [Instr]
 push rs = do
   incrementOffset (4 * length rs)
@@ -362,7 +333,7 @@ checkFuncDefined :: String -> Functions -> Bool
 checkFuncDefined s fs
   = not $ or [ s == s' | FuncA s' _ <- fs ]
 
-{- ARM ASSEMBLY BOILERPLATE CODE -}
+{- ARM11 ASSEMBLY BOILERPLATE CODE -}
 
 space, spaceX2, text, global, dataLabel, word, ascii :: String
 spaceGen :: Int -> String
@@ -377,7 +348,18 @@ ascii     = ".ascii"
 
 {- SHOW INSTANCES -}
 
--- our lengths are going to be slightly off?
+-- POST: Produces a correctly indented string representation for an instruction
+showInstr :: Instr -> String
+showInstr label@(Def s)
+  = space ++ show label
+showInstr instr
+  = spaceX2 ++ show instr
+
+instance Show AssemblyFunc where
+  show (FuncA name body)
+    = name ++ ":" ++ "\n"
+      ++ intercalate "\n" (map showInstr body)
+
 instance Show Data where
   show (MSG i s l)
     = space ++ "msg_"  ++ show i   ++ ":\n" ++
@@ -435,15 +417,18 @@ instance Show Instr where
   show (STR s i reg ops)
     = "STR" ++ showSizeIndexingRegOps s i reg ops
   show (SUB fl reg op' op2)
-    = "SUB" ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op2
+    = "SUB" ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++
+      show op2
   show (ADD fl reg op' op2)
-    = "ADD" ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op2
+    = "ADD" ++ show fl ++ " " ++ show reg ++ ", " ++ show op' ++ ", " ++
+      show op2
   show (EOR reg op' op'')
     = "EOR " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op''
   show (RSBS reg op' op'')
     = "RSBS " ++ show reg ++ ", " ++ show op' ++ ", " ++ show op''
   show (SMULL r0 r1 r2 r3)
-    = "SMULL " ++ show r0 ++ ", " ++ show r1 ++ ", " ++ show r2 ++ ", " ++ show r3
+    = "SMULL " ++ show r0 ++ ", " ++ show r1 ++ ", " ++ show r2 ++ ", " ++
+      show r3
   show (CMP reg op2)
     = "CMP " ++ show reg ++ ", " ++ show op2
   show (MOVLE reg op2)

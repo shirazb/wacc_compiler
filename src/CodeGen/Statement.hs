@@ -1,4 +1,4 @@
-{- This module generates ARM Assembly code for statements -}
+{- This module generates ARM11 Assembly code for statements -}
 
 module CodeGen.Statement where
 
@@ -6,7 +6,6 @@ import Control.Monad.StateStack
 import Control.Monad.State.Strict ( lift )
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Debug.Trace
 
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
@@ -18,13 +17,14 @@ import Utilities.Definitions
 
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
-    instr <- codegen rhs
+    instr          <- codegen rhs
     (map', offset) <- getStackInfo
-    let newOffset = offset - typeSize t
-    let newMap = Map.insert name newOffset map'
+    let newOffset   = offset - typeSize t
+    let newMap      = Map.insert name newOffset map'
     let chckLookUp  = fromJust $ Map.lookup name newMap
     putStackInfo (newMap, newOffset)
-    let str = [STR (sizeFromType typeSizesSTR t) NoIdx R0 [RegOp SP, ImmI newOffset]]
+    let str         = [STR (sizeFromType typeSizesSTR t) NoIdx R0
+                      [RegOp SP, ImmI newOffset]]
     return $ instr ++ str
 
   codegen (Block s _)
@@ -39,19 +39,15 @@ instance CodeGen Stat where
     = return []
 
   codegen (Free e _) = do
-    evalE <- codegen e
+    evalE     <- codegen e
     freeInstr <- getFreeExprInstr (typeOfExpr e)
-    return $
-      evalE ++
-      freeInstr
+    return $ evalE ++ freeInstr
 
   codegen (Assignment lhs rhs _) = do
     evalRHS <- codegen rhs
     evalLHS <- codegen lhs
     return $ evalRHS ++ evalLHS
-  -- when you do a return
-  -- you need to clear the stack
-  -- and pop pc
+
   codegen (Return expr _)
     = codegen expr
 
@@ -62,32 +58,30 @@ instance CodeGen Stat where
   codegen (If cond thenStat elseStat _) = do
     condInstr          <- codegen cond
     elseStatLabel      <- getNextLabel
-    let branchIfFalse  = [CMP R0 (ImmOp2 0), BEQ elseStatLabel]
+    let branchIfFalse   = [CMP R0 (ImmOp2 0), BEQ elseStatLabel]
     execThenStat       <- genInNewScope thenStat
     execElseStat       <- genInNewScope elseStat
     afterIfLabel       <- getNextLabel
-    let branchAfterIf  = [BT afterIfLabel]
-    return $  condInstr ++
-              branchIfFalse ++
-              execThenStat ++
-              branchAfterIf ++
-              [Def elseStatLabel] ++
-              execElseStat ++
-              [Def afterIfLabel]
+    let branchAfterIf   = [BT afterIfLabel]
+    return $
+      condInstr           ++
+      branchIfFalse       ++
+      execThenStat        ++
+      branchAfterIf       ++
+      [Def elseStatLabel] ++
+      execElseStat        ++
+      [Def afterIfLabel]
 
   codegen (While cond stat _) = do
     loopBodyLabel <- getNextLabel
     loopCondLabel <- getNextLabel
-    -- does order of these two matter
-
     evalCond      <- codegen cond
-
     execBody      <- genInNewScope stat
     return $
-      [BT loopCondLabel, Def loopBodyLabel] ++
-      execBody ++
-      [Def loopCondLabel] ++
-      evalCond ++
+      [BT loopCondLabel, Def loopBodyLabel]  ++
+      execBody                               ++
+      [Def loopCondLabel]                    ++
+      evalCond                               ++
       [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
 
   codegen (Print e _) = do
@@ -109,19 +103,17 @@ instance CodeGen Stat where
     = error $ "CodeGen.Statement.codegen: Attempting to codegen the statement: "
       ++ "\n    " ++ show s
 
--- we have to do a check for a return
-
 prepareScope :: Stat -> CodeGenerator ([Instr] , [Instr])
 prepareScope s = do
   saveStackInfo
-  let sizeOfScope = scopeSize s
-  (env, _) <- getStackInfo
-  let envWithOffset = Map.map (+ sizeOfScope) env
+  let sizeOfScope                      = scopeSize s
+  (env, _)                            <- getStackInfo
+  let envWithOffset                    = Map.map (+ sizeOfScope) env
   putStackInfo (envWithOffset, sizeOfScope)
   (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
   return (createStackSpace, clearStackSpace)
 
--- Codegens the statement inside of a new scope
+-- POST: Codegens the statement inside of a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
   (createStackSpace, clearStackSpace) <- prepareScope s
@@ -131,8 +123,8 @@ genInNewScope s = do
 
 getFreeExprInstr :: Type -> CodeGenerator [Instr]
 getFreeExprInstr t = case t of
-  PairT _ _ -> branchWithFunc genFreePair BL
-  _         -> return [BL "free"]
+   PairT _ _ -> branchWithFunc genFreePair BL
+   _         -> return [BL "free"]
 
 getReadIntoLHS :: AssignLHS -> CodeGenerator [Instr]
 getReadIntoLHS lhs = case t of
