@@ -14,6 +14,12 @@ import Semantics.Annotators.AST
 import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
+import Optimisations.ConstantEval
+
+parseOp :: String -> AST
+parseOp s = a
+  where
+    Right (Just ((a,b),c)) = runParser parseProgram s
 
 main = do
   -- Read file from command line
