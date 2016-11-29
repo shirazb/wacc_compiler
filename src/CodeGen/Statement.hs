@@ -49,12 +49,8 @@ instance CodeGen Stat where
     evalLHS <- codegen lhs
     return $ evalRHS ++ evalLHS
 
-  codegen (Return expr _) = do
-    instr <- codegen expr
-    sizeOfScope <- readScopeSizeFromEnv
-    let clearStack = [ADD NF SP SP (ImmOp2 sizeOfScope)]
-    restorePC <- pop [PC]
-    return $ instr ++ clearStack ++ restorePC
+  codegen (Return expr _)
+    = codegen expr
 
   codegen (Exit expr _) = do
     evalExpr <- codegen expr
@@ -116,7 +112,6 @@ prepareScope s = do
   let sizeOfScope                      = scopeSize s
   (env, _)                            <- getStackInfo
   let envWithOffset                    = Map.map (+ sizeOfScope) env
-  insertScopeSizeToEnv sizeOfScope
   putStackInfo (envWithOffset, sizeOfScope)
   (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
   return (createStackSpace, clearStackSpace)

@@ -20,7 +20,6 @@ import Utilities.Definitions
    and the correct address is loaded in to the PC. -}
 
 -- POST: Generates assembly code for statements in a function body
-
 codeGenFunc :: Int -> Stat -> CodeGenerator [Instr]
 codeGenFunc sizeOfScope ifStat@(If cond thenStat elseStat _) = do
   condInstr          <- codegen cond
@@ -50,6 +49,7 @@ codeGenFunc sizeOfScope while@(While cond st _) = do
   evalCond      <- codegen cond
   execBody      <- genInNewScopeFunc sizeOfScope st
   return $
+    [BT loopCondLabel, Def loopBodyLabel]  ++
     execBody                               ++
     [Def loopCondLabel]                    ++
     evalCond                               ++
@@ -73,17 +73,14 @@ instance CodeGen Func where
     saveStackInfo
     addParamsToEnv params 0
     saveLR            <- push [LR]
-
     let sizeOfScope    = scopeSize body
-    insertScopeSizeToEnv sizeOfScope
     (env, _)          <- getStackInfo
     let envWithOffset  = Map.map (+ sizeOfScope) env
     putStackInfo (envWithOffset, sizeOfScope)
-    (createStackSpace, _) <- manageStack sizeOfScope
-    instrs            <- codegen body
-
-
-    let listOfInstrs   = saveLR ++ instrs ++ [LTORG]
+    (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
+    instrs            <- codeGenFunc sizeOfScope body
+    restorePC         <- pop [PC]
+    let listOfInstrs   = saveLR ++ createStackSpace ++ instrs ++ [LTORG]
     let newFunc        = FuncA ("f_" ++ name) listOfInstrs
     addFunction newFunc
     restoreStackInfo
