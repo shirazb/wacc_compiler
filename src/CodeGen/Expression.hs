@@ -23,9 +23,6 @@ instance CodeGen Expr where
   codegen (IntLit i _)
     = return [LDR W NoIdx R0 [ImmLDRI i]]
 
-  -- Note: We have the specific case for '\0' as
-  --       Haskell interprets it as Nul so we need to
-  --       do the conversion
   codegen (CharLit c _)
     = if c == '\0'
         then return [Mov R0 (ImmI 0)]
@@ -40,7 +37,6 @@ instance CodeGen Expr where
     = return [Mov R0 (ImmI 0)]
 
   codegen (IdentE (Ident name (Info t _)) _) = do
-    -- looks up variable in env to get the stack offset
     let size    = sizeFromType typeSizesLDR t
     (env, _)   <- getStackInfo
     let offset  = fromJust (Map.lookup name env)
@@ -48,10 +44,8 @@ instance CodeGen Expr where
 
   codegen expr@(ExprArray ae _) = do
     saveR4       <- push [R4]
-    -- loads the address of the array element in to register R4
     loadAddrR4   <- codegen ae
     let size      = sizeFromType typeSizesLDR (typeOfExpr expr)
-    -- loads the array element in to register R0
     let loadElem  = [LDR size NoIdx R4 [RegOp R4], Mov R0 (RegOp R4)]
     restoreR4    <- pop [R4]
     return $
@@ -85,16 +79,16 @@ instance CodeGen Expr where
     return $ firstExpr ++ performLogicOp
 
   codegen (BinaryApp op e e' _) = do
-    instrExpr        <- codegen e
+    instr        <- codegen e
     saveFirst    <- push [R0]
-    instrExpr1       <- codegen e'
+    instr1       <- codegen e'
     let evaluate  = [Mov R1 (RegOp R0)]
     restoreR0    <- pop [R0]
     binOpInstr   <- getBinOpInstr op
     return $
-      instrExpr      ++
+      instr      ++
       saveFirst  ++
-      instrExpr1     ++
+      instr1     ++
       evaluate   ++
       restoreR0  ++
       binOpInstr
@@ -205,6 +199,13 @@ getBinOpInstr (Arith Mul) = do
   let operation  = [SMULL R0 R1 R0 R1, CMP R1 (Shift R0 ASR 31)]
   errorHandling <- branchWithFunc genOverFlowFunction BLNE
   return $ operation ++ errorHandling
+
+-- getBinOpInstr (Logic op) = do
+--   label         <- getNextLabel
+--   let fstCMP     = [CMP R0 (ImmOp2 (logicNum op)), BEQ label]
+--   let setFalse   = [Mov R0 (ImmI (invertLogicalNum $ logicNum op))]
+--   let labelJump  = [Def label]
+--   return $ fstCMP ++ setFalse ++ labelJump
 
 getBinOpInstr (RelOp op) = do
   let comp  = [CMP R0 (RegOp2 R1)]

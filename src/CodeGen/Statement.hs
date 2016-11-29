@@ -18,13 +18,11 @@ import Utilities.Definitions
 -- POST: Generates assembly code for statements
 instance CodeGen Stat where
   codegen (Declaration t ident@(Ident name _) rhs _) = do
-    -- Adds a new variable to the mapping and caclulates
-    -- the offset of the variable on the stack
-    -- using the type size of the identifier
     instr          <- codegen rhs
     (map', offset) <- getStackInfo
     let newOffset   = offset - typeSize t
     let newMap      = Map.insert name newOffset map'
+    let chckLookUp  = fromJust $ Map.lookup name newMap
     putStackInfo (newMap, newOffset)
     let str         = [STR (sizeFromType typeSizesSTR t) NoIdx R0
                       [RegOp SP, ImmI newOffset]]
@@ -115,13 +113,11 @@ instance CodeGen Stat where
 prepareScope :: Stat -> CodeGenerator ([Instr] , [Instr])
 prepareScope s = do
   saveStackInfo
-  let sizeOfScope  = scopeSize s
-  (env, _)  <- getStackInfo
-  -- calculates size of scope and modifies the environment
-  -- to change the offsets of the variables
-  let envWithOffset = Map.map (+ sizeOfScope) env
+  let sizeOfScope                      = scopeSize s
+  (env, _)                            <- getStackInfo
+  let envWithOffset                    = Map.map (+ sizeOfScope) env
+  insertScopeSizeToEnv sizeOfScope
   putStackInfo (envWithOffset, sizeOfScope)
-  -- generates deallocation and allocation instructions for stack
   (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
   return (createStackSpace, clearStackSpace)
 

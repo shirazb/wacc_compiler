@@ -18,6 +18,7 @@ import Utilities.Definitions hiding (Env)
 instrsFromAST :: AST -> CodeGenerator [Instr]
 instrsFromAST (Program fs body) = do
   mapM_ codegen fs
+  let defMain  = [Def "main"]
   saveLR       <- push [LR]
   instructions <- genInNewScope body
   let succesfulExit = [Mov R0 (ImmI 0)]
