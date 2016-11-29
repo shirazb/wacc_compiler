@@ -74,14 +74,14 @@ instance CodeGen Func where
     addParamsToEnv params 0
     saveLR            <- push [LR]
 
-    instrs            <- genInNewScope body
+    let sizeOfScope    = scopeSize body
+    insertScopeSizeToEnv sizeOfScope
+    (env, _)          <- getStackInfo
+    let envWithOffset  = Map.map (+ sizeOfScope) env
+    putStackInfo (envWithOffset, sizeOfScope)
+    (createStackSpace, _) <- manageStack sizeOfScope
+    instrs            <- codegen body
 
-    {-let sizeOfScope    = scopeSize body-}
-    {-(env, _)          <- getStackInfo-}
-    {-let envWithOffset  = Map.map (+ sizeOfScope) env-}
-    {-putStackInfo (envWithOffset, sizeOfScope)-}
-    {-(createStackSpace, clearStackSpace) <- manageStack sizeOfScope-}
-    {-instrs            <- codegen body-}
 
     let listOfInstrs   = saveLR ++ instrs ++ [LTORG]
     let newFunc        = FuncA ("f_" ++ name) listOfInstrs
