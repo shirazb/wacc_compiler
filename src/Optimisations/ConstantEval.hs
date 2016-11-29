@@ -1,8 +1,10 @@
 {-# LANGUAGE MultiWayIf #-}
-module Optimisations.ConstantEval where
+{-# LANGUAGE ViewPatterns #-}
+
+module Optimisations.ConstantEval (optConstEvalAST) where
 import Utilities.Definitions
 import Control.Monad.Writer
-
+import Prelude hiding (LT, GT, EQ)
 
 {-
 
@@ -171,6 +173,19 @@ optConstEvalExpr expr@(BinaryApp (Arith Mod) (IntLit i pos') e pos) = do
      | IntLit i' pos'' <- e' -> evaluate (i `mod` i') pos''
      | otherwise             -> return expr
 
+-- optConstEvalExpr (BinaryApp (Logic op) (BoolLit b pos) (BoolLit b' pos') pos'')
+--   = return (BoolLit (evalBool b op b') pos)
+--   where
+--     evalBool b1 bOp b2 = b1 (fromJust (lookup bOp bOps)) b2
+--     bOps = [(AND, (&&)), (OR, (||))]
+
+optConstEvalExpr (BinaryApp (Logic (lookUpBoolOp -> Just op)) (BoolLit b pos) (BoolLit b' pos') pos'')
+  = return (BoolLit (b `op` b') pos)
+
+optConstEvalExpr expr@(BinaryApp (Logic (lookUpBoolOp -> Just op)) (BoolLit b pos) e pos') = do
+  e' <- optConstEvalExpr e
+  if | BoolLit b' _ <- e  -> return $ BoolLit (b `op` b') pos
+     | otherwise          -> return expr
 
 optConstEvalExpr (UnaryApp op e pos) = do
   e' <- optConstEvalExpr e
@@ -182,3 +197,9 @@ optConstEvalExpr (ExprArray (ArrayElem ident es pos) pos') = do
 
 optConstEvalExpr e
   = return e
+
+lookUpBoolOp :: LogicalOp -> Maybe (Bool -> Bool -> Bool)
+lookUpBoolOp bOp
+  = lookup bOp bOps
+  where
+    bOps = [(AND, (&&)), (OR, (||))]
