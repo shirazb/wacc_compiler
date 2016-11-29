@@ -10,6 +10,7 @@ TODO: Add control flow analysis
 -}
 
 type ArithmeticErrors = [String]
+
 optConstEvalAST :: AST -> Writer ArithmeticErrors AST
 optConstEvalAST (Program fs body) = do
   body' <- optConstEvalStat body
@@ -86,62 +87,76 @@ optConstEvalAssignRHS (FuncCallAssign i params pos) = do
   params' <- mapM optConstEvalExpr params
   return $ FuncCallAssign i params' pos
 
-optConstEvalExpr :: Expr -> Writer ArithmeticErrors Expr
+
+
+
+evaluate :: Int -> Position -> Writer ArithmeticErrors (Maybe Expr)
+evaluate i pos = do
+  when overFlowCheck (tell ["OVERFLOW: " ++ show pos])
+  return $ Just $ IntLit i pos
+  where
+  overFlowCheck  = i > 2147483647 || i < (-2147483647)
+
+
+
+optConstEvalExpr :: Expr -> Writer ArithmeticErrors (Maybe Expr)
 optConstEvalExpr (BinaryApp (Arith Add) (IntLit i pos') (IntLit i' pos) posE)
-  = IntLit (i + i') pos'
+  = evaluate (i + i') pos
 
 optConstEvalExpr (BinaryApp (Arith Mul) (IntLit i pos') (IntLit i' pos) posE)
-  = IntLit (i * i') pos'
+  = evaluate (i * i') pos'
 
 optConstEvalExpr (BinaryApp (Arith Div) (IntLit i pos') (IntLit i' pos) posE)
-  = IntLit (i `div` i') pos'
+  = evaluate (i `div` i') pos'
 
 optConstEvalExpr (BinaryApp (Arith Mod) (IntLit i pos') (IntLit i' pos) posE)
-  = IntLit (i `mod` i') pos'
+  = evaluate (i `mod` i') pos'
 
 optConstEvalExpr (BinaryApp (Arith Sub)(IntLit i pos') (IntLit i' pos) posE)
-  = IntLit (i - i') pos'
+  = evaluate (i - i') pos'
 
-optConstEvalExpr expr@(BinaryApp (Arith Add) (IntLit i pos') e pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i + i') pos'
-  | otherwise = expr
+optConstEvalExpr expr@(BinaryApp (Arith Add) (IntLit i pos') e pos) = do
+  e' <- optConstEvalExpr e
+  if | (IntLit i' pos'') <- e' = evaluate (i + i') pos'
+     |
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i + i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Add) e (IntLit i pos') pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i + i') pos'
-  | otherwise = expr
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i + i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Mul) (IntLit i pos') e pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i * i') pos'
-  | otherwise = expr
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i * i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Mul) e (IntLit i pos') pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i * i') pos'
-  | otherwise = expr
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i * i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Div) (IntLit i pos') e pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i `div` i') pos'
-  | otherwise = expr
+  | ( _, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i `div` i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Div) e (IntLit i pos') pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i `div` i') pos'
-  | otherwise = expr
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i `div` i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Sub) (IntLit i pos') e pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i - i') pos'
-  | otherwise = expr
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i - i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Sub) e (IntLit i pos') pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i - i') pos'
-  | otherwise = expr
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i - i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Mod) e (IntLit i pos') pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i `mod` i') pos'
-  | otherwise = expr
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i `mod` i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr expr@(BinaryApp (Arith Mod) (IntLit i pos') e pos)
-  | (IntLit i' pos'') <- optConstEvalExpr e = IntLit (i `mod` i') pos'
-  | otherwise = expr
-
+  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i `mod` i') pos'
+  | otherwise = return expr
 
 optConstEvalExpr (UnaryApp op e' pos)
   = UnaryApp op (optConstEvalExpr e') pos
