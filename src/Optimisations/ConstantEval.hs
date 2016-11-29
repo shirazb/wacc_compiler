@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 module Optimisations.ConstantEval where
 import Utilities.Definitions
 import Control.Monad.Writer
@@ -88,81 +89,96 @@ optConstEvalAssignRHS (FuncCallAssign i params pos) = do
   return $ FuncCallAssign i params' pos
 
 
-
-
-evaluate :: Int -> Position -> Writer ArithmeticErrors (Maybe Expr)
+evaluate :: Int -> Position -> Writer ArithmeticErrors Expr
 evaluate i pos = do
   when overFlowCheck (tell ["OVERFLOW: " ++ show pos])
-  return $ Just $ IntLit i pos
+  return $ IntLit i pos
   where
   overFlowCheck  = i > 2147483647 || i < (-2147483647)
 
-
-
-optConstEvalExpr :: Expr -> Writer ArithmeticErrors (Maybe Expr)
+optConstEvalExpr :: Expr -> Writer ArithmeticErrors Expr
 optConstEvalExpr (BinaryApp (Arith Add) (IntLit i pos') (IntLit i' pos) posE)
   = evaluate (i + i') pos
 
 optConstEvalExpr (BinaryApp (Arith Mul) (IntLit i pos') (IntLit i' pos) posE)
   = evaluate (i * i') pos'
 
-optConstEvalExpr (BinaryApp (Arith Div) (IntLit i pos') (IntLit i' pos) posE)
-  = evaluate (i `div` i') pos'
+optConstEvalExpr expr@(BinaryApp (Arith Div) (IntLit i pos') (IntLit i' pos) posE)
+  | i' == 0 = tell ["DIVIDE BY ZERO"] >> return expr
+  | otherwise = evaluate (i `div` i') pos'
 
-optConstEvalExpr (BinaryApp (Arith Mod) (IntLit i pos') (IntLit i' pos) posE)
-  = evaluate (i `mod` i') pos'
+optConstEvalExpr expr@(BinaryApp (Arith Mod) (IntLit i pos') (IntLit i' pos) posE)
+  | i' == 0 = tell ["DIVIDE BY ZERO"] >> return expr
+  | otherwise = evaluate (i `mod` i') pos'
 
 optConstEvalExpr (BinaryApp (Arith Sub)(IntLit i pos') (IntLit i' pos) posE)
   = evaluate (i - i') pos'
 
 optConstEvalExpr expr@(BinaryApp (Arith Add) (IntLit i pos') e pos) = do
   e' <- optConstEvalExpr e
-  if | (IntLit i' pos'') <- e' = evaluate (i + i') pos'
-     |
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i + i') pos'
-  | otherwise = return expr
+  if | (IntLit i' pos'') <- e' -> evaluate (i + i') pos'
+     | otherwise               -> return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Add) e (IntLit i pos') pos)
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i + i') pos'
-  | otherwise = return expr
+optConstEvalExpr expr@(BinaryApp (Arith Add) e (IntLit i pos') pos) = do
+  e' <- optConstEvalExpr e
+  if | IntLit i' pos'' <- e' -> evaluate (i + i') pos''
+     | otherwise             -> return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Mul) (IntLit i pos') e pos)
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i * i') pos'
-  | otherwise = return expr
+optConstEvalExpr expr@(BinaryApp (Arith Mul) (IntLit i pos') e pos) = do
+  e' <- optConstEvalExpr e
+  if | IntLit i' pos'' <- e' -> evaluate (i * i') pos'
+     | otherwise             -> return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Mul) e (IntLit i pos') pos)
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i * i') pos'
-  | otherwise = return expr
+optConstEvalExpr expr@(BinaryApp (Arith Mul) e (IntLit i pos') pos) = do
+  e' <- optConstEvalExpr e
+  if | IntLit i' pos'' <- e' -> evaluate (i * i') pos''
+     | otherwise             -> return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Div) (IntLit i pos') e pos)
-  | ( _, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i `div` i') pos'
-  | otherwise = return expr
+optConstEvalExpr expr@(BinaryApp (Arith Div) (IntLit i pos') e pos) = do
+  e' <- optConstEvalExpr e
+  if | IntLit 0 pos'' <- e' ->  tell ["DIVIDE BY ZERO"] >> return expr
+     | IntLit i' pos'' <- e' -> evaluate (i `div` i') pos'
+     | otherwise             -> return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Div) e (IntLit i pos') pos)
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i `div` i') pos'
-  | otherwise = return expr
+optConstEvalExpr expr@(BinaryApp (Arith Div) e (IntLit i pos') pos) = do
+  e' <- optConstEvalExpr e
+  if | i == 0                -> tell ["DIVIDE BY ZERO"] >> return expr
+     | IntLit i' pos'' <- e' -> evaluate (i `div` i') pos''
+     | otherwise             -> return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Sub) (IntLit i pos') e pos)
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i - i') pos'
-  | otherwise = return expr
+optConstEvalExpr expr@(BinaryApp (Arith Sub) (IntLit i pos') e pos) = do
+  e' <- optConstEvalExpr e
+  if | IntLit i' pos'' <- e' -> evaluate (i - i') pos'
+     | otherwise             -> return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Sub) e (IntLit i pos') pos)
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i - i') pos'
-  | otherwise = return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Mod) e (IntLit i pos') pos)
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i `mod` i') pos'
-  | otherwise = return expr
+optConstEvalExpr expr@(BinaryApp (Arith Sub) e (IntLit i pos') pos) = do
+  e' <- optConstEvalExpr e
+  if | IntLit i' pos'' <- e' -> evaluate (i - i') pos''
+     | otherwise             -> return expr
 
-optConstEvalExpr expr@(BinaryApp (Arith Mod) (IntLit i pos') e pos)
-  | (_, IntLit i' pos'') <- optConstEvalExpr e = evaluate (i `mod` i') pos'
-  | otherwise = return expr
 
-optConstEvalExpr (UnaryApp op e' pos)
-  = UnaryApp op (optConstEvalExpr e') pos
+optConstEvalExpr expr@(BinaryApp (Arith Mod) e (IntLit i pos') pos) = do
+  e' <- optConstEvalExpr e
+  if | i == 0                -> tell ["DIVIDE BY ZERO"] >> return expr
+     | IntLit i' pos'' <- e' -> evaluate (i `mod` i') pos'
+     | otherwise             -> return expr
 
-optConstEvalExpr (ExprArray (ArrayElem ident es pos) pos')
-  = ExprArray (ArrayElem ident (map optConstEvalExpr es) pos) pos'
+
+optConstEvalExpr expr@(BinaryApp (Arith Mod) (IntLit i pos') e pos) = do
+  e' <- optConstEvalExpr e
+  if | IntLit 0 pos'' <- e'  ->  tell ["DIVIDE BY ZERO"] >> return expr
+     | IntLit i' pos'' <- e' -> evaluate (i `mod` i') pos''
+     | otherwise             -> return expr
+
+
+optConstEvalExpr (UnaryApp op e pos) = do
+  e' <- optConstEvalExpr e
+  return $ UnaryApp op e' pos
+
+optConstEvalExpr (ExprArray (ArrayElem ident es pos) pos') = do
+  es' <- mapM optConstEvalExpr es
+  return $ ExprArray (ArrayElem ident es' pos) pos'
 
 optConstEvalExpr e
   = return e
