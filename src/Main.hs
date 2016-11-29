@@ -16,7 +16,7 @@ import Semantics.TypeChecker.Program
 import Utilities.Definitions
 
 main = do
-  -- Read file from command line
+  -- Reads in file from command line
   args         <- getArgs
   let filename  = head args
   contents     <- readFile filename
