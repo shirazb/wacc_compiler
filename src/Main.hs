@@ -14,7 +14,7 @@ import Semantics.Annotators.AST
 import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
-import Optimisations.ConstantEval
+import Optimisations.Optimiser
 
 parseOp :: String -> AST
 parseOp s = a
