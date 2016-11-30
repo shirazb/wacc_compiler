@@ -71,20 +71,15 @@ codeGenFunc sizeOfScope s
 instance CodeGen Func where
   codegen (Func t ident@(Ident name _) (ParamList params _) body _) = do
     saveStackInfo
-    -- Adds the parameters to the environment
     addParamsToEnv params 0
-
-    -- adds a new environment including parameters to the stateStack to account for
-    -- new scope within the function body
     saveLR            <- push [LR]
     let sizeOfScope    = scopeSize body
     (env, _)          <- getStackInfo
     let envWithOffset  = Map.map (+ sizeOfScope) env
     putStackInfo (envWithOffset, sizeOfScope)
     (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
-
     instrs            <- codeGenFunc sizeOfScope body
-
+    restorePC         <- pop [PC]
     let listOfInstrs   = saveLR ++ createStackSpace ++ instrs ++ [LTORG]
     let newFunc        = FuncA ("f_" ++ name) listOfInstrs
     addFunction newFunc
