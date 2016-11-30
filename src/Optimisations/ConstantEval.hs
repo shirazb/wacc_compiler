@@ -12,7 +12,7 @@
 module Optimisations.ConstantEval (optConstEval) where
 
 import Prelude hiding (LT, GT, EQ)
-import Control.Monad.Writer.Strict (Writer (..), tell, when, runWriter)
+import Control.Monad.Writer.Strict (Writer (..), tell, when, runWriter, writer)
 import Data.Maybe (fromJust)
 
 {- LOCAL IMPORTS -}
@@ -110,130 +110,149 @@ instance ConstEval AssignRHS where
     params' <- mapM constEval params
     return $ FuncCallAssign i params' pos
 
-
+-- Constant evaluates the expression, then rearranges and rebrackets the
+-- expression for more constant evaluation
 instance ConstEval Expr where
-  constEval expr@(BinaryApp (Arith Add) (IntLit i pos) (IntLit i' pos') posE)
-    = evaluate (i + i') pos expr
-
-  constEval expr@(BinaryApp (Arith Mul) (IntLit i pos) (IntLit i' pos') posE)
-    = evaluate (i * i') pos expr
-
-  constEval expr@(BinaryApp (Arith Sub) (IntLit i pos) (IntLit i' pos') posE)
-    = evaluate (i - i') pos expr
-
-  constEval expr@(BinaryApp (Arith Div) (IntLit i pos) (IntLit i' pos') posE)
-    | i' == 0   = tell [divideByZero posE expr] >> return expr
-    | otherwise = evaluate (i `div` i') pos expr
-
-  constEval expr@(BinaryApp (Arith Mod) (IntLit i pos) (IntLit i' pos') posE)
-    | i' == 0   = tell [divideByZero posE expr] >> return expr
-    | otherwise = evaluate (i `mod` i') pos expr
-
-
-  constEval expr@(BinaryApp (Arith Add) e1 e2 pos) = do
-    e1' <- constEval e1
-    e2' <- constEval e2
-    if | IntLit i _ <- e1', IntLit i' _ <- e2'
-         -> evaluate (i + i') pos expr
-       | otherwise
-         -> return (BinaryApp (Arith Add) e1' e2' pos)
-
-  constEval expr@(BinaryApp (Arith Sub) e1 e2 pos) = do
-   e1' <- constEval e1
-   e2' <- constEval e2
-   if | IntLit i _ <- e1', IntLit i' _ <- e2'
-        -> evaluate (i - i') pos expr
-      | otherwise
-        -> return (BinaryApp (Arith Sub) e1' e2' pos)
-
-  constEval expr@(BinaryApp (Arith Div) e1 e2 pos) = do
-   e1' <- constEval e1
-   e2' <- constEval e2
-   if | IntLit 0 _ <- e2'
-        -> tell [divideByZero pos expr] >> return expr
-      | IntLit i _ <- e1', IntLit i' _ <- e2'
-        -> evaluate (i `div` i') pos expr
-      | otherwise
-        -> return (BinaryApp (Arith Div) e1' e2' pos)
-
-  constEval expr@(BinaryApp (Arith Mod) e1 e2 pos) = do
-   e1' <- constEval e1
-   e2' <- constEval e2
-   if | IntLit 0 _ <- e2'
-        -> tell [divideByZero pos expr] >> return expr
-      | IntLit i _ <- e1', IntLit i' _ <- e2'
-        -> evaluate (i `mod` i') pos expr
-      | otherwise
-        -> return (BinaryApp (Arith Mod) e1' e2' pos)
-
-  constEval expr@(BinaryApp (Arith Mul) e1 e2 pos) = do
-   e1' <- constEval e1
-   e2' <- constEval e2
-   if | IntLit i _ <- e1', IntLit i' _ <- e2'
-        -> evaluate (i * i') pos expr
-      | otherwise
-        -> return (BinaryApp (Arith Mul) e1' e2' pos)
-
-  constEval (BinaryApp (Logic (lookUpBoolOp -> op)) (BoolLit b pos) (BoolLit b' pos') pos'')
-    = return (BoolLit (b `op` b') pos)
-
-  constEval (BinaryApp (Logic op) e1 e2 pos) = do
-    e1' <- constEval e1
-    e2' <- constEval e2
-    let opF = lookUpBoolOp op
-    if | BoolLit b _ <- e1', BoolLit b' _ <- e2'
-          -> return $ BoolLit (b `opF` b') pos
-       | otherwise
-          -> return $ BinaryApp (Logic op) e1' e2' pos
-
-  constEval (BinaryApp (RelOp (lookUpRelOp -> op)) (CharLit c pos) (CharLit c' pos') pos'')
-    = return $ BoolLit (c `op` c') pos''
-  constEval (BinaryApp (RelOp (lookUpRelOp -> op)) (IntLit i pos) (IntLit i' pos') pos'')
-    = return $ BoolLit (i `op` i') pos''
-
-  constEval (BinaryApp (RelOp op) e1 e2 pos) = do
-    e1' <- constEval e1
-    e2' <- constEval e2
-    let opF :: (Ord a => a -> a -> Bool); opF = lookUpRelOp op
-    if | CharLit c _ <- e1', CharLit c' _ <- e2'
-          -> return $ BoolLit (c `opF` c') pos
-       | IntLit i _ <- e1', IntLit i' _ <- e2'
-          -> return $ BoolLit ( i `opF` i') pos
-       | otherwise
-          -> return $ BinaryApp (RelOp LT) e1' e2' pos
-
-  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (CharLit c pos) (CharLit c' pos') pos'')
-    = return $ BoolLit (c `op` c') pos''
-
-  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (IntLit i pos) (IntLit i' pos') pos'')
-    = return $ BoolLit (i `op` i') pos''
-
-  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (BoolLit i pos) (BoolLit i' pos') pos'')
-    = return $ BoolLit (i `op` i') pos'
-
-  constEval (BinaryApp (EquOp op) e1 e2 pos) = do
-    e1' <- constEval e1
-    e2' <- constEval e2
-    let opF :: (Eq a => a -> a -> Bool); opF = lookUpEqOp op
-    if | CharLit c _ <- e1', CharLit c' _ <- e2'
-          -> return $ BoolLit (c `opF` c') pos
-       | IntLit i _ <- e1', IntLit i' _ <- e2'
-          -> return $ BoolLit ( i `opF` i') pos
-       | BoolLit b _ <- e1', BoolLit b' _ <- e2'
-          -> return $ BoolLit (b `opF` b') pos
-       | otherwise
-          -> return $ BinaryApp (EquOp op) e1' e2' pos
-
-  constEval (UnaryApp op e pos) = do
-    e' <- constEval e
-    return $ UnaryApp op e' pos
-
-  constEval (ExprArray (ArrayElem ident es pos) pos') = do
-    es' <- mapM constEval es
-    return $ ExprArray (ArrayElem ident es' pos) pos'
-
   constEval e
-    = return e
+    = constEvalExpr e >>=! rearrange >>=! rebracket >>=! constEvalExpr
+    where
+      -- Short-circuit the fmap if there were errors
+      (<$!>) :: (a -> a) -> ConstantEvaluator a -> ConstantEvaluator a
+      f <$!> x = case runWriter x of
+        (x', [])  -> writer (f x', [])
+        (_, errs) -> x
+
+      -- Short-circuit the bind if there were errors
+      (>>=!) :: ConstantEvaluator a -> (a -> ConstantEvaluator a) -> ConstantEvaluator a
+      x >>=! f = case runWriter x of
+        (x', [])  -> f x'
+        (_, errs)   -> x
+
+-- POST: Evaluates constant expressions
+constEvalExpr :: Expr -> ConstantEvaluator Expr
+constEvalExpr expr@(BinaryApp (Arith Add) (IntLit i pos) (IntLit i' pos') posE)
+  = evaluate (i + i') pos expr
+
+constEvalExpr expr@(BinaryApp (Arith Mul) (IntLit i pos) (IntLit i' pos') posE)
+  = evaluate (i * i') pos expr
+
+constEvalExpr expr@(BinaryApp (Arith Sub) (IntLit i pos) (IntLit i' pos') posE)
+  = evaluate (i - i') pos expr
+
+constEvalExpr expr@(BinaryApp (Arith Div) (IntLit i pos) (IntLit i' pos') posE)
+  | i' == 0   = tell [divideByZero posE expr] >> return expr
+  | otherwise = evaluate (i `div` i') pos expr
+
+
+constEvalExpr expr@(BinaryApp (Arith Mod) (IntLit i pos) (IntLit i' pos') posE)
+  | i' == 0   = tell [divideByZero posE expr] >> return expr
+  | otherwise = evaluate (i `mod` i') pos expr
+
+
+constEvalExpr expr@(BinaryApp (Arith Add) e1 e2 pos) = do
+  e1' <- constEvalExpr e1
+  e2' <- constEvalExpr e2
+  if | IntLit i _ <- e1', IntLit i' _ <- e2'
+       -> evaluate (i + i') pos expr
+     | otherwise
+       -> return (BinaryApp (Arith Add) e1' e2' pos)
+
+constEvalExpr expr@(BinaryApp (Arith Sub) e1 e2 pos) = do
+ e1' <- constEvalExpr e1
+ e2' <- constEvalExpr e2
+ if | IntLit i _ <- e1', IntLit i' _ <- e2'
+      -> evaluate (i - i') pos expr
+    | otherwise
+      -> return (BinaryApp (Arith Sub) e1' e2' pos)
+
+constEvalExpr expr@(BinaryApp (Arith Div) e1 e2 pos) = do
+ e1' <- constEvalExpr e1
+ e2' <- constEvalExpr e2
+ if | IntLit 0 _ <- e2'
+      -> tell [divideByZero pos expr] >> return expr
+    | IntLit i _ <- e1', IntLit i' _ <- e2'
+      -> evaluate (i `div` i') pos expr
+    | otherwise
+      -> return (BinaryApp (Arith Div) e1' e2' pos)
+
+constEvalExpr expr@(BinaryApp (Arith Mod) e1 e2 pos) = do
+ e1' <- constEvalExpr e1
+ e2' <- constEvalExpr e2
+ if | IntLit 0 _ <- e2'
+      -> tell [divideByZero pos expr] >> return expr
+    | IntLit i _ <- e1', IntLit i' _ <- e2'
+      -> evaluate (i `mod` i') pos expr
+    | otherwise
+      -> return (BinaryApp (Arith Mod) e1' e2' pos)
+
+constEvalExpr expr@(BinaryApp (Arith Mul) e1 e2 pos) = do
+ e1' <- constEvalExpr e1
+ e2' <- constEvalExpr e2
+ if | IntLit i _ <- e1', IntLit i' _ <- e2'
+      -> evaluate (i * i') pos expr
+    | otherwise
+      -> return (BinaryApp (Arith Mul) e1' e2' pos)
+
+constEvalExpr (BinaryApp (Logic (lookUpBoolOp -> op)) (BoolLit b pos) (BoolLit b' pos') pos'')
+  = return (BoolLit (b `op` b') pos)
+
+constEvalExpr (BinaryApp (Logic op) e1 e2 pos) = do
+  e1' <- constEvalExpr e1
+  e2' <- constEvalExpr e2
+  let opF = lookUpBoolOp op
+  if | BoolLit b _ <- e1', BoolLit b' _ <- e2'
+        -> return $ BoolLit (b `opF` b') pos
+     | otherwise
+        -> return $ BinaryApp (Logic op) e1' e2' pos
+
+constEvalExpr (BinaryApp (RelOp (lookUpRelOp -> op)) (CharLit c pos) (CharLit c' pos') pos'')
+  = return $ BoolLit (c `op` c') pos''
+constEvalExpr (BinaryApp (RelOp (lookUpRelOp -> op)) (IntLit i pos) (IntLit i' pos') pos'')
+  = return $ BoolLit (i `op` i') pos''
+
+constEvalExpr (BinaryApp (RelOp op) e1 e2 pos) = do
+  e1' <- constEvalExpr e1
+  e2' <- constEvalExpr e2
+  let opF :: (Ord a => a -> a -> Bool); opF = lookUpRelOp op
+  if | CharLit c _ <- e1', CharLit c' _ <- e2'
+        -> return $ BoolLit (c `opF` c') pos
+     | IntLit i _ <- e1', IntLit i' _ <- e2'
+        -> return $ BoolLit ( i `opF` i') pos
+     | otherwise
+        -> return $ BinaryApp (RelOp LT) e1' e2' pos
+
+constEvalExpr (BinaryApp (EquOp (lookUpEqOp -> op)) (CharLit c pos) (CharLit c' pos') pos'')
+  = return $ BoolLit (c `op` c') pos''
+
+constEvalExpr (BinaryApp (EquOp (lookUpEqOp -> op)) (IntLit i pos) (IntLit i' pos') pos'')
+  = return $ BoolLit (i `op` i') pos''
+
+constEvalExpr (BinaryApp (EquOp (lookUpEqOp -> op)) (BoolLit i pos) (BoolLit i' pos') pos'')
+  = return $ BoolLit (i `op` i') pos'
+
+constEvalExpr (BinaryApp (EquOp op) e1 e2 pos) = do
+  e1' <- constEvalExpr e1
+  e2' <- constEvalExpr e2
+  let opF :: (Eq a => a -> a -> Bool); opF = lookUpEqOp op
+  if | CharLit c _ <- e1', CharLit c' _ <- e2'
+        -> return $ BoolLit (c `opF` c') pos
+     | IntLit i _ <- e1', IntLit i' _ <- e2'
+        -> return $ BoolLit ( i `opF` i') pos
+     | BoolLit b _ <- e1', BoolLit b' _ <- e2'
+        -> return $ BoolLit (b `opF` b') pos
+     | otherwise
+        -> return $ BinaryApp (EquOp op) e1' e2' pos
+
+constEvalExpr (UnaryApp op e pos) = do
+  e' <- constEvalExpr e
+  return $ UnaryApp op e' pos
+
+constEvalExpr (ExprArray (ArrayElem ident es pos) pos') = do
+  es' <- mapM constEvalExpr es
+  return $ ExprArray (ArrayElem ident es' pos) pos'
+
+constEvalExpr e
+  = return e
 
 -- POST: notIntLit <-> parameter is not an integer literal
 notAnIntLit :: Expr -> Bool
@@ -246,29 +265,33 @@ notAnIntLit _
 -- POST: Rebrackets the expression for more constant evaluation
 --       e.g.: (x + 2) + 3 ---> x + (2 + 3)
 --             2 * (3 * x) ---> (2 * 3) * x
-rebracket :: Expr -> Expr
-rebracket expr@(BinaryApp (Arith Mul) (BinaryApp (Arith Mul) e lit@(IntLit i pos') _) lit'@(IntLit i' _) pos)
-  = if notAnIntLit e
-      then BinaryApp (Arith Mul) e (IntLit (i * i') pos') pos
-      else expr
+rebracket :: Expr -> ConstantEvaluator Expr
+rebracket expr@(BinaryApp (Arith Mul) (BinaryApp (Arith Mul) e lit@(IntLit i pos') _) lit'@(IntLit i' _) pos) = do
+  e' <- constEval e
+  if notAnIntLit e'
+    then return $ BinaryApp (Arith Mul) e (IntLit (i * i') pos') pos
+    else return expr
 -- e.g.: 2 + (3 + x) --> (2 + 3) + x
-rebracket expr@(BinaryApp (Arith Mul) lit'@(IntLit i' pos') (BinaryApp (Arith Mul) lit@(IntLit i _) e _) pos)
-  = if notAnIntLit e
-      then BinaryApp (Arith Mul) e (IntLit (i * i') pos') pos
-      else expr
-rebracket expr@(BinaryApp (Arith Add) (BinaryApp (Arith Add) e lit@(IntLit i pos') _) lit'@(IntLit i' _) pos)
-  = if notAnIntLit e
-      then BinaryApp (Arith Add) e (IntLit (i + i') pos') pos
-      else expr
-rebracket expr@(BinaryApp (Arith Add) lit'@(IntLit i' pos') (BinaryApp (Arith Add) lit@(IntLit i _) e _) pos)
-  = if notAnIntLit e
-      then BinaryApp (Arith Add) e (IntLit (i + i') pos') pos
-      else expr
+rebracket expr@(BinaryApp (Arith Mul) lit'@(IntLit i' pos') (BinaryApp (Arith Mul) lit@(IntLit i _) e _) pos) = do
+  e' <- constEval e
+  if notAnIntLit e'
+    then return $ BinaryApp (Arith Mul) (IntLit (i * i') pos') e' pos
+    else return expr
+rebracket expr@(BinaryApp (Arith Add) (BinaryApp (Arith Add) e lit@(IntLit i pos') _) lit'@(IntLit i' _) pos)  = do
+  e' <- constEval e
+  if notAnIntLit e'
+    then return $ BinaryApp (Arith Add) e' (IntLit (i + i') pos') pos
+    else return expr
+rebracket expr@(BinaryApp (Arith Add) lit'@(IntLit i' pos') (BinaryApp (Arith Add) lit@(IntLit i _) e _) pos) = do
+  e' <- constEval e
+  if notAnIntLit e'
+    then return $ BinaryApp (Arith Add) (IntLit (i + i') pos') e' pos
+    else return expr
 rebracket e
-  = e
+  = return e
 
-rearrange :: Expr -> Expr
-rearrange = id
+rearrange :: Expr -> ConstantEvaluator Expr
+rearrange = return
 
 -- POST: Checks if the given integer overflows, reports error if it does
 evaluate :: Int -> Position -> Expr -> Writer ArithmeticErrors Expr
