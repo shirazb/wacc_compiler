@@ -14,6 +14,8 @@ import Utilities.Definitions
 typeCheckProgram :: Program -> TypeChecker ()
 typeCheckProgram (Program fs main) = do
   when (checkForReturnInMain main) (tell [returnInMain])
+  when (checkForBreakOutsideLoop main) (tell [breakWithoutLoop])
+  when (checkForContinueOutsideLoop main) (tell [continueWithoutLoop])
   mapM_ typeCheckFunc fs
   typeCheckStat main
 
@@ -30,6 +32,30 @@ checkForReturnInMain (If _ s1 s2 _)
 checkForReturnInMain (While _ s1 _)
   = checkForReturnInMain s1
 checkForReturnInMain _
+  = False
+
+checkForBreakOutsideLoop :: Stat -> Bool
+checkForBreakOutsideLoop (Break _)
+  = True
+checkForBreakOutsideLoop (Seq s1 s2 _)
+  = checkForBreakOutsideLoop s1 || checkForBreakOutsideLoop s2
+checkForBreakOutsideLoop (If _ s1 s2 _)
+  = checkForBreakOutsideLoop s1 || checkForBreakOutsideLoop s2
+checkForBreakOutsideLoop (While _ s1 _)
+  = False
+checkForBreakOutsideLoop _
+  = False
+
+checkForContinueOutsideLoop :: Stat -> Bool
+checkForContinueOutsideLoop (Continue _)
+  = True
+checkForContinueOutsideLoop (Seq s1 s2 _)
+  = checkForContinueOutsideLoop s1 || checkForContinueOutsideLoop s2
+checkForContinueOutsideLoop (If _ s1 s2 _)
+  = checkForContinueOutsideLoop s1 || checkForContinueOutsideLoop s2
+checkForContinueOutsideLoop (While _ s1 _)
+  = False
+checkForContinueOutsideLoop _
   = False
 
 -- POST: Generates type error messages

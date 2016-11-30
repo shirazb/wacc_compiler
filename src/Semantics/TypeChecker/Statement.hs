@@ -16,9 +16,6 @@ import Utilities.Definitions
 -- POST: Type checks statements
 typeCheckStat :: Stat -> TypeChecker ()
 
-typeCheckStat (Skip _)
-  = return ()
-
 typeCheckStat stat@(Declaration t ident rhs pos) = do
   typeRHS <- typeCheckRHS rhs
   when (typeRHS /= t) (tell [typeMismatch t typeRHS (getPosRHS rhs) stat])
@@ -72,3 +69,7 @@ typeCheckStat (Block s pos)
 typeCheckStat (Seq s s' pos) = do
   typeCheckStat s
   typeCheckStat s'
+
+--Catches Skip, Break, Continue
+typeCheckStat _
+  = return ()

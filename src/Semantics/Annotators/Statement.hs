@@ -19,6 +19,12 @@ annotateStat :: Stat -> ScopeAnalysis Stat
 annotateStat s@Skip{}
   = return s
 
+annotateStat b@Break{}
+  = return b
+
+annotateStat c@Continue{}
+  = return c
+
 annotateStat (Declaration t ident rhs pos) = do
   newRHS   <- annotateRHS rhs
   newIdent <- annotateNewIdent ident (Info t Variable)

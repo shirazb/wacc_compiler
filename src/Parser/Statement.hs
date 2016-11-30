@@ -36,6 +36,8 @@ parseStatement'
   <|> parseWhileStat
   <|> parseBlock
   <|> parseSkip
+  <|> parseBreak
+  <|> parseContinue
 
 -- POST: Parses an if statement
 parseIfStat :: Parser Char Stat
@@ -85,6 +87,14 @@ parseSeq = parseStatement' >>= rest
 parseSkip :: Parser Char Stat
 parseSkip
   = keyword "skip" >> Skip <$> getPosition
+
+parseBreak :: Parser Char Stat
+parseBreak
+  = keyword "break" >> Break <$> getPosition
+
+parseContinue :: Parser Char Stat
+parseContinue
+  = keyword "continue" >> Continue <$> getPosition
 
 -- POST: Parses a declaration of the form type name = rhs
 parseDeclaration :: Parser Char Stat

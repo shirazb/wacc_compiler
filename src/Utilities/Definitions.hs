@@ -70,6 +70,8 @@ data Stat
   | While Expr Stat Position
   | Block Stat Position
   | Seq Stat Stat Position
+  | Break Position
+  | Continue Position
   deriving (Eq, Show)
 
 data AssignLHS

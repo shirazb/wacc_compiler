@@ -16,20 +16,21 @@ import Semantics.TypeChecker.Program
 import Utilities.Definitions
 
 main = do
-  -- Read file from command line
+  -- Reads file from command line
   args         <- getArgs
   let filename  = head args
   contents     <- readFile filename
 
   -- Parses the source file and either generates an AST or exits with a syntax
   -- error
-  let ast      = runParser parseProgram contents
+  let ast       = runParser parseProgram contents
   a <- case ast of
          Right (Just ((a,b),_))  -> return a
          Left err                -> do {print err; exitWith (ExitFailure 100)}
 
   -- Annotation enriches the AST with type and scope error information
   let annotatedAST = annotateAST a
+
   -- Traverses the AST, prints any scope errors found and exits the program if
   -- any errors are found
   case scopeCheckProgram annotatedAST of

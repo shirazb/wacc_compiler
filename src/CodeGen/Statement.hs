@@ -41,6 +41,13 @@ instance CodeGen Stat where
   codegen (Skip _)
     = return []
 
+  --TODO: generate code for break, continue
+  codegen (Break _)
+    = return []
+
+  codegen (Continue _)
+    = return []
+    
   codegen (Free e _) = do
     evalE     <- codegen e
     freeInstr <- getFreeExprInstr (typeOfExpr e)

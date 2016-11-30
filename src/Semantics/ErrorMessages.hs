@@ -21,6 +21,8 @@ derefNullPtr = "Dereferencing a null pointer"
 numOfArgs    = "Incorrect number of arguments"
 freeNonHeap  = "Freeing non heap allocated object"
 returnMain   = "Cannot return from the top-level statement of the program"
+noLoopBreak  = "No enclosing loop to break out of"
+noLoopCont   = "No enclosing loop to continue with"
 
 -- POST: Outputs a type mismatch error message
 typeMismatch :: Show a => Type -> Type -> Position -> a -> ErrorMsg
@@ -67,6 +69,14 @@ freeNonHeapObject pos
 returnInMain :: ErrorMsg
 returnInMain
   = err ++ returnMain ++ "\n"
+
+breakWithoutLoop :: ErrorMsg
+breakWithoutLoop
+  = err ++ noLoopBreak ++ "\n"
+
+continueWithoutLoop :: ErrorMsg
+continueWithoutLoop
+  = err ++ noLoopCont ++ "\n"
 
 -- POST: Outputs a scope error message
 mkScopeErrMsg :: ScopeError -> ErrorMsg
