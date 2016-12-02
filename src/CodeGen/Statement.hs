@@ -39,12 +39,13 @@ instance CodeGen Stat where
   codegen (Skip _)
     = return []
 
-  --TODO: generate code for break, continue
-  codegen (Break _)
-    = return []
+  codegen (Break _) = do
+    (loopEndLabel, _) <- getLoopLabels
+    return [BT loopEndLabel]
 
-  codegen (Continue _)
-    = return []
+  codegen (Continue _) = do
+    (_, loopCondLabel) <- getLoopLabels
+    return [BT loopCondLabel]
     
   codegen (Free e _) = do
     evalE     <- codegen e
@@ -83,14 +84,19 @@ instance CodeGen Stat where
   codegen (While cond stat _) = do
     loopBodyLabel <- getNextLabel
     loopCondLabel <- getNextLabel
+    loopEndLabel  <- getNextLabel
+    saveLoopLabels
+    putLoopLabels (loopEndLabel, loopCondLabel)
     evalCond      <- codegen cond
     execBody      <- genInNewScope stat
+    restoreLoopLabels
     return $
       [BT loopCondLabel, Def loopBodyLabel]  ++
       execBody                               ++
       [Def loopCondLabel]                    ++
       evalCond                               ++
-      [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
+      [CMP R0 (ImmOp2 1), BEQ loopBodyLabel] ++
+      [Def loopEndLabel]
 
   codegen (Print e _) = do
     evalE      <- codegen e

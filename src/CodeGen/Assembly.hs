@@ -26,7 +26,7 @@ genInstruction :: CodeGenerator a -> (((((a, Functions), DataSegment),
                   (Env, StackOffset)), (Int, Int)), LabelNumber)
 genInstruction p
   = runState (runStateStackT (runStateStackT (runStateT (runStateT p [])
-    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) (0,0)) startLabelNum
+    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) ([],[])) startLabelNum
   where
   startMsgNum          = 0
   startOffset          = 0
@@ -45,7 +45,7 @@ type Env             = Map.Map String Int
 type CodeGenerator a = StateT Functions 
                      ( StateT DataSegment 
                      ( StateStackT (Env, Int)
-                     ( StateStackT (Int, Int)
+                     ( StateStackT (String, String)
                      ( State Int
                      )))) a
 
@@ -344,11 +344,11 @@ getStackInfo :: CodeGenerator (Env, Int)
 getStackInfo
   = lift (lift get)
 
-getLoopLabels :: CodeGenerator (Int, Int)
+getLoopLabels :: CodeGenerator (Label, Label)
 getLoopLabels
   = lift . lift . lift $ get
 
-putLoopLabels :: (Int, Int) -> CodeGenerator ()
+putLoopLabels :: (Label, Label) -> CodeGenerator ()
 putLoopLabels
   = lift . lift . lift . put
 
