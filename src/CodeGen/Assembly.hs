@@ -23,10 +23,10 @@ class CodeGen a where
   codegen :: a -> CodeGenerator [Instr]
 
 genInstruction :: CodeGenerator a -> (((((a, Functions), DataSegment),
-                  (Env, StackOffset)), (Int, Int)), LabelNumber)
+                  (Env, StackOffset)), ([Instr], String, String)), LabelNumber)
 genInstruction p
   = runState (runStateStackT (runStateStackT (runStateT (runStateT p [])
-    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) ([],[])) startLabelNum
+    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) ([], [],[])) startLabelNum
   where
   startMsgNum          = 0
   startOffset          = 0
@@ -41,11 +41,12 @@ type MsgNumber       = Int
 type TextSegment     = [Instr]
 type Functions       = [AssemblyFunc]
 type Env             = Map.Map String Int
+type ScopeContext    = ([Instr], String, String)
 
 type CodeGenerator a = StateT Functions 
                      ( StateT DataSegment 
                      ( StateStackT (Env, Int)
-                     ( StateStackT (String, String)
+                     ( StateStackT ScopeContext
                      ( State Int
                      )))) a
 
@@ -344,21 +345,31 @@ getStackInfo :: CodeGenerator (Env, Int)
 getStackInfo
   = lift (lift get)
 
-getLoopLabels :: CodeGenerator (Label, Label)
-getLoopLabels
+getScopeContext :: CodeGenerator ScopeContext
+getScopeContext
   = lift . lift . lift $ get
 
-putLoopLabels :: (Label, Label) -> CodeGenerator ()
-putLoopLabels
+putScopeContext :: ScopeContext -> CodeGenerator ()
+putScopeContext
   = lift . lift . lift . put
 
-saveLoopLabels :: CodeGenerator ()
-saveLoopLabels
+saveScopeContext :: CodeGenerator ()
+saveScopeContext
   = lift $ lift $ lift save
   
-restoreLoopLabels :: CodeGenerator ()
-restoreLoopLabels
+restoreScopeContext :: CodeGenerator ()
+restoreScopeContext
   = lift $ lift $ lift restore
+
+putClearupInstrs :: [Instr] -> CodeGenerator ()
+putClearupInstrs clearStackSpace = do
+  (_, condLabel, endLabel) <- getScopeContext
+  putScopeContext (clearStackSpace, condLabel, endLabel)
+
+getClearupInstrs :: [Instr] -> CodeGenerator [Instr]
+getClearupInstrs clearup = do
+  (clearupInstr, _, _) <- getScopeContext
+  return clearupInstr
 
 -- POST: Increments the stack pointer and modifys the variable mappings
 incrementOffset :: Int -> CodeGenerator ()

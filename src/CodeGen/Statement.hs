@@ -40,12 +40,12 @@ instance CodeGen Stat where
     = return []
 
   codegen (Break _) = do
-    (loopEndLabel, _) <- getLoopLabels
-    return [BT loopEndLabel]
+    (clearStackSpace, _, loopEndLabel) <- getScopeContext
+    return $ clearStackSpace ++ [BT loopEndLabel]
 
   codegen (Continue _) = do
-    (_, loopCondLabel) <- getLoopLabels
-    return [BT loopCondLabel]
+    (clearStackSpace, loopCondLabel, _) <- getScopeContext
+    return $ clearStackSpace ++ [BT loopCondLabel]
     
   codegen (Free e _) = do
     evalE     <- codegen e
@@ -85,11 +85,8 @@ instance CodeGen Stat where
     loopBodyLabel <- getNextLabel
     loopCondLabel <- getNextLabel
     loopEndLabel  <- getNextLabel
-    saveLoopLabels
-    putLoopLabels (loopEndLabel, loopCondLabel)
     evalCond      <- codegen cond
-    execBody      <- genInNewScope stat
-    restoreLoopLabels
+    execBody <- genInNewWhileScope stat loopCondLabel loopEndLabel
     return $
       [BT loopCondLabel, Def loopBodyLabel]  ++
       execBody                               ++
@@ -133,7 +130,21 @@ prepareScope s = do
 genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
   (createStackSpace, clearStackSpace) <- prepareScope s
+  saveScopeContext
+  putClearupInstrs clearStackSpace
   instrs <- codegen s
+  restoreScopeContext
+  restoreStackInfo
+  return $ createStackSpace ++ instrs ++ clearStackSpace
+
+-- POST: Generates assembly code of a statement within a while-loop scope
+genInNewWhileScope :: Stat -> Label -> Label  -> CodeGenerator [Instr]
+genInNewWhileScope s condLabel endLabel = do
+  (createStackSpace, clearStackSpace) <- prepareScope s
+  saveScopeContext
+  putScopeContext (clearStackSpace, condLabel, endLabel)
+  instrs <- codegen s
+  restoreScopeContext
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
 
