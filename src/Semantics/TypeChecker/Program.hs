@@ -29,8 +29,10 @@ checkForReturnInMain (Seq s1 s2 _)
   = checkForReturnInMain s1 || checkForReturnInMain s2
 checkForReturnInMain (If _ s1 s2 _)
   = checkForReturnInMain s1 || checkForReturnInMain s2
-checkForReturnInMain (While _ s1 _)
-  = checkForReturnInMain s1
+checkForReturnInMain (While _ s _)
+  = checkForReturnInMain s
+checkForReturnInMain (Block s _)
+  = checkForReturnInMain s
 checkForReturnInMain _
   = False
 
@@ -41,7 +43,9 @@ checkForBreakOutsideLoop (Seq s1 s2 _)
   = checkForBreakOutsideLoop s1 || checkForBreakOutsideLoop s2
 checkForBreakOutsideLoop (If _ s1 s2 _)
   = checkForBreakOutsideLoop s1 || checkForBreakOutsideLoop s2
-checkForBreakOutsideLoop (While _ s1 _)
+checkForBreakOutsideLoop (Block s _)
+  = checkForBreakOutsideLoop s
+checkForBreakOutsideLoop (While _ s _)
   = False
 checkForBreakOutsideLoop _
   = False
@@ -53,7 +57,9 @@ checkForContinueOutsideLoop (Seq s1 s2 _)
   = checkForContinueOutsideLoop s1 || checkForContinueOutsideLoop s2
 checkForContinueOutsideLoop (If _ s1 s2 _)
   = checkForContinueOutsideLoop s1 || checkForContinueOutsideLoop s2
-checkForContinueOutsideLoop (While _ s1 _)
+checkForContinueOutsideLoop (Block s _)
+  = checkForContinueOutsideLoop s
+checkForContinueOutsideLoop (While _ s _)
   = False
 checkForContinueOutsideLoop _
   = False

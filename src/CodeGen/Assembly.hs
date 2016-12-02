@@ -22,11 +22,11 @@ import Utilities.Definitions hiding (Env)
 class CodeGen a where
   codegen :: a -> CodeGenerator [Instr]
 
-genInstruction :: CodeGenerator a -> ((((a, Functions), DataSegment),
-                  (Env, StackOffset)), LabelNumber)
+genInstruction :: CodeGenerator a -> (((((a, Functions), DataSegment),
+                  (Env, StackOffset)), (Int, Int)), LabelNumber)
 genInstruction p
-  = runState (runStateStackT (runStateT (runStateT p [])
-    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) startLabelNum
+  = runState (runStateStackT (runStateStackT (runStateT (runStateT p [])
+    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) (0,0)) startLabelNum
   where
   startMsgNum          = 0
   startOffset          = 0
@@ -41,8 +41,13 @@ type MsgNumber       = Int
 type TextSegment     = [Instr]
 type Functions       = [AssemblyFunc]
 type Env             = Map.Map String Int
-type CodeGenerator a = StateT Functions (StateT DataSegment (StateStackT
-                       (Env, Int) (State Int))) a
+
+type CodeGenerator a = StateT Functions 
+                     ( StateT DataSegment 
+                     ( StateStackT (Env, Int)
+                     ( StateStackT (Int, Int)
+                     ( State Int
+                     )))) a
 
 data DataSegment
   = DataSeg [Data] MsgNumber
@@ -314,12 +319,12 @@ restoreStackInfo
 -- EXAMPLE: Do you even lift?
 updateNextLabelNum :: Int -> CodeGenerator ()
 updateNextLabelNum
-  = lift . lift . lift . put
+  = lift . lift . lift . lift . put
 
 -- POST: Retrieves the next label number
 getNextLabelNum :: CodeGenerator Int
 getNextLabelNum
-  = lift . lift . lift $ get
+  = lift . lift . lift . lift $ get
 
 -- POST: Returns the String "L:" appended with the next label num, and updates
 --       the label number
@@ -338,6 +343,22 @@ putStackInfo
 getStackInfo :: CodeGenerator (Env, Int)
 getStackInfo
   = lift (lift get)
+
+getLoopLabels :: CodeGenerator (Int, Int)
+getLoopLabels
+  = lift . lift . lift $ get
+
+putLoopLabels :: (Int, Int) -> CodeGenerator ()
+putLoopLabels
+  = lift . lift . lift . put
+
+saveLoopLabels :: CodeGenerator ()
+saveLoopLabels
+  = lift $ lift $ lift save
+  
+restoreLoopLabels :: CodeGenerator ()
+restoreLoopLabels
+  = lift $ lift $ lift restore
 
 -- POST: Increments the stack pointer and modifys the variable mappings
 incrementOffset :: Int -> CodeGenerator ()
