@@ -269,7 +269,7 @@ typeOfArrayElem (ArrayElem (Ident _ info) idxs _)
     ArrayT dim innerType = typeInfo info
     derefDim             = dim - length idxs
 
-typeOfArrayElem
+typeOfArrayElem ae
   = error $ "CodeGen.Expression.typeOfArrayElem. Calling on ArrayElem: "
             ++ show ae
 

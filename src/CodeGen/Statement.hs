@@ -100,7 +100,7 @@ instance CodeGen Stat where
     readIntoLHS        <- getReadIntoLHS lhs
     return $ calcAddrToReadInto ++ readIntoLHS
 
-  codegen
+  codegen s
     = error $ "CodeGen.Statement.codegen: Attempting to codegen the statement: "
       ++ "\n    " ++ show s
 
