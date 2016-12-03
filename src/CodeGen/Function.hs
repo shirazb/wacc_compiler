@@ -26,8 +26,8 @@ instance CodeGen Func where
     putStackInfo (envWithOffset, sizeOfScope)
     (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
 
-    saveScopeContext
-    putClearupInstrs clearStackSpace
+    functionContext   <- getFunctionContext
+    putFunctionContext clearStackSpace
 
     instrs            <- codegen body
 
@@ -35,7 +35,7 @@ instance CodeGen Func where
     let listOfInstrs   = saveLR ++ createStackSpace ++ instrs ++ [LTORG]
     let newFunc        = FuncA ("f_" ++ name) listOfInstrs
     addFunction newFunc
-    restoreScopeContext
+    putFunctionContext functionContext
     restoreStackInfo
     return []
 

@@ -22,11 +22,11 @@ import Utilities.Definitions hiding (Env)
 class CodeGen a where
   codegen :: a -> CodeGenerator [Instr]
 
-genInstruction :: CodeGenerator a -> (((((a, Functions), DataSegment),
-                  (Env, StackOffset)), ([Instr], String, String)), LabelNumber)
+genInstruction :: CodeGenerator a -> ((((((a, Functions), DataSegment),
+                  (Env, StackOffset)), LoopContext), FunctionContext), LabelNumber)
 genInstruction p
-  = runState (runStateStackT (runStateStackT (runStateT (runStateT p [])
-    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) ([], [],[])) startLabelNum
+  = runState (runStateT (runStateT (runStateStackT (runStateT (runStateT p [])
+    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) ([], [],[])) []) startLabelNum
   where
   startMsgNum          = 0
   startOffset          = 0
@@ -41,14 +41,16 @@ type MsgNumber       = Int
 type TextSegment     = [Instr]
 type Functions       = [AssemblyFunc]
 type Env             = Map.Map String Int
-type ScopeContext    = ([Instr], String, String)
+type LoopContext     = ([Instr], String, String)
+type FunctionContext = [Instr]
 
 type CodeGenerator a = StateT Functions 
                      ( StateT DataSegment 
                      ( StateStackT (Env, Int)
-                     ( StateStackT ScopeContext
+                     ( StateT LoopContext
+                     ( StateT FunctionContext
                      ( State Int
-                     )))) a
+                     ))))) a
 
 data DataSegment
   = DataSeg [Data] MsgNumber
@@ -306,6 +308,36 @@ getData  = lift get
 putData :: DataSegment -> CodeGenerator ()
 putData = lift . put
 
+
+-- POST:    Updates the next label number with the given number
+-- EXAMPLE: Do you even lift?
+updateNextLabelNum :: Int -> CodeGenerator ()
+updateNextLabelNum
+  = lift . lift . lift . lift . lift . put
+
+-- POST: Retrieves the next label number
+getNextLabelNum :: CodeGenerator Int
+getNextLabelNum
+  = lift . lift . lift . lift . lift $ get
+
+-- POST: Returns the String "L:" appended with the next label num, and updates
+--       the label number
+getNextLabel :: CodeGenerator String
+getNextLabel = do
+  labelNum <- getNextLabelNum
+  updateNextLabelNum (labelNum + 1)
+  return $ "L" ++ show labelNum
+
+-- POST: Gets the state at the top of the stack
+getStackInfo :: CodeGenerator (Env, Int)
+getStackInfo
+  = lift (lift get)
+
+-- POST: Replaces the state at the top of the stack.
+putStackInfo :: (Env, Int) -> CodeGenerator ()
+putStackInfo
+  = lift . lift . put
+
 -- POST: Pushes the current state on the stack
 saveStackInfo :: CodeGenerator ()
 saveStackInfo
@@ -316,60 +348,22 @@ restoreStackInfo :: CodeGenerator ()
 restoreStackInfo
   = lift (lift restore)
 
--- POST:    Updates the next label number with the given number
--- EXAMPLE: Do you even lift?
-updateNextLabelNum :: Int -> CodeGenerator ()
-updateNextLabelNum
-  = lift . lift . lift . lift . put
-
--- POST: Retrieves the next label number
-getNextLabelNum :: CodeGenerator Int
-getNextLabelNum
-  = lift . lift . lift . lift $ get
-
--- POST: Returns the String "L:" appended with the next label num, and updates
---       the label number
-getNextLabel :: CodeGenerator String
-getNextLabel = do
-  labelNum <- getNextLabelNum
-  updateNextLabelNum (labelNum + 1)
-  return $ "L" ++ show labelNum
-
--- POST: Replaces the state at the top of the stack.
-putStackInfo :: (Env, Int) -> CodeGenerator ()
-putStackInfo
-  = lift . lift . put
-
--- POST: Gets the state at the top of the stack
-getStackInfo :: CodeGenerator (Env, Int)
-getStackInfo
-  = lift (lift get)
-
-getScopeContext :: CodeGenerator ScopeContext
-getScopeContext
+getLoopContext :: CodeGenerator LoopContext
+getLoopContext
   = lift . lift . lift $ get
 
-putScopeContext :: ScopeContext -> CodeGenerator ()
-putScopeContext
+putLoopContext :: LoopContext -> CodeGenerator ()
+putLoopContext
   = lift . lift . lift . put
 
-saveScopeContext :: CodeGenerator ()
-saveScopeContext
-  = lift $ lift $ lift save
-  
-restoreScopeContext :: CodeGenerator ()
-restoreScopeContext
-  = lift $ lift $ lift restore
+getFunctionContext :: CodeGenerator FunctionContext
+getFunctionContext
+  = lift . lift . lift . lift $ get
 
-putClearupInstrs :: [Instr] -> CodeGenerator ()
-putClearupInstrs clearStackSpace = do
-  (_, condLabel, endLabel) <- getScopeContext
-  putScopeContext (clearStackSpace, condLabel, endLabel)
+putFunctionContext :: FunctionContext -> CodeGenerator ()
+putFunctionContext
+  = lift . lift . lift . lift . put
 
-getClearupInstrs :: CodeGenerator [Instr]
-getClearupInstrs = do
-  (clearupInstr, _, _) <- getScopeContext
-  return clearupInstr
 
 -- POST: Increments the stack pointer and modifys the variable mappings
 incrementOffset :: Int -> CodeGenerator ()

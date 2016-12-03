@@ -40,11 +40,11 @@ instance CodeGen Stat where
     = return []
 
   codegen (Break _) = do
-    (clearStackSpace, _, loopEndLabel) <- getScopeContext
+    (clearStackSpace, _, loopEndLabel) <- getLoopContext
     return $ clearStackSpace ++ [BT loopEndLabel]
 
   codegen (Continue _) = do
-    (clearStackSpace, loopCondLabel, _) <- getScopeContext
+    (clearStackSpace, loopCondLabel, _) <- getLoopContext
     return $ clearStackSpace ++ [BT loopCondLabel]
     
   codegen (Free e _) = do
@@ -59,7 +59,7 @@ instance CodeGen Stat where
 
   codegen ret@(Return expr _) = do
     returnExpr <- codegen expr
-    clearStack <- getClearupInstrs
+    clearStack <- getFunctionContext
     --let clearStack = [ADD NF SP SP (ImmOp2 sizeOfScope)]
     restorePC <- pop [PC]
     return $ returnExpr ++ clearStack ++ restorePC
@@ -134,10 +134,8 @@ prepareScope s = do
 genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
   (createStackSpace, clearStackSpace) <- prepareScope s
-  saveScopeContext
-  putClearupInstrs clearStackSpace
+  putFunctionContext clearStackSpace
   instrs <- codegen s
-  restoreScopeContext
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
 
@@ -145,10 +143,12 @@ genInNewScope s = do
 genInNewWhileScope :: Stat -> Label -> Label  -> CodeGenerator [Instr]
 genInNewWhileScope s condLabel endLabel = do
   (createStackSpace, clearStackSpace) <- prepareScope s
-  saveScopeContext
-  putScopeContext (clearStackSpace, condLabel, endLabel)
+
+  loopContext <- getLoopContext
+  putLoopContext (clearStackSpace, condLabel, endLabel)
   instrs <- codegen s
-  restoreScopeContext
+  putLoopContext loopContext
+
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
 
@@ -156,6 +156,7 @@ genInNewWhileScope s condLabel endLabel = do
 --       type
 getFreeExprInstr :: Type -> CodeGenerator [Instr]
 getFreeExprInstr t = case t of
+
    PairT _ _ -> branchWithFunc genFreePair BL
    _         -> return [BL "free"]
 
