@@ -366,8 +366,8 @@ putClearupInstrs clearStackSpace = do
   (_, condLabel, endLabel) <- getScopeContext
   putScopeContext (clearStackSpace, condLabel, endLabel)
 
-getClearupInstrs :: [Instr] -> CodeGenerator [Instr]
-getClearupInstrs clearup = do
+getClearupInstrs :: CodeGenerator [Instr]
+getClearupInstrs = do
   (clearupInstr, _, _) <- getScopeContext
   return clearupInstr
 

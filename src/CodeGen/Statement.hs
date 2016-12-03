@@ -57,8 +57,12 @@ instance CodeGen Stat where
     evalLHS <- codegen lhs
     return $ evalRHS ++ evalLHS
 
-  codegen (Return expr _)
-    = codegen expr
+  codegen ret@(Return expr _) = do
+    returnExpr <- codegen expr
+    clearStack <- getClearupInstrs
+    --let clearStack = [ADD NF SP SP (ImmOp2 sizeOfScope)]
+    restorePC <- pop [PC]
+    return $ returnExpr ++ clearStack ++ restorePC
 
   codegen (Exit expr _) = do
     evalExpr <- codegen expr
