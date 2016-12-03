@@ -85,18 +85,62 @@ instance CodeGen Stat where
       evalCond                               ++
       [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
 
+-- Whilst the scope of the counter is inside the loop, it is actually
+-- declared before the new scope starts, not inside the loop.
+-- 'cond' and 'assign' need not be inside of the loop body's scope either,
+-- so in fact only the body of the loop must be generated inside of a new scope.
   codegen (For decl cond assign loopBody _) = do
+    -- Labels
     loopBodyLabel <- getNextLabel
     loopCondLabel <- getNextLabel
+
+    -- codegen cond
+
+    -- save the current stack info
+
+    -- add the declaration to the env (codegen decl)
+    -- get the env
+    -- get the size of the loop body's scope
+    -- amend env for size of new scope
+    -- put new stack info
+    -- codegen loopBody
+    -- codegen assign
+    -- restore stack info
+
+
+    -- Save the stack info, we are going into a new scope
+    saveStackInfo
+
+    -- Add the declaration to the inner scope
     execDecl      <- codegen decl
-    evalCond      <- codegen cond
-    execAssign    <- codegen assign
+
+    -- The condition is evaluated outside of the loopBody's new scope, but
+    -- contains the declaration in its env.
+    evalCond <- codegen cond
+
+    -- Get the instrs to ADD and SUB to the SP
+    let sizeOfScope = scopeSize loopBody
+    (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
+
+    -- Amend the stack info for the new scope
+    (env, _) <- getStackInfo
+    let envWithOffset = Map.map (+ sizeOfScope) env
+    putStackInfo (envWithOffset, sizeOfScope)
+
+    -- Generate the body and assign in this new scope
     execBody      <- codegen loopBody
+    execAssign    <- codegen assign
+
+    -- Leave the scope (revert to previous environment and offset)
+    restoreStackInfo
+
     return $
       execDecl                               ++
       [BT loopCondLabel, Def loopBodyLabel]  ++
+      createStackSpace                       ++
       execBody                               ++
       execAssign                             ++
+      clearStackSpace                        ++
       [Def loopCondLabel]                    ++
       evalCond                               ++
       [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
@@ -129,8 +173,7 @@ prepareScope s = do
   (env, _)                            <- getStackInfo
   let envWithOffset                    = Map.map (+ sizeOfScope) env
   putStackInfo (envWithOffset, sizeOfScope)
-  (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
-  return (createStackSpace, clearStackSpace)
+  manageStack sizeOfScope
 
 -- POST: Generates assembly code for the given statement within a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
@@ -154,7 +197,7 @@ getReadIntoLHS lhs = case t of
   BaseT BaseChar   -> branchWithFunc genReadChar BL
   BaseT BaseInt    -> branchWithFunc genReadInt  BL
   _                -> error $ "Assertion failed in \
-                        \CodeGen.Statement.genReadLHSInstr: Called with lhs of \
+                        \CodeGen.Statement.getReadIntoLHS: Called with lhs of \
                         \incorrect type. \n\
                         \  AssignLHS: " ++ show lhs ++ "\n\
                         \  Type:" ++ show t
