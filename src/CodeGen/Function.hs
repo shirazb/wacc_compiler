@@ -49,12 +49,3 @@ addParamsToEnv (Param t (Ident name _) _ : ps) offsetToParam = do
   let offsetToNextParam  = offsetToParam + typeSize t
   putStackInfo (newEnv, offset)
   addParamsToEnv ps offsetToNextParam
-
--- POST: Generates assembly for the supplied statement in a new scope
---       using the codeGenFunc method
-{-genInNewScopeFunc :: Int -> Stat -> CodeGenerator [Instr]-}
-{-genInNewScopeFunc outerScopeSize s = do-}
-  {-(createStackSpace, clearStackSpace) <- prepareScope s-}
-  {-instrs <- codeGenFunc outerScopeSize s-}
-  {-restoreStackInfo-}
-  {-return $ createStackSpace ++ instrs ++ clearStackSpace-}

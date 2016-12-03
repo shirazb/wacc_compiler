@@ -60,7 +60,6 @@ instance CodeGen Stat where
   codegen ret@(Return expr _) = do
     returnExpr <- codegen expr
     clearStack <- getFunctionContext
-    --let clearStack = [ADD NF SP SP (ImmOp2 sizeOfScope)]
     restorePC <- pop [PC]
     return $ returnExpr ++ clearStack ++ restorePC
 
