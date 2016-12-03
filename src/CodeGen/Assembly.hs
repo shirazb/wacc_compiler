@@ -162,6 +162,8 @@ typeSizesSTR = [(BaseT BaseInt, W), (BaseT BaseChar, B),
 scopeSize :: Stat -> Int
 scopeSize (Declaration t _ _ _)
   = typeSize t
+scopeSize (For decl cond inc body _)
+  = scopeSize decl
 scopeSize (Seq s1 s2 _)
   = scopeSize s1 + scopeSize s2
 scopeSize _
