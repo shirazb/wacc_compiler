@@ -85,51 +85,34 @@ instance CodeGen Stat where
       evalCond                               ++
       [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
 
--- Whilst the scope of the counter is inside the loop, it is actually
--- declared before the new scope starts, not inside the loop.
--- 'cond' and 'assign' need not be inside of the loop body's scope either,
--- so in fact only the body of the loop must be generated inside of a new scope.
   codegen (For decl cond assign loopBody _) = do
-    -- Labels
     loopBodyLabel <- getNextLabel
     loopCondLabel <- getNextLabel
 
-    -- codegen cond
-
-    -- save the current stack info
-
-    -- add the declaration to the env (codegen decl)
-    -- get the env
-    -- get the size of the loop body's scope
-    -- amend env for size of new scope
-    -- put new stack info
-    -- codegen loopBody
-    -- codegen assign
-    -- restore stack info
-
-
-    -- Save the stack info, we are going into a new scope
+    -- The stack info before entering the for loop is what will br reverted to
+    -- after the for loop (it has no permanent effect on the env or offset)
     saveStackInfo
 
     -- Add the declaration to the inner scope
-    execDecl      <- codegen decl
+    execDecl <- codegen decl
 
-    -- The condition is evaluated outside of the loopBody's new scope, but
+    -- The condition is evaluated outside of the loopBody's new stack space, but
     -- contains the declaration in its env.
     evalCond <- codegen cond
 
-    -- Get the instrs to ADD and SUB to the SP
+    -- Get the instrs to manage the new stack space of loopBody's inner scope
     let sizeOfScope = scopeSize loopBody
     (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
 
-    -- Amend the stack info for the new scope
-    (env, _) <- getStackInfo
+    -- Amend the stack info for the new scope before geerating code for the
+    -- statements inside the new scope
+    (env, _)          <- getStackInfo
     let envWithOffset = Map.map (+ sizeOfScope) env
     putStackInfo (envWithOffset, sizeOfScope)
 
     -- Generate the body and assign in this new scope
-    execBody      <- codegen loopBody
-    execAssign    <- codegen assign
+    execBody   <- codegen loopBody
+    execAssign <- codegen assign
 
     -- Leave the scope (revert to previous environment and offset)
     restoreStackInfo
