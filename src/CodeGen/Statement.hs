@@ -134,7 +134,6 @@ prepareScope s = do
 genInNewScope :: Stat -> CodeGenerator [Instr]
 genInNewScope s = do
   (createStackSpace, clearStackSpace) <- prepareScope s
-  putFunctionContext clearStackSpace
   instrs <- codegen s
   restoreStackInfo
   return $ createStackSpace ++ instrs ++ clearStackSpace
