@@ -85,6 +85,22 @@ instance CodeGen Stat where
       evalCond                               ++
       [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
 
+  codegen (For decl cond assign loopBody _) = do
+    loopBodyLabel <- getNextLabel
+    loopCondLabel <- getNextLabel
+    execDecl      <- codegen decl
+    evalCond      <- codegen cond
+    execAssign    <- codegen assign
+    execBody      <- codegen loopBody
+    return $
+      execDecl                               ++
+      [BT loopCondLabel, Def loopBodyLabel]  ++
+      execBody                               ++
+      execAssign                             ++
+      [Def loopCondLabel]                    ++
+      evalCond                               ++
+      [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
+
   codegen (Print e _) = do
     evalE      <- codegen e
     printInstr <- getExprPrintInstr (typeOfExpr e)

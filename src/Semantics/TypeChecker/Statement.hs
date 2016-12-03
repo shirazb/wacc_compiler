@@ -57,6 +57,14 @@ typeCheckStat (While cond stat pos) = do
     (tell [typeMismatch (BaseT BaseBool) exprT (getPosExpr cond) cond])
   typeCheckStat stat
 
+typeCheckStat (For decl cond assign loopBody pos) = do
+  typeCheckStat decl
+  exprT <- typeCheckExpr cond
+  typeCheckStat assign
+  when (exprT /= BaseT BaseBool)
+    (tell [typeMismatch (BaseT BaseBool) exprT (getPosExpr cond) cond])
+  typeCheckStat loopBody
+
 typeCheckStat (Return expr pos)
   = void $ typeCheckExpr expr
 
