@@ -16,6 +16,7 @@ import Semantics.TypeChecker.Program
 import Utilities.Definitions
 import Optimisations.Optimiser
 
+-- For debugging
 parseOp :: String -> AST
 parseOp s = a
   where
