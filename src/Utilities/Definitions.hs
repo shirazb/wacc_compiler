@@ -70,7 +70,7 @@ data Stat
   | Println Expr Position
   | If Expr Stat Stat Position
   | While Expr Stat Position
-  | For Stat Expr Stat Stat Position -- ***
+  | For Stat Expr Stat Stat Position
   | Block Stat Position
   | Seq Stat Stat Position
   deriving (Eq)

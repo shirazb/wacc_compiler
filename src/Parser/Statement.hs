@@ -70,11 +70,11 @@ parseForStat = do
   punctuation '('
   decl     <- require parseDeclaration
               "Invalid declaration in for loop argument"
-  punctuation ';'
+  require (punctuation ';') "Missing semicolon in for loop declaration"
   cond     <- require parseExpr "Invalid condition in for loop argument"
-  punctuation ';'
+  require (punctuation ';') "Missing semicolon in for loop declaration"
   assign   <- require parseAssignment "Invalid assignment in for loop argument"
-  punctuation ')'
+  require (punctuation ')') "Missing closing parenthesis in for loop declaration"
   require (keyword "do") "Missing 'do' keyword"
   loopBody <- require parseStatement "Invalid statement in for loop body"
   require (keyword "done") "Missing 'done' keyword"
