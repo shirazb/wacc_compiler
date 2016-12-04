@@ -198,9 +198,9 @@ instance ConstEval Expr where
     if | CharLit c _ <- e1', CharLit c' _ <- e2'
           -> return $ BoolLit (c `opF` c') pos
        | IntLit i _ <- e1', IntLit i' _ <- e2'
-          -> return $ BoolLit ( i `opF` i') pos
+          -> return $ BoolLit (i `opF` i') pos
        | otherwise
-          -> return $ BinaryApp (RelOp LT) e1' e2' pos
+          -> return $ BinaryApp (RelOp op) e1' e2' pos
 
   constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (CharLit c pos) (CharLit c' pos') pos'')
     = return $ BoolLit (c `op` c') pos''
