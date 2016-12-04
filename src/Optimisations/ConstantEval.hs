@@ -235,41 +235,6 @@ instance ConstEval Expr where
   constEval e
     = return e
 
--- POST: notIntLit <-> parameter is not an integer literal
-notAnIntLit :: Expr -> Bool
-notAnIntLit IntLit{}
-  = False
-notAnIntLit _
-  = True
-
--- PRE: Expression has been constant evaluation
--- POST: Rebrackets the expression for more constant evaluation
---       e.g.: (x + 2) + 3 ---> x + (2 + 3)
---             2 * (3 * x) ---> (2 * 3) * x
-rebracket :: Expr -> Expr
-rebracket expr@(BinaryApp (Arith Mul) (BinaryApp (Arith Mul) e lit@(IntLit i pos') _) lit'@(IntLit i' _) pos)
-  = if notAnIntLit e
-      then BinaryApp (Arith Mul) e (IntLit (i * i') pos') pos
-      else expr
--- e.g.: 2 + (3 + x) --> (2 + 3) + x
-rebracket expr@(BinaryApp (Arith Mul) lit'@(IntLit i' pos') (BinaryApp (Arith Mul) lit@(IntLit i _) e _) pos)
-  = if notAnIntLit e
-      then BinaryApp (Arith Mul) e (IntLit (i * i') pos') pos
-      else expr
-rebracket expr@(BinaryApp (Arith Add) (BinaryApp (Arith Add) e lit@(IntLit i pos') _) lit'@(IntLit i' _) pos)
-  = if notAnIntLit e
-      then BinaryApp (Arith Add) e (IntLit (i + i') pos') pos
-      else expr
-rebracket expr@(BinaryApp (Arith Add) lit'@(IntLit i' pos') (BinaryApp (Arith Add) lit@(IntLit i _) e _) pos)
-  = if notAnIntLit e
-      then BinaryApp (Arith Add) e (IntLit (i + i') pos') pos
-      else expr
-rebracket e
-  = e
-
-rearrange :: Expr -> Expr
-rearrange = id
-
 -- POST: Checks if the given integer overflows, reports error if it does
 evaluate :: Int -> Position -> Expr -> Writer ArithmeticErrors Expr
 evaluate i pos expr = do
