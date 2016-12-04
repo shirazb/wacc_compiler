@@ -48,8 +48,15 @@ main = do
     [] -> return ()
     errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
 
+  -- Optimisations sequence
+  optimisedAST <- case optimiser annotatedAST of
+                    Right optAST -> return optAST
+                    Left errors  -> do
+                        mapM_ putStrLn errors
+                        exitWith (ExitFailure 200)
+
   -- Generates ARM11 Assembly code from the AST and prints to stdout
   -- Compile script pipes this in to a file and generates the assembly file.
-  putStrLn (makeInstr annotatedAST)
+  putStrLn (makeInstr optimisedAST)
 
   exitSuccess
