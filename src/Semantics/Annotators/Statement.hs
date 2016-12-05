@@ -66,9 +66,16 @@ annotateStat (If cond thenStat elseStat pos) = do
   return $ If newCond newThenStat newElseStat pos
 
 annotateStat (While cond body pos) = do
-  newCond     <- annotateExpr cond
+  newCond <- annotateExpr cond
   newBody <- inChildScope $ annotateStat body
   return $ While newCond newBody pos
+
+annotateStat (For decl cond assign loopBody pos) = inChildScope $ do
+  newDecl     <- annotateStat decl
+  newCond     <- annotateExpr cond
+  newAssign   <- annotateStat assign
+  newLoopBody <- annotateStat loopBody
+  return $ For newDecl newCond newAssign newLoopBody pos
 
 annotateStat (Block s pos) = do
   newStat <- inChildScope (annotateStat s)

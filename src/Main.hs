@@ -14,6 +14,13 @@ import Semantics.Annotators.AST
 import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
+import Optimisations.Optimiser
+
+-- For debugging
+parseOp :: String -> AST
+parseOp s = a
+  where
+    Right (Just ((a,b),c)) = runParser parseProgram s
 
 main = do
   -- Reads file from command line
@@ -43,8 +50,15 @@ main = do
     [] -> return ()
     errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
 
+  -- Optimisations sequence
+  optimisedAST <- case optimiser annotatedAST of
+                    Right optAST -> return optAST
+                    Left errors  -> do
+                        mapM_ putStrLn errors
+                        exitWith (ExitFailure 200)
+
   -- Generates ARM11 Assembly code from the AST and prints to stdout
   -- Compile script pipes this in to a file and generates the assembly file.
-  putStrLn (makeInstr annotatedAST)
+  putStrLn (makeInstr optimisedAST)
 
   exitSuccess

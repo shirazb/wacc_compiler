@@ -34,6 +34,7 @@ parseStatement'
   <|> parseBuiltInFunc "print"   Print
   <|> parseIfStat
   <|> parseWhileStat
+  <|> parseForStat
   <|> parseBlock
   <|> parseSkip
   <|> parseBreak
@@ -42,9 +43,9 @@ parseStatement'
 -- POST: Parses an if statement
 parseIfStat :: Parser Char Stat
 parseIfStat = do
-  pos <- getPosition
+  pos      <- getPosition
   keyword "if"
-  cond <- require parseExpr "Invalid expression in if condition"
+  cond     <- require parseExpr "Invalid expression in if condition"
   require (keyword "then") "Missing 'then' keyword"
   thenStat <- require parseStatement "Invalid statement in 'then' branch"
   require (keyword "else") "Missing 'else' keyword"
@@ -55,13 +56,31 @@ parseIfStat = do
 -- POST: Parses a while loop
 parseWhileStat :: Parser Char Stat
 parseWhileStat = do
-  pos <- getPosition
+  pos      <- getPosition
   keyword "while"
-  cond      <- require parseExpr "Invalid expression in while condition"
+  cond     <- require parseExpr "Invalid expression in while condition"
   require (keyword "do") "Missing 'do' keyword"
-  loopBody  <- require parseStatement "Invalid statement in while body"
+  loopBody <- require parseStatement "Invalid statement in while body"
   require (keyword "done") "Missing 'done' keyword"
   return $ While cond loopBody pos
+
+-- POST: Parses a for loop
+parseForStat :: Parser Char Stat
+parseForStat = do
+  pos      <- getPosition
+  keyword "for"
+  punctuation '('
+  decl     <- require parseDeclaration
+              "Invalid declaration in for loop argument"
+  require (punctuation ';') "Missing semicolon in for loop declaration"
+  cond     <- require parseExpr "Invalid condition in for loop argument"
+  require (punctuation ';') "Missing semicolon in for loop declaration"
+  assign   <- require parseAssignment "Invalid assignment in for loop argument"
+  require (punctuation ')') "Missing closing parenthesis in for loop declaration"
+  require (keyword "do") "Missing 'do' keyword"
+  loopBody <- require parseStatement "Invalid statement in for loop body"
+  require (keyword "done") "Missing 'done' keyword"
+  return $ For decl cond assign loopBody pos
 
 -- POST: Parses a new block of statements
 parseBlock :: Parser Char Stat
@@ -71,7 +90,6 @@ parseBlock = do
   stat <- require parseStatement "Invalid statement in block"
   require (keyword "end") "Missing 'end' keyword in block"
   return $ Block stat pos
-
 
 -- POST: Parses a sequence of statements seperated by the semi-colon operator
 parseSeq :: Parser Char Stat

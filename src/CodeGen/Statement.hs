@@ -98,6 +98,49 @@ instance CodeGen Stat where
       [CMP R0 (ImmOp2 1), BEQ loopBodyLabel] ++
       [Def loopEndLabel]
 
+  codegen (For decl cond assign loopBody _) = do
+    loopBodyLabel <- getNextLabel
+    loopCondLabel <- getNextLabel
+
+    -- The stack info before entering the for loop is what will br reverted to
+    -- after the for loop (it has no permanent effect on the env or offset)
+    saveStackInfo
+
+    -- Add the declaration to the inner scope
+    execDecl <- codegen decl
+
+    -- The condition is evaluated outside of the loopBody's new stack space, but
+    -- contains the declaration in its env.
+    evalCond <- codegen cond
+
+    -- Get the instrs to manage the new stack space of loopBody's inner scope
+    let sizeOfScope = scopeSize loopBody
+    (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
+
+    -- Amend the stack info for the new scope before geerating code for the
+    -- statements inside the new scope
+    (env, _)          <- getStackInfo
+    let envWithOffset = Map.map (+ sizeOfScope) env
+    putStackInfo (envWithOffset, sizeOfScope)
+
+    -- Generate the body and assign in this new scope
+    execBody   <- codegen loopBody
+    execAssign <- codegen assign
+
+    -- Leave the scope (revert to previous environment and offset)
+    restoreStackInfo
+
+    return $
+      execDecl                               ++
+      [BT loopCondLabel, Def loopBodyLabel]  ++
+      createStackSpace                       ++
+      execBody                               ++
+      execAssign                             ++
+      clearStackSpace                        ++
+      [Def loopCondLabel]                    ++
+      evalCond                               ++
+      [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
+
   codegen (Print e _) = do
     evalE      <- codegen e
     printInstr <- getExprPrintInstr (typeOfExpr e)
@@ -126,8 +169,7 @@ prepareScope s = do
   (env, _)                            <- getStackInfo
   let envWithOffset                    = Map.map (+ sizeOfScope) env
   putStackInfo (envWithOffset, sizeOfScope)
-  (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
-  return (createStackSpace, clearStackSpace)
+  manageStack sizeOfScope
 
 -- POST: Generates assembly code for the given statement within a new scope
 genInNewScope :: Stat -> CodeGenerator [Instr]
@@ -165,7 +207,7 @@ getReadIntoLHS lhs = case t of
   BaseT BaseChar   -> branchWithFunc genReadChar BL
   BaseT BaseInt    -> branchWithFunc genReadInt  BL
   _                -> error $ "Assertion failed in \
-                        \CodeGen.Statement.genReadLHSInstr: Called with lhs of \
+                        \CodeGen.Statement.getReadIntoLHS: Called with lhs of \
                         \incorrect type. \n\
                         \  AssignLHS: " ++ show lhs ++ "\n\
                         \  Type:" ++ show t

@@ -23,6 +23,8 @@ freeNonHeap  = "Freeing non heap allocated object"
 returnMain   = "Cannot return from the top-level statement of the program"
 noLoopBreak  = "No enclosing loop to break out of"
 noLoopCont   = "No enclosing loop to continue with"
+divByZero    = "Divide By Zero Error -- constant expression evalutes to zero"
+overFlowErr  = "OverFlow Error -- constant expression overflows"
 
 -- POST: Outputs a type mismatch error message
 typeMismatch :: Show a => Type -> Type -> Position -> a -> ErrorMsg
@@ -57,6 +59,20 @@ typeMismatchList expT actT pos expr'
     expe ++ show expT  ++ "\n" ++
     act  ++ show actT  ++ "\n" ++
     expr ++ show expr' ++ "\n"
+
+-- POST: Outputs an error if we have divide by zero
+divideByZero :: Position -> Expr -> ErrorMsg
+divideByZero pos e
+  = err  ++ divByZero ++ "\n" ++
+    loc  ++ show pos  ++ "\n" ++
+    expr ++ show e    ++ "\n"
+
+-- POST: Outputs an error if we have overflow
+overFlowError :: Position -> Expr -> ErrorMsg
+overFlowError pos e
+  = err  ++ overFlowErr ++ "\n" ++
+    loc  ++ show pos    ++ "\n" ++
+    expr ++ show e      ++ "\n"
 
 -- POST: Outputs an error message if freeing a non-heap allocated object
 freeNonHeapObject :: Position -> ErrorMsg
