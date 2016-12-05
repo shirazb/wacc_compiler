@@ -1,1 +1,2 @@
-1.divZero.wacc -- we caught the error at compile time -divide by zero
+divZero.wacc -- we caught the error at compile time -divide by zero
+IOLoop.wacc  -- 'continue' is now a keyword, IOLoop uses it as an identifier
