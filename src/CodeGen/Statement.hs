@@ -84,12 +84,12 @@ instance CodeGen Stat where
       execElseStat        ++
       [Def afterIfLabel]
 
-  codegen (While cond stat _) = do
+  codegen (While cond body _) = do
     loopBodyLabel <- getNextLabel
     loopCondLabel <- getNextLabel
     loopEndLabel  <- getNextLabel
     evalCond      <- codegen cond
-    execBody <- genInNewWhileScope stat loopCondLabel loopEndLabel
+    execBody      <- genInNewWhileScope body loopCondLabel loopEndLabel
     return $
       [BT loopCondLabel, Def loopBodyLabel]  ++
       execBody                               ++
@@ -98,36 +98,40 @@ instance CodeGen Stat where
       [CMP R0 (ImmOp2 1), BEQ loopBodyLabel] ++
       [Def loopEndLabel]
 
-  codegen (For decl cond assign loopBody _) = do
-    loopBodyLabel <- getNextLabel
+  codegen (For decl cond assign body _) = do
+    loopBodyLabel     <- getNextLabel
     loopCondLabel <- getNextLabel
+    loopEndLabel      <- getNextLabel
 
-    -- The stack info before entering the for loop is what will br reverted to
-    -- after the for loop (it has no permanent effect on the env or offset)
     saveStackInfo
 
     -- Add the declaration to the inner scope
     execDecl <- codegen decl
 
-    -- The condition is evaluated outside of the loopBody's new stack space, but
+    -- Condition is evaluated outside of body's new stack space, but
     -- contains the declaration in its env.
     evalCond <- codegen cond
 
-    -- Get the instrs to manage the new stack space of loopBody's inner scope
-    let sizeOfScope = scopeSize loopBody
+    -- Get the instrs to manage the new stack space of body's inner scope
+    let sizeOfScope = scopeSize body
     (createStackSpace, clearStackSpace) <- manageStack sizeOfScope
 
-    -- Amend the stack info for the new scope before geerating code for the
-    -- statements inside the new scope
+    -- Modify stack offets
     (env, _)          <- getStackInfo
-    let envWithOffset = Map.map (+ sizeOfScope) env
+    let envWithOffset  = Map.map (+ sizeOfScope) env
     putStackInfo (envWithOffset, sizeOfScope)
 
-    -- Generate the body and assign in this new scope
-    execBody   <- codegen loopBody
+    --Generate assignment first, needed in loopContext
     execAssign <- codegen assign
 
-    -- Leave the scope (revert to previous environment and offset)
+    --Include assignment in look clearup context
+    previousLoopContext                 <- getLoopContext
+    putLoopContext (execAssign ++ clearStackSpace, loopCondLabel, loopEndLabel)
+    
+    -- Generate both body and assignment in this new scope
+    execBody   <- codegen body
+    
+    putLoopContext previousLoopContext
     restoreStackInfo
 
     return $
@@ -139,7 +143,8 @@ instance CodeGen Stat where
       clearStackSpace                        ++
       [Def loopCondLabel]                    ++
       evalCond                               ++
-      [CMP R0 (ImmOp2 1), BEQ loopBodyLabel]
+      [CMP R0 (ImmOp2 1), BEQ loopBodyLabel] ++
+      [Def loopEndLabel]
 
   codegen (Print e _) = do
     evalE      <- codegen e

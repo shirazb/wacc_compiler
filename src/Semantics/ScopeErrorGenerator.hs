@@ -57,8 +57,14 @@ scopeErrorStat (If expr stat1 stat2 _)
 scopeErrorStat (While expr stat _)
   = scopeErrorExpr expr ++ scopeErrorStat stat
 
+scopeErrorStat (For stat1 expr stat2 stat3 _)
+  = scopeErrorExpr expr ++ scopeErrorStat stat1 
+                        ++ scopeErrorStat stat2
+                        ++ scopeErrorStat stat3
+
 scopeErrorStat (Block stat _)
   = scopeErrorStat stat
+
 
 scopeErrorStat (Seq stat1 stat2 _)
   = scopeErrorStat stat1 ++ scopeErrorStat stat2
