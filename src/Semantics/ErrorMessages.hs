@@ -21,8 +21,8 @@ derefNullPtr = "Dereferencing a null pointer"
 numOfArgs    = "Incorrect number of arguments"
 freeNonHeap  = "Freeing non heap allocated object"
 returnMain   = "Cannot return from the top-level statement of the program"
-noLoopBreak  = "No enclosing loop to break out of"
-noLoopCont   = "No enclosing loop to continue with"
+noLoopBreak  = "Unexpected break found outside of loop"
+noLoopCont   = "Unexpected continue found oustide of loop"
 divByZero    = "Divide By Zero Error -- constant expression evalutes to zero"
 overFlowErr  = "OverFlow Error -- constant expression overflows"
 
@@ -82,17 +82,20 @@ freeNonHeapObject pos
 
 -- POST: Outputs an error message if returning from the top-level statement of
 --       the program
-returnInMain :: ErrorMsg
-returnInMain
-  = err ++ returnMain ++ "\n"
+returnInMain :: Position -> ErrorMsg
+returnInMain pos
+  = err ++ returnMain ++ "\n" ++
+    loc ++ show pos
 
-breakWithoutLoop :: ErrorMsg
-breakWithoutLoop
-  = err ++ noLoopBreak ++ "\n"
+breakWithoutLoop :: Position -> ErrorMsg
+breakWithoutLoop pos
+  = err ++ noLoopBreak ++ "\n" ++
+    loc ++ show pos
 
-continueWithoutLoop :: ErrorMsg
-continueWithoutLoop
-  = err ++ noLoopCont ++ "\n"
+continueWithoutLoop :: Position -> ErrorMsg
+continueWithoutLoop pos
+  = err ++ noLoopCont ++ "\n" ++
+    loc ++ show pos
 
 -- POST: Outputs a scope error message
 mkScopeErrMsg :: ScopeError -> ErrorMsg
