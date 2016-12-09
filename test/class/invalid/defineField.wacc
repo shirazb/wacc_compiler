@@ -1,0 +1,11 @@
+begin
+  class Dog is
+   int x = 1;
+  
+    init(int x) is
+      self.x = x;
+    end
+  end
+ println 1
+
+end

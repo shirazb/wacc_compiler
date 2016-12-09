@@ -1,7 +1,7 @@
 {- This module contains the data definitions for the WACC syntac. Definitions
 used to build an Abstract Syntax Tree (AST). The AST is an internal
 represenation of the parsed contents of a given input file. This module also
-defines show instances, which are used to pretty-print the internal
+defines pretty instances, which are used to pretty-print the internal
 represenation of the program -}
 
 module Utilities.Definitions where
@@ -11,52 +11,94 @@ import Prelude hiding (GT, LT, EQ)
 import Data.Char
 import Data.List
 import qualified Data.Map as Map
-import Control.Monad.State.Strict (State)
+import Control.Monad.State.Strict (State (..), StateT (..))
 import Control.Monad.Writer.Strict (Writer)
 
-type Env                 = Map.Map (String, Context) Info
 type AST                 = Program
 type Err                 = (String, Position)
 type ErrorMsg            = String
 type Position            = (Int, Int)
-type ScopeError          = (String, ScopeErrorType, Position)
+type ScopeError         = (String, ScopeErrorType, Position)
 type ArrayIndexes        = [Expr]
 type TypeChecker a       = Writer [ErrorMsg] a
-type ScopeAnalysis a     = State SymbolTable a
 type ArithmeticErrors    = [String]
 type ConstantEvaluator a = Writer ArithmeticErrors a
 
-data Program   = Program [Func] Stat                     deriving (Eq)
-data Func      = Func Type Ident ParamList Stat Position deriving (Eq)
-data ParamList = ParamList [Param] Position              deriving (Eq)
-data Param     = Param Type Ident Position               deriving (Eq)
-data ArrayElem = ArrayElem Ident ArrayIndexes Position   deriving (Eq)
-data Ident     = Ident String Info                       deriving (Eq)
+data Program   = Program [Class] [Func] Stat             deriving (Eq, Show)
+data Func      = Func Type Ident ParamList Stat Position deriving (Eq, Show)
+data ParamList = ParamList [Param] Position              deriving (Eq, Show)
+data Param     = Param Type Ident Position               deriving (Eq, Show)
+data ArrayElem = ArrayElem Ident ArrayIndexes Position   deriving (Eq, Show)
+
+data FuncCall
+  = FuncCall Ident [Expr]
+  deriving (Eq, Show)
+
+data Ident
+  = Ident String Info
+  | Self Info -- should be ClassT and Variable
+  deriving (Show, Eq)
+
+data MemberAccess
+  = MemList Instance [Member] Position
+  deriving (Eq, Show)
+
+data Instance
+  = VarObj Ident Position
+  | FuncReturnsObj FuncCall Position
+  deriving (Eq, Show)
+
+data Member
+  = FieldAccess Ident Position
+  | MethodCall FuncCall Position
+  deriving (Eq, Show)
+
+data Field
+  = Field {
+    fieldType  :: Type,
+    fieldIdent :: Ident,
+    fieldPos   :: Position
+  }
+  deriving (Eq, Show)
+
+data Constructor
+  = Constructor {
+      constructorParams :: ParamList,
+      constructorBody   :: Stat,
+      constructorPos    :: Position
+  }
+  deriving (Eq, Show)
+
+data Class
+  = Class Ident [Field] Constructor [Func] Position
+  deriving (Eq, Show)
 
 data ScopeErrorType
   = NoError
   | Duplicate
   | NotInScope
-  deriving (Eq)
+  | SelfNotInClass
+  | ClassNotInScope String
+  | CyclicConstr String
+  deriving (Eq, Show)
 
 data Info
-  = Info {
-    typeInfo :: Type,
-    context  :: Context
-  }
+  = Info InfoType Type Context
+  | ClassInfo String [Ident] [Type]
   | ScopeError ScopeErrorType
   | NoInfo
+  deriving (Eq, Show)
+
+data InfoType
+  = Instance
+  | Static
   deriving (Eq, Show)
 
 data Context
   = Function
   | Variable
+  | ClassName
   deriving (Eq, Ord, Show)
-
-data SymbolTable
-  = ST SymbolTable Env
-  | None
-  deriving (Eq)
 
 data Stat
   = Skip Position
@@ -65,6 +107,7 @@ data Stat
   | Read AssignLHS Position
   | Free Expr Position
   | Return Expr Position
+  | ReturnVoid Position
   | Exit Expr Position
   | Print Expr Position
   | Println Expr Position
@@ -72,53 +115,62 @@ data Stat
   | While Expr Stat Position
   | For Stat Expr Stat Stat Position
   | Block Stat Position
-  | Seq Stat Stat Position
   | Break Position
   | Continue Position
-  deriving (Eq)
+  | CallFunc FuncCall Position
+  | CallMethod MemberAccess Position -- we have to ensure that is only a function
+  | Seq Stat Stat Position               -- we could change it in to an expression and
+                                            -- typecheck that its an objet
+  deriving (Eq, Show)
 
 data AssignLHS
   = Var Ident Position
   | ArrayDeref ArrayElem Position
   | PairDeref PairElem Position
-  deriving (Eq)
+  | MemberDeref MemberAccess Position-- Check for method calls in semantics
+  deriving (Eq, Show)
 
 data AssignRHS
   = ExprAssign Expr Position
   | ArrayLitAssign [Expr] Position
   | NewPairAssign  Expr Expr Position
   | PairElemAssign PairElem Position
-  | FuncCallAssign Ident [Expr] Position
-  deriving (Eq)
+  | FuncCallAssign FuncCall Position
+  | ConstructAssign FuncCall Position
+  deriving (Eq, Show)
 
 data PairElem
   = PairElem PairElemSelector Expr Position
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data PairElemSelector
   = Fst
   | Snd
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data BaseType
   = BaseInt
   | BaseBool
   | BaseChar
   | BaseString
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data Type
-  = BaseT BaseType
+  = Void
+  | BaseT BaseType
   | PairT Type Type
   | ArrayT Int Type
-  | Pair
+  | ClassT String
   | FuncT Type [Type]
+  | Pair
   | NoType
   | PolyArray
   | PolyFunc
   | PolyPair
   | RelationalT
   | DataType
+  | NotInScopeT String
+  deriving (Show)
 
 data Expr
   = StringLit String Position
@@ -126,6 +178,7 @@ data Expr
   | IntLit Int Position
   | BoolLit Bool Position
   | PairLiteral Position
+  | ExprMemberAccess MemberAccess Position
   | IdentE Ident Position
   | ExprArray ArrayElem Position
   | UnaryApp UnOp Expr Position
@@ -138,24 +191,24 @@ data UnOp
   | Len
   | Ord
   | Chr
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data LogicalOp
   = AND
   | OR
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data RelationalOp
   = LT
   | LTE
   | GTE
   | GT
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data EqOps
  = EQ
  | NEQ
- deriving (Eq)
+ deriving (Eq, Show)
 
 data ArithOp
   = Mul
@@ -163,14 +216,14 @@ data ArithOp
   | Mod
   | Add
   | Sub
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data BinOp
   = Logic LogicalOp
   | Arith ArithOp
   | RelOp RelationalOp
   | EquOp EqOps
-  deriving (Eq)
+  deriving (Eq, Show)
 
 {- FUNDAMENTAL TYPES -}
 
@@ -237,14 +290,19 @@ instance Eq Type where
   PairT _ _ == Pair      = True
   Pair      == PairT _ _ = True
   Pair      == Pair      = True
+  Void      == Void      = True
+  ClassT i  == ClassT i' = i == i'
   _ == _ = False
 
 {- HELPER FUNCTIONS -}
 
+class Pretty a where
+  pretty :: a -> String
+
 -- POST: Shows and indents a string
-showAndIndent :: Show a => a -> String
+showAndIndent :: Pretty a => a -> String
 showAndIndent
-  = indent . show
+  = indent . pretty
 
 -- POST: Indents the given string by 4 spaces and returns the result as a
 --       string
@@ -252,14 +310,14 @@ indent :: String -> String
 indent s
   = unlines indentedLines
   where
-    indentedLines = map ("    " ++) (lines s)
+    indentedLines = map ("  " ++) (lines s)
 
 -- POST:    Converts a list in to a string, and seperates the elements in the
 --          list with a comma
 -- EXAMPLE: listToString "[" [1,2,3] "]" will return "[1,2,3]"
-listToString :: Show a => String -> [a] -> String -> String
+listToString :: Pretty a => String -> [a] -> String -> String
 listToString open xs close
-  = open ++ intercalate ", " (map show xs) ++ close
+  = open ++ intercalate ", " (map pretty xs) ++ close
 
 -- PRE:  (key, value) list is not empty and contains the association you are
 --       looking for
@@ -270,8 +328,9 @@ flippedLookup y xs
   = head [ x | (x, y') <- xs, y == y' ]
 
 -- POST: Generates a string represenation of a list of functions
-showFuncs :: [Func] -> String
-showFuncs = concatMap (flip (++) "\n" . show)
+manyPretty :: Pretty a => [a] -> String
+manyPretty
+  = concatMap (flip (++) "\n" . pretty)
 
 -- POST: Constructs a string representation of a dimension of an array
 constructArray :: Int -> String
@@ -292,222 +351,282 @@ inBrackets :: String -> String
 inBrackets s
   = "(" ++ s ++ ")"
 
--- -- POST: Removes superfluous brackets
--- showWithoutBrackets :: (ExpressionTerm a, ExpressionTerm b) => a -> b -> String
--- showWithoutBrackets t t'
---   = let showT' = show t' in
---       if precedence t < precedence t'
---         then inBrackets showT'
---         else showT'
+-- POST: Removes superfluous brackets
+showWithoutBrackets :: (ExpressionTerm a, ExpressionTerm b) => a -> b -> String
+showWithoutBrackets t t'
+  = let showT' = pretty t' in
+      if precedence t < precedence t'
+        then inBrackets showT'
+        else showT'
 
 {- SHOW INSTANCES -}
 
-instance Show Program where
-  show (Program funcs body)
-    =  "begin\n" ++ indent(showFuncs funcs ++ showAndIndent body) ++ "end"
---
-instance Show Func where
-  show (Func t ident params body _)
-    = show t ++ "  " ++ show ident ++ show params ++ " is\n" ++
+instance Pretty Program where
+  pretty (Program classes funcs body)
+    = "begin\n" ++ indent (
+          manyPretty classes  ++ "\n" ++
+          manyPretty funcs    ++
+          pretty body) ++
+      "end"
+
+instance Pretty Class where
+  pretty (Class ident fields constructor methods pos)
+    = "class " ++ pretty ident ++ " is\n\n" ++ indent (
+        manyPretty fields  ++ "\n" ++
+        pretty constructor ++ "\n" ++
+        manyPretty methods) ++
+      "end"
+
+
+instance Pretty Field where
+  pretty (Field t ident _)
+    = pretty t ++ " " ++ pretty ident ++ ";"
+
+instance Pretty Constructor where
+  pretty (Constructor params body _)
+    = "init" ++ pretty params ++ " is\n" ++ showAndIndent body ++ "end\n"
+
+instance Pretty Func where
+  pretty (Func t ident params body _)
+    = pretty t ++ " " ++ pretty ident ++ pretty params ++ " is\n" ++
       showAndIndent body ++  "end\n"
 
-instance Show ParamList where
-  show (ParamList list _)
+instance Pretty ParamList where
+  pretty (ParamList list _)
     = listToString "(" list ")"
 
-instance Show Param where
-  show (Param t ident _)
-    = show t ++ " " ++ show ident
+instance Pretty Param where
+  pretty (Param t ident _)
+    = pretty t ++ " " ++ pretty ident
 
-instance Show UnOp where
-  show unOp
+instance Pretty UnOp where
+  pretty unOp
     = flippedLookup unOp (unOpPrec2 ++ unOpPrec1)
 
-instance Show BinOp where
-  show binOp
+instance Pretty BinOp where
+  pretty binOp
     = flippedLookup binOp (binOpPrec1 ++ binOpPrec2 ++ binOpPrec3
                            ++ binOpPrec4 ++ binOpPrec5 ++ binOpPrec6)
 
-instance Show ArrayElem where
-  show (ArrayElem ident elems _)
-    = show ident ++ concatMap (\x ->  "[" ++ show x ++ "]") elems
+instance Pretty ArrayElem where
+  pretty (ArrayElem ident elems _)
+    = pretty ident ++ concatMap (\x ->  "[" ++ pretty x ++ "]") elems
 
-instance Show Ident where
-  show (Ident name _)
-    = name
+instance Pretty Ident where
+  pretty (Ident name info)
+    = name ++ "\x1b[32m" ++ " ( " ++ show info ++ ")" ++ "\x1b[0m"
+  pretty (Self info)
+    = "self" ++ "\x1b[32m" ++ " ( " ++ show info ++ ")" ++ "\x1b[0m"
 
-instance Show Stat where
-  show (Skip _)
+instance Pretty MemberAccess where
+  pretty (MemList inst ms _)
+    = pretty inst ++ "." ++ intercalate "." (map pretty ms)
+
+instance Pretty Instance where
+  pretty (VarObj ident _)
+    = pretty ident
+  pretty (FuncReturnsObj fc _)
+    = pretty fc
+
+instance Pretty FuncCall where
+  pretty (FuncCall ident args)
+    = pretty ident ++ listToString "(" args ")"
+
+instance Pretty Member where
+  pretty (FieldAccess ident _)
+    = pretty ident
+  pretty (MethodCall fc _)
+    = pretty fc
+
+instance Pretty Stat where
+  pretty (Skip _)
     = "skip"
-  show (Declaration typ ident rhs _)
-   = show typ ++ " " ++ show ident ++ " = " ++ show rhs
-  show (Assignment lhs rhs _)
-    = show lhs ++ " = " ++ show rhs
-  show (Read lhs _)
-    = "read " ++ show lhs
-  show (Free expr _)
-    = "free " ++ show expr
-  show (Return expr _)
-    = "return " ++ show expr
-  show (Exit expr _)
-    = "exit " ++ show expr
-  show (Print expr _)
-    = "print " ++ show expr
-  show (Println expr _)
-    = "println " ++ show expr
-  show (If cond stat stat' _)
-    = "if" ++ " (" ++ show cond ++ ") " ++ "then\n" ++ showAndIndent stat ++
+  pretty (Declaration typ ident rhs _)
+   = pretty typ ++ " " ++ pretty ident ++ " = " ++ pretty rhs
+  pretty (Assignment lhs rhs _)
+    = pretty lhs ++ " = " ++ pretty rhs
+  pretty (Read lhs _)
+    = "read " ++ pretty lhs
+  pretty (Free expr _)
+    = "free " ++ pretty expr
+  pretty (Return expr _)
+    = "return " ++ pretty expr
+  pretty (Exit expr _)
+    = "exit " ++ pretty expr
+  pretty (Print expr _)
+    = "print " ++ pretty expr
+  pretty (Println expr _)
+    = "println " ++ pretty expr
+  pretty (If cond stat stat' _)
+    = "if" ++ " (" ++ pretty cond ++ ") " ++ "then\n" ++ showAndIndent stat ++
         "else\n" ++ showAndIndent stat' ++ "fi"
-  show (While cond body _)
-    = "while (" ++ show cond ++ ") " ++ "do\n" ++ showAndIndent body ++ "done"
-  show (Block stat _)
+  pretty (While cond body _)
+    = "while (" ++ pretty cond ++ ") " ++ "do\n" ++ showAndIndent body ++ "done"
+  pretty (Block stat _)
     = "begin\n" ++ showAndIndent stat ++ "end"
-  show (Seq stat stat' _)
-    = show stat ++ ";\n" ++ show stat'
---
-instance Show AssignLHS where
-  show (Var ident _)
-    = show ident
-  show (ArrayDeref arrayElem _)
-    = show arrayElem
-  show (PairDeref pairElem _)
-    = show pairElem
+  pretty (Seq stat stat' _)
+    = pretty stat ++ ";\n" ++ pretty stat'
+  pretty (Break _)
+    = "break"
+  pretty (Continue _)
+    = "continue"
+  pretty (CallFunc fc pos)
+    = "call " ++ pretty fc
+  pretty (CallMethod member pos)
+    = pretty member
 
-instance Show AssignRHS where
-  show (ExprAssign e _)
-    = show e
-  show (ArrayLitAssign elems _)
+instance Pretty AssignLHS where
+  pretty (Var ident _)
+    = pretty ident
+  pretty (ArrayDeref arrayElem _)
+    = pretty arrayElem
+  pretty (PairDeref pairElem _)
+    = pretty pairElem
+  pretty (MemberDeref member _)
+    = pretty member
+
+instance Pretty AssignRHS where
+  pretty (ExprAssign e _)
+    = pretty e
+  pretty (ArrayLitAssign elems _)
     = listToString "[" elems "]"
-  show (NewPairAssign e e' _)
+  pretty (NewPairAssign e e' _)
     = "newpair" ++ listToString "(" [e, e'] ")"
-  show (FuncCallAssign funcName params _)
-    = "call " ++ show funcName ++ listToString "(" params ")"
-  show (PairElemAssign pair _)
-    = show pair
+  pretty (FuncCallAssign fc _)
+    = "call " ++ pretty fc
+  pretty (PairElemAssign pair _)
+    = pretty pair
+  pretty (ConstructAssign fc _)
+    = "new " ++ pretty fc
 
-instance Show PairElem where
-  show (PairElem selector expr _)
-    = show selector ++ " " ++ show expr
+instance Pretty PairElem where
+  pretty (PairElem selector expr _)
+    = pretty selector ++ " " ++ pretty expr
 
-instance Show PairElemSelector where
-  show Fst
+instance Pretty PairElemSelector where
+  pretty Fst
     = "fst"
-  show Snd
+  pretty Snd
     = "snd"
 
-instance Show ScopeErrorType where
-  show NoError
+instance Pretty ScopeErrorType where
+  pretty NoError
     = "No Error with thsi variable"
-  show Duplicate
+  pretty Duplicate
     = "Duplicate"
-  show NotInScope
+  pretty NotInScope
     = "Not in scope"
 
-instance Show Type where
-  show (BaseT baseType)
-     = show baseType
-  show (ArrayT dim arrayType)
-     = show arrayType ++ constructArray dim
-  show (PairT t t')
-     = "pair(" ++ show t ++ ", " ++ show t' ++ ")"
-  show Pair
-     = "null"
-  show (FuncT t paramTypes)
-    = "Return Type: " ++ show t ++ "\n"
-       ++ "Parameter Types: " ++ listToString "(" paramTypes ")"
-  show NoType
+instance Pretty Type where
+  pretty (BaseT baseType)
+    = pretty baseType
+  pretty (ArrayT dim arrayType)
+    = pretty arrayType ++ constructArray dim
+  pretty (PairT t t')
+    = "pair(" ++ pretty t ++ ", " ++ pretty t' ++ ")"
+  pretty Pair
+    = "null"
+  pretty Void
+    = "void"
+  pretty (ClassT name)
+    = name
+  pretty (FuncT t paramTypes)
+    =  pretty t
+  pretty NoType
     = "No Type"
-  show PolyArray
-   = "Array of any type"
-  show PolyFunc
-   = "Function of any type"
-  show PolyPair
-   = "Pair of any type"
-  show RelationalT
-   = "char or int"
-  show DataType
-   = "int or string or char or array or pair"
+  pretty PolyArray
+    = "Array of any type"
+  pretty PolyFunc
+    = "Function of any type"
+  pretty PolyPair
+    = "Pair of any type"
+  pretty RelationalT
+    = "char or int"
+  pretty DataType
+    = "int or string or char or array or pair"
 
-instance Show BaseType where
-  show BaseInt
+instance Pretty BaseType where
+  pretty BaseInt
     = "int"
-  show BaseBool
+  pretty BaseBool
     = "bool"
-  show BaseChar
+  pretty BaseChar
     = "char"
-  show BaseString
+  pretty BaseString
     = "string"
---
--- class Show a => ExpressionTerm a where
---   precedence :: a -> Int
---
--- instance ExpressionTerm Expr where
---   precedence (UnaryApp unOp _ _)
---     = precedence unOp
---   precedence (BinaryApp binOp _ _ _)
---     = precedence binOp
---   precedence _
---     = minPrecedence - 1
---
--- instance ExpressionTerm UnOp where
---   precedence Not
---     = 2
---   precedence Neg
---     = 2
---   precedence _
---     = 12
---
--- instance ExpressionTerm BinOp where
---   precedence (Arith Mul)
---     = 4
---   precedence (Arith Div)
---     = 4
---   precedence (Arith Mod)
---     = 4
---   precedence (Arith Add)
---     = 6
---   precedence (Arith Sub)
---     = 6
---   precedence (RelOp LT)
---     = 8
---   precedence (RelOp LTE)
---     = 8
---   precedence (RelOp GTE)
---     = 8
---   precedence (RelOp GT)
---     = 8
---   precedence (EquOp EQ)
---     = 10
---   precedence (EquOp NEQ)
---     = 10
---   precedence (Logic AND)
---     = 12
---   precedence (Logic OR)
---     = 12
---
--- instance Show Expr where
---   show (StringLit s _)
---     = show s
---   show (CharLit c _)
---     = "\'" ++ [c] ++ "\'"
---   show (IntLit x _)
---     = show x
---   show (BoolLit b _)
---     = map toLower (show b)
---   show (PairLiteral _)
---     = "null"
---   show (IdentE ident _)
---     = show ident
---   show (ExprArray arrayElem _)
---     = show arrayElem
---
---   show (UnaryApp unOp expr _)
---     = unOpString ++ showWithoutBrackets unOp expr
---     where
---       unOpString = show unOp ++ " "
---
---   show (BinaryApp binOp expr expr' _)
---     = showExpr ++ " " ++ show binOp ++ " " ++ showExpr'
---     where
---       showExpr  = showWithoutBrackets binOp expr
---       showExpr' = showWithoutBrackets binOp expr'
+
+class Pretty a => ExpressionTerm a where
+  precedence :: a -> Int
+
+instance ExpressionTerm Expr where
+  precedence (UnaryApp unOp _ _)
+    = precedence unOp
+  precedence (BinaryApp binOp _ _ _)
+    = precedence binOp
+  precedence _
+    = minPrecedence - 1
+
+instance ExpressionTerm UnOp where
+  precedence Not
+    = 2
+  precedence Neg
+    = 2
+  precedence _
+    = 12
+
+instance ExpressionTerm BinOp where
+  precedence (Arith Mul)
+    = 2
+  precedence (Arith Div)
+    = 2
+  precedence (Arith Mod)
+    = 2
+  precedence (Arith Add)
+    = 4
+  precedence (Arith Sub)
+    = 4
+  precedence (RelOp LT)
+    = 6
+  precedence (RelOp LTE)
+    = 6
+  precedence (RelOp GTE)
+    = 6
+  precedence (RelOp GT)
+    = 6
+  precedence (EquOp EQ)
+    = 8
+  precedence (EquOp NEQ)
+    = 8
+  precedence (Logic AND)
+    = 10
+  precedence (Logic OR)
+    = 10
+
+instance Pretty Expr where
+  pretty (StringLit s _)
+    = show s
+  pretty (CharLit c _)
+    = "\'" ++ [c] ++ "\'"
+  pretty (IntLit x _)
+    = show x
+  pretty (BoolLit b _)
+    = map toLower (show b)
+  pretty (PairLiteral _)
+    = "null"
+  pretty (ExprMemberAccess mem _)
+    = pretty mem
+  pretty (IdentE ident _)
+    = pretty ident
+  pretty (ExprArray arrayElem _)
+    = pretty arrayElem
+
+  pretty (UnaryApp unOp expr _)
+    = unOpString ++ showWithoutBrackets unOp expr
+    where
+      unOpString = pretty unOp ++ " "
+
+  pretty (BinaryApp binOp expr expr' _)
+    = showExpr ++ " " ++ pretty binOp ++ " " ++ showExpr'
+    where
+      showExpr  = showWithoutBrackets binOp expr
+      showExpr' = showWithoutBrackets binOp expr'

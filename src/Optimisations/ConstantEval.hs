@@ -31,10 +31,10 @@ class ConstEval a where
   constEval :: a -> ConstantEvaluator a
 
 instance ConstEval AST where
-  constEval (Program fs body) = do
+  constEval (Program c fs body) = do
     fs'   <- mapM constEval fs
     body' <- constEval body
-    return $ Program fs' body'
+    return $ Program c fs' body'
 
 instance ConstEval Func where
   constEval (Func t i pl body pos)

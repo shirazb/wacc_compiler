@@ -1,0 +1,14 @@
+begin
+  class nullable is
+    int x;
+    int y;
+
+    init(int x, int y) is
+      self.x = x;
+      self.y = y
+    end
+  end
+
+  nullable n = new nullable(1, 2);
+  n = null
+end

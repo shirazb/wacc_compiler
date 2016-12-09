@@ -1,0 +1,6 @@
+begin
+  class c is
+    init() is skip end
+  end
+  println 1
+end

@@ -1,6 +1,6 @@
 {- This module defines a parser combinator for identifiers -}
 
-module Parser.Identifier (identifier) where
+module Parser.Identifier (identifier, ident) where
 
 import Control.Applicative  (Alternative (..))
 import Control.Monad        (liftM2, guard)
@@ -18,7 +18,13 @@ ident
 -- POST: Parses identifiers, removing surround whitespace and checking that it
 --       is not a keyword
 identifier :: Parser Char Ident
-identifier = trimWS $ do
-  name  <- ident
-  guard (name `notElem` keywords)
-  return $ Ident name NoInfo
+identifier = trimWS (do
+    name <- ident
+    guard (name `notElem` keywords)
+    return $ Ident name NoInfo)
+  <|> parseSelf
+
+-- POST: Parses the keyword self
+parseSelf :: Parser Char Ident
+parseSelf
+  = token "self" >> return (Self NoInfo)

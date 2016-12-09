@@ -12,6 +12,8 @@ import Control.Monad.Writer.Strict (tell, unless)
 import Semantics.ErrorMessages
 import Utilities.Definitions
 
+import Semantics.Annotators.Util (typeInfo, memberIdent, identInfo)
+
 -- POST: Type checks expressions, returns either a type which is the type of
 --       the expression or returns NoType denoting that the expression failed
 --       to type check
@@ -32,8 +34,14 @@ typeCheckExpr (StringLit _ _)
 typeCheckExpr (PairLiteral _)
   = return PolyPair
 
-typeCheckExpr (IdentE (Ident _ (Info t _)) _)
+typeCheckExpr (IdentE (Ident _ (Info _ t _)) _)
   = return t
+
+typeCheckExpr (IdentE (Self (Info Instance t _)) _)
+  = return t
+
+typeCheckExpr (ExprMemberAccess ma _)
+  = typeCheckMemberAccess ma
 
 typeCheckExpr (ExprArray ae@(ArrayElem i indexes _) _)
   = typeCheckArrayElem ae
@@ -90,6 +98,8 @@ typeCheckExpr binExpr@(BinaryApp op@(EquOp _) expr expr' pos) = do
                                  >> return NoType
                   | otherwise -> return (BaseT BaseBool)
 
+typeCheckExpr e
+  = error $ "typeCheckExpr: no pattern for: " ++ pretty e
 {- HELPER FUNCTIONS -}
 
 -- POST: Checks if the argument provided to the Unary operator is of the
@@ -99,10 +109,10 @@ checkUnAppType :: Show a => Type -> Type -> Type -> Position -> a
                               -> TypeChecker Type
 checkUnAppType expectedT actualT opReturnT pos a
   = if actualT /= expectedT
-      then do {
+      then do
         tell [typeMismatch expectedT actualT pos a];
         return NoType
-      } else return opReturnT
+      else return opReturnT
 
 -- POST: Checks if the two arguments provided to the binary operator are of the
 --       same and correct type. If they are then it returns the return type of
@@ -182,9 +192,29 @@ isValidArrayType (ArrayT _ (BaseT _))
 isValidArrayType _
   = False
 
+-- POST: Type checks each expression in the list. Returns the return type.
+typeCheckFuncCall :: FuncCall -> Position -> TypeChecker Type
+typeCheckFuncCall (FuncCall i es) pos = do
+  ts <- mapM typeCheckExpr es
+  let FuncT t ts' = typeInfo (identInfo i)
+  if | length ts /= length ts' -> tell [typeMismatchList ts' ts pos expr] >>
+                                  return NoType
+     | ts == ts'               -> return t
+     | otherwise               -> tell [typeMismatchList ts' ts pos expr] >>
+                                  return NoType
+
+-- POST: Type checks the member access
+typeCheckMemberAccess :: MemberAccess -> TypeChecker Type
+typeCheckMemberAccess (MemList _ ma _)
+  = case last ma of
+      FieldAccess i _   -> return (typeInfo (identInfo i))
+      MethodCall fc pos -> typeCheckFuncCall fc pos
+
 -- POST: Returns the type of an identifier
 typeCheckIdent :: Ident -> TypeChecker Type
 typeCheckIdent (Ident _ info)
+  = return (typeInfo info)
+typeCheckIdent (Self info)
   = return (typeInfo info)
 
 -- POST: Checks if the type of an expression is an int

@@ -1,0 +1,13 @@
+begin
+  class Class is
+    int y;
+
+    init() is skip; y = 5 end
+
+    void doSomething(int y) is skip; y = 1 end
+  end
+
+  Class c = new Class();
+
+  c.doSomething(4)
+end

@@ -1,0 +1,17 @@
+begin
+  class rec is
+    rec r;
+    rec r1;
+    int x;
+
+    init(int x) is
+      self.r1 = new rec(x);
+      self.r = new rec(x + 1);
+      self.x = x
+    end
+  end
+
+  skip;
+  rec r = new rec(10);
+  println r.r.x
+end

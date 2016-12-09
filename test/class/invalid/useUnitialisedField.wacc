@@ -1,0 +1,10 @@
+begin
+  class A is
+    int x ;
+
+    init(int y) is
+      y = self.x + 1;
+      x = y
+    end
+  end
+end

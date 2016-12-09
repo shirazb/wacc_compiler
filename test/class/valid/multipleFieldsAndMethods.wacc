@@ -1,0 +1,26 @@
+begin
+class C is
+
+  int f;
+  int x;
+  pair(int, char) p;
+
+  init(int f, pair(int, char) p) is
+    self.f = f;
+    self.p = p;
+    x = fst p
+  end
+
+  pair(int, char) getP() is
+    return p
+  end
+
+  void func(int z) is
+    z = f + x;
+    skip;
+    self.x = self.x + x + f;
+    fst self.p = fst p
+  end
+end
+  C c = new C(1, null)
+end

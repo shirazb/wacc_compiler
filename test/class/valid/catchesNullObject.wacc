@@ -1,0 +1,11 @@
+begin
+  class n is
+    bool b;
+
+    init() is skip; b = true end
+
+  end
+
+  n n = null;
+  n.b = false
+end

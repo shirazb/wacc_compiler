@@ -1,0 +1,16 @@
+begin
+  class c is
+    int x;
+    init(int x, int y) is
+      y = y;
+      self.x = x
+    end
+
+    void selfX(int x) is
+      self.x = x
+    end
+  end
+
+  c t = new c(1, 2);
+  c t1 = new c(2, 3)
+end

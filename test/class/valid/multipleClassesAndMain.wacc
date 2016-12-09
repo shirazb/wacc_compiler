@@ -1,0 +1,23 @@
+begin
+  class class1 is
+    int x;
+    bool b;
+    char c;
+
+    init(int x, bool b) is
+skip ; skip; skip;
+        self.x = x;
+        self.b = b;
+        self.c = chr x
+    end
+
+    void f() is skip end
+  end
+
+  class class2 is
+    init(int x, int y, int[][] z) is skip end
+  end
+
+  int x = 3;
+  pair(int, bool) p = newpair(x, false)
+end

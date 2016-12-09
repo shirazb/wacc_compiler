@@ -1,0 +1,12 @@
+begin
+  class aClass is
+    int x;
+    init (int x) is self.x = x end
+
+    void setX(int x) is self.x = x + 1 end
+  end
+
+  aClass x = new aClass(10);
+  x.x = 15;
+  x.x = x.x - 10
+end

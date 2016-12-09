@@ -1,0 +1,21 @@
+begin
+  class C is
+    int x;
+    int y;
+
+    init(int x, int y) is
+      self.x = x;
+      self.y = y
+    end
+
+    int x(int x) is
+      x = self.x;
+      self.x = self.x(self.x);
+      x = self.x(x);
+      return self.x(self.x(x))
+    end
+  end
+
+  C c = new C(1, 2);
+  c.x(c.x)
+end

@@ -1,17 +1,18 @@
 {- This module defines a number of parser combinators used to parse
 statements -}
 
-module Parser.Statement (parseStatement) where
+module Parser.Statement (parseStatement, checkNoReturnStat) where
 
 import Control.Applicative ((<|>), (<$>), liftA3)
-import Control.Monad.State (liftM2)
+import Control.Monad.State (liftM2, unless, get)
+import Control.Monad.Except
 
 {- LOCAL IMPORTS -}
 import Parser.BasicCombinators
-import Parser.Expression
-import Parser.Identifier
+import Parser.Expression (parseExpr, arrayElem, parseMemberAccess, parseFuncCall)
+import Parser.Identifier (identifier)
 import Parser.LexicalResolver
-import Parser.Type
+import Parser.Type (parseType)
 import Utilities.Definitions
 
 -- POST: Parses all valid statements in the WACC language
@@ -24,9 +25,11 @@ parseStatement
 -- POST: Parses all valid statements in the WACC language
 parseStatement' :: Parser Char Stat
 parseStatement'
-  =   parseDeclaration
+  = parseDeclaration
+  <|> parseCallFunc
   <|> parseRead
   <|> parseAssignment
+  <|> parseCallMethod
   <|> parseBuiltInFunc "free"    Free
   <|> parseBuiltInFunc "return"  Return
   <|> parseBuiltInFunc "exit"    Exit
@@ -36,9 +39,11 @@ parseStatement'
   <|> parseWhileStat
   <|> parseForStat
   <|> parseBlock
-  <|> parseSkip
-  <|> parseBreak
-  <|> parseContinue
+  <|> parseKeywordStat "return" ReturnVoid
+  <|> parseKeywordStat "skip" Skip
+  <|> parseKeywordStat "break" Break
+  <|> parseKeywordStat "continue" Continue
+
 
 -- POST: Parses an if statement
 parseIfStat :: Parser Char Stat
@@ -85,7 +90,7 @@ parseForStat = do
 -- POST: Parses a new block of statements
 parseBlock :: Parser Char Stat
 parseBlock = do
-  pos <- getPosition
+  pos  <- getPosition
   keyword "begin"
   stat <- require parseStatement "Invalid statement in block"
   require (keyword "end") "Missing 'end' keyword in block"
@@ -101,18 +106,12 @@ parseSeq = parseStatement' >>= rest
       stat' <-  require parseStatement "Invalid statement in sequence"
       rest $ Seq stat stat' pos) <|> return stat
 
--- POST: Parses the skip keyword
-parseSkip :: Parser Char Stat
-parseSkip
-  = keyword "skip" >> Skip <$> getPosition
-
-parseBreak :: Parser Char Stat
-parseBreak
-  = keyword "break" >> Break <$> getPosition
-
-parseContinue :: Parser Char Stat
-parseContinue
-  = keyword "continue" >> Continue <$> getPosition
+-- POST: Parses a statement consisting of just a keyword
+parseKeywordStat :: String -> (Position -> Stat) -> Parser Char Stat
+parseKeywordStat string statConstructor = do
+  pos <- getPosition
+  keyword string
+  return $ statConstructor pos
 
 -- POST: Parses a declaration of the form type name = rhs
 parseDeclaration :: Parser Char Stat
@@ -129,15 +128,14 @@ parseAssignment :: Parser Char Stat
 parseAssignment = do
   pos <- getPosition
   lhs <- parseLHS
-  require (punctuation '=')
-      "Missing equal sign in assignment. Did you misspell or forget a keyword?"
+  punctuation '='
   rhs <- require parseRHS "Invalid RHS in assignment"
   return $ Assignment lhs rhs pos
 
 -- POST: Parses the built in functions of the WACC language
 parseBuiltInFunc :: String -> (Expr -> Position -> Stat) -> Parser Char Stat
 parseBuiltInFunc funcName func = do
-  pos <- getPosition
+  pos   <- getPosition
   keyword funcName
   expr1 <- require parseExpr ("Invalid arguments to " ++ funcName ++
              " function")
@@ -153,6 +151,25 @@ parseRead = do
   pos <- getPosition
   return $ Read lhs pos
 
+parseCallMethod :: Parser Char Stat
+parseCallMethod = do
+  pos <- getPosition
+  memberAccess <- parseMemberAccess
+  guard (checkIsMethodCall memberAccess)
+  return $ CallMethod memberAccess pos
+
+checkIsMethodCall (MemList inst mems _)
+  = case last mems of
+      MethodCall _ _ -> True
+      _              -> False
+
+parseCallFunc :: Parser Char Stat
+parseCallFunc = do
+  pos <- getPosition
+  keyword "call"
+  fc <- parseFuncCall
+  return $ CallFunc fc pos
+
 -- POST: Parses all valid right hand sides in WACC
 parseRHS :: Parser Char AssignRHS
 parseRHS
@@ -161,27 +178,50 @@ parseRHS
   <|> assignToFuncCall
   <|> assignToArrayLit
   <|> assignToNewPair
+  <|> assignToConstructor
 
 -- POST: Parses all valid left hand sides in WACC
 parseLHS :: Parser Char AssignLHS
 parseLHS
   =   do {pos <- getPosition; element <- arrayElem; return $ ArrayDeref element pos}
   <|> do {pos <- getPosition; pairE <- pairElem; return $ PairDeref pairE pos}
+  <|> do {pos <- getPosition; memAccess <- parseFieldLHS; return $ MemberDeref memAccess pos}
   <|> do {pos <- getPosition; ident <- identifier; return $ Var ident pos}
 
+parseFieldLHS :: Parser Char MemberAccess
+parseFieldLHS = do
+  pos <- getPosition
+  memAccess <- parseMemberAccess
+  guard (checkIsFieldAccess memAccess)
+  return memAccess
+
+checkIsFieldAccess :: MemberAccess -> Bool
+checkIsFieldAccess (MemList inst mems _)
+  = case last mems of
+      FieldAccess _ _ -> True
+      _               -> False
+
 {- HELPER FUNCTIONS -}
+
+-- POST: Parses a constructor call (RHS)
+assignToConstructor :: Parser Char AssignRHS
+assignToConstructor = do
+  pos              <- getPosition
+  keyword "new"
+  constructorCall  <- parseFuncCall
+  return $ ConstructAssign constructorCall pos
 
 -- POST: Parses an expression (RHS)
 assignToExpr :: Parser Char AssignRHS
 assignToExpr = do
-  pos <- getPosition
+  pos  <- getPosition
   expr <- parseExpr
   return $ ExprAssign expr pos
 
 -- POST: Parses a newpair declaration (RHS)
 assignToNewPair :: Parser Char AssignRHS
 assignToNewPair = do
-  pos <- getPosition
+  pos   <- getPosition
   token "newpair"
   require (punctuation '(') "Missing opening parenthesis for newpair"
   expr1 <- require parseExpr "Invalid expression in first expression in newpair"
@@ -195,14 +235,13 @@ assignToFuncCall :: Parser Char AssignRHS
 assignToFuncCall = do
   pos      <- getPosition
   keyword "call"
-  name     <- require identifier "Invalid Function Name"
-  arglist  <- require (parseExprList '(' ')') "Invalid parameter list"
-  return $ FuncCallAssign name arglist pos
+  funcCall <- require parseFuncCall "Invalid function call"
+  return $ FuncCallAssign funcCall pos
 
 -- POST: Parses array literals (RHS)
 assignToArrayLit :: Parser Char AssignRHS
 assignToArrayLit = do
-  pos <- getPosition
+  pos      <- getPosition
   punctuation '['
   exprList <- sepby parseExpr (punctuation ',')
   require (punctuation ']') "No closing bracket in array literal"
@@ -211,9 +250,9 @@ assignToArrayLit = do
 -- POST: Parses pair elements in which can appear in both the LHS and the RHS
 pairElem :: Parser Char PairElem
 pairElem = do
-  pos <- getPosition
+  pos      <- getPosition
   selector <- pairFst <|> pairSnd
-  expr <- pairElemExpr
+  expr     <- pairElemExpr
   return $ PairElem selector expr pos
 
 -- POST: Parses a pair elem expression
@@ -223,20 +262,39 @@ pairElemExpr
 
 -- POST: Parses the 'fst' keyword in a pair
 pairFst :: Parser Char PairElemSelector
-pairFst = do
-  keyword "fst"
-  return Fst
+pairFst
+  = keyword "fst" >> return Fst
 
 -- POST: Parses the 'snd' keyword in a pair
 pairSnd :: Parser Char PairElemSelector
-pairSnd = do
-  keyword "snd"
-  return Snd
+pairSnd =
+  keyword "snd" >> return Snd
 
 -- POST: Wraps the result of parsing a pairElem in the appropriate data
 --       constructor
 assignToPairElem :: Parser Char AssignRHS
 assignToPairElem = do
-  pos <- getPosition
+  pos   <- getPosition
   pairE <- pairElem
   return $ PairElemAssign pairE pos
+
+-- POST: Returns true if a return statement is present in the main body
+checkNoReturnStat :: Stat -> Parser Char ()
+checkNoReturnStat (Return _ _) = do
+  pos <- getPosition
+  throwError ("Syntax Error: Not in a function. Cannot return.", pos)
+checkNoReturnStat (ReturnVoid _) = do
+  pos <- getPosition
+  throwError ("Syntax Error: Not in a function. Cannot return.", pos)
+checkNoReturnStat (Seq s1 s2 _)
+  = checkNoReturnStat s1 >> checkNoReturnStat s2
+checkNoReturnStat (If _ s1 s2 _)
+  = checkNoReturnStat s1 >> checkNoReturnStat s2
+checkNoReturnStat (While _ s _)
+  = checkNoReturnStat s
+checkNoReturnStat (For _ _ _ s _)
+  = checkNoReturnStat s
+checkNoReturnStat (Block s _)
+  = checkNoReturnStat s
+checkNoReturnStat _
+  = return ()

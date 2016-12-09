@@ -1,0 +1,23 @@
+begin
+  class c is
+    int f;
+    c d;
+
+# INVALID: Constructor cannot take itself. Make test for this
+#              init(int x, c c) is
+
+    init(int x) is
+       f = x;
+       d = new c(10)
+    end
+
+    c construct(c c) is
+      c d = self.d.construct(c).construct(self);
+      return d
+    end
+
+  end
+  skip
+#  c C = new c(3);
+ # C.construct(c)
+end

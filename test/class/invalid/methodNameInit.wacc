@@ -1,0 +1,16 @@
+begin
+  class Dog is
+    int y;
+    
+    init(int y) is
+       self.y = y
+    end
+
+    int init(int z) is
+      return z
+    end
+  end
+  
+  println 1
+
+end

@@ -13,6 +13,8 @@ import Semantics.TypeChecker.Expression
 import Semantics.ErrorMessages
 import Utilities.Definitions
 
+import Semantics.Annotators.Util (typeInfo, memberIdent)
+
 -- POST: Type checks statements
 typeCheckStat :: Stat -> TypeChecker ()
 
@@ -73,6 +75,12 @@ typeCheckStat (Println expr pos)
 
 typeCheckStat (Block s pos)
   = typeCheckStat s
+
+typeCheckStat (CallFunc fc pos)
+  = void $ typeCheckFuncCall fc pos
+
+typeCheckStat (CallMethod ma _)
+  = void $ typeCheckMemberAccess ma
 
 typeCheckStat (Seq s s' pos) = do
   typeCheckStat s

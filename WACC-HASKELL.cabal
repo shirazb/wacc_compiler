@@ -19,6 +19,8 @@ executable WACC-HASKELL
   main-is:             Main.hs
   other-modules:       Parser.BasicCombinators,
                        Parser.Expression,
+                       Parser.Class,
+                       Parser.Identifier
                        Parser.Function
                        Parser.LexicalResolver,
                        Parser.Program,
@@ -26,9 +28,11 @@ executable WACC-HASKELL
                        Parser.Type
                        Semantics.Annotators.AST,
                        Semantics.Annotators.Expression,
+                       Semantics.Annotators.Class,
                        Semantics.Annotators.Function,
                        Semantics.Annotators.Identifier,
                        Semantics.Annotators.Statement,
+                       Semantics.Annotators.Type,
                        Semantics.Annotators.Util,
                        Semantics.ErrorMessages,
                        Utilities.Definitions

@@ -1,0 +1,41 @@
+#!/usr/bin/ruby
+# Ruby front-end for your compiler.
+# You are free to change the language used for this script,
+# but do *not* change its name.
+puts "-------------- RUNNING CLASS TESTS -----------------"
+
+build = `make`
+puts "#{build}"
+
+testDir = "test"
+
+files = `find #{testDir}/class/valid -type f -name "*.wacc"`.split("\n")
+
+puts "-------------- VALID TESTS -----------------"
+
+files.each do |file|
+    puts "\n\n---------------------------------------------------------------------"
+    puts "TESTING FILE: #{file}"
+    output = `./compile #{file}`
+    if $?.exitstatus != 0
+      puts "TEST FAILED:"
+      puts "\n#{output}\n"
+    else
+      puts "TEST PASSED."
+    end
+end
+
+files = `find #{testDir}/class/invalid -type f -name "*.wacc"`.split("\n")
+files.each do |file|
+  puts "\n\n---------------------------------------------------------------------"
+  puts "TESTING FILE: #{file}"
+  output = `./compile #{file}`
+  if $?.exitstatus == 0
+    puts "TEST FAILED:"
+    puts "\n#{output}\n"
+  else
+    puts "TEST PASSED."
+  end
+end
+
+tmp = `rm -r *.s`

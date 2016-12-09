@@ -1,0 +1,11 @@
+begin
+  class c is
+    bool b;
+
+    init(bool b) is
+      self.b = b
+    end
+  end
+
+  skip
+end

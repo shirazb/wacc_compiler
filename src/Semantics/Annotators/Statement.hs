@@ -7,11 +7,14 @@ import Control.Monad.State.Strict
 import qualified Data.Map as Map
 
 {- LOCAL IMPORTS -}
-import Semantics.ErrorMessages
-import Semantics.Annotators.Expression ( annotateExpr, annotateExprList )
+import Semantics.Annotators.Expression ( annotateExpr, annotateExprList,
+                                         annotateFuncCall, annotateMemberAccess)
 import Semantics.Annotators.Identifier ( annotateIdent, annotateNewIdent )
-import Semantics.Annotators.Util ( inChildScope )
+import Semantics.Annotators.Type (scopeCheckType)
+import Semantics.Annotators.Util
+import Semantics.ErrorMessages
 import Utilities.Definitions
+import Debug.Trace
 
 -- POST: Annotates statements
 annotateStat :: Stat -> ScopeAnalysis Stat
@@ -25,10 +28,14 @@ annotateStat b@Break{}
 annotateStat c@Continue{}
   = return c
 
+annotateStat r@ReturnVoid{}
+  = return r
+
 annotateStat (Declaration t ident rhs pos) = do
+  newT     <- scopeCheckType t
   newRHS   <- annotateRHS rhs
-  newIdent <- annotateNewIdent ident (Info t Variable)
-  return $ Declaration t newIdent newRHS pos
+  newIdent <- annotateNewIdent ident (Info Static newT Variable)
+  return $ Declaration newT newIdent newRHS pos
 
 annotateStat (Assignment lhs rhs pos) = do
   newLHS <- annotateLHS lhs
@@ -81,10 +88,21 @@ annotateStat (Block s pos) = do
   newStat <- inChildScope (annotateStat s)
   return $ Block newStat pos
 
+annotateStat (CallFunc call pos)
+  = CallFunc <$> annotateFuncCall call <*> return pos
+
+-- TODO: make sure in typechecking we ensure that this expression
+-- is always an object
+annotateStat (CallMethod ma pos)
+  = CallMethod <$> annotateMemberAccess ma <*> return pos
+
 annotateStat (Seq s1 s2 pos) = do
   newStat1 <- annotateStat s1
   newStat2 <- annotateStat s2
   return $ Seq newStat1 newStat2 pos
+
+annotateStat s
+  = error $ "No pattern for annotateStat of " ++ pretty s
 
 -- POST: Annotates an AssignLHS
 annotateLHS :: AssignLHS -> ScopeAnalysis AssignLHS
@@ -101,6 +119,10 @@ annotateLHS (ArrayDeref (ArrayElem ident exprs pos1) pos2) = do
 annotateLHS (PairDeref (PairElem elemSelector expr pos1) pos2) = do
   newExpr <- annotateExpr expr
   return $ PairDeref (PairElem elemSelector newExpr  pos1) pos2
+
+annotateLHS (MemberDeref ma pos) = do
+  ma' <- annotateMemberAccess ma
+  return $ MemberDeref ma' pos
 
 -- POST: Annotates an AssignRHS
 annotateRHS :: AssignRHS -> ScopeAnalysis AssignRHS
@@ -122,7 +144,8 @@ annotateRHS (PairElemAssign (PairElem selector expr pos1) pos2) = do
   newExpr <- annotateExpr expr
   return $ PairElemAssign (PairElem selector newExpr pos1) pos2
 
-annotateRHS (FuncCallAssign f exprList pos) = do
-  newFunc <- annotateIdent Function f
-  newExprList <- annotateExprList exprList
-  return $ FuncCallAssign newFunc newExprList pos
+annotateRHS (FuncCallAssign funcCall pos)
+  = FuncCallAssign <$> annotateFuncCall funcCall <*> return pos
+
+annotateRHS (ConstructAssign funcCall pos)
+  = ConstructAssign <$> annotateFuncCall funcCall <*> return pos

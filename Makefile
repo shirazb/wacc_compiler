@@ -2,5 +2,5 @@ all:
 	stack build
 
 clean:
-	stack clean
-	rm *.s
+	-stack clean
+	rm *.s  

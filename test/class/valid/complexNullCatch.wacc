@@ -1,0 +1,33 @@
+begin
+  class class1 is
+    int x;
+    bool b;
+    char c;
+
+    init(int x, bool b) is
+      skip;
+      self.x = 3;
+      self.b = b;
+      self.c = 'c'
+    end
+
+    void f() is skip end
+  end
+
+  class class2 is
+    init(int x, int y) is skip end
+
+    class1 foo(class1 d) is
+      class1 c= new class1(3, false);
+      return c
+    end
+  end
+
+  int x = 3;
+  pair(int, bool) p = newpair(x, false);
+
+  class2 c2 = new class2(3, 4);
+  class1 c1 = new class1(3, true);
+
+  c2.foo(c1).x = c2.foo(c1).x
+end

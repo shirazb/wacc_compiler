@@ -16,7 +16,7 @@ import Utilities.Definitions hiding (Env)
 
 -- POST: Generates assembly code for entire program using the AST
 genInstrFromAST :: AST -> CodeGenerator [Instr]
-genInstrFromAST (Program fs body) = do
+genInstrFromAST (Program _ fs body) = do
   mapM_ codegen fs
   let defMain                  = [Def "main"]
   pLr                         <- push [LR]

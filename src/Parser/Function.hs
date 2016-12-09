@@ -2,16 +2,17 @@
 
 module Parser.Function where
 
-import Control.Monad ( liftM3 )
+import Control.Monad ( liftM3, when )
 import Control.Monad.Except ( throwError )
 
 {- LOCAL IMPORTS -}
-import Parser.BasicCombinators ( Parser, getPosition, require, sepby )
+import Parser.BasicCombinators ( Parser (..), getPosition, require, sepby )
 import Parser.Identifier ( identifier )
 import Parser.LexicalResolver
 import Parser.Statement ( parseStatement )
 import Parser.Type ( parseType )
 import Utilities.Definitions
+
 
 -- POST: Parses a function defintion
 parseFunction :: Parser Char Func
@@ -22,7 +23,7 @@ parseFunction = do
   paramList    <- bracket (punctuation '(') parseParamList (require
                     (punctuation ')') "Invalid parameter list")
   require (keyword "is") "Missing 'is' keyword"
-  funcBody     <- parseFunctionBody
+  funcBody     <- parseFunctionBody returnType
   require (keyword "end") "Missing 'end' keyword"
   let parameterTypes = map parameterType (parameters paramList)
   let functionType = FuncT returnType parameterTypes
@@ -32,50 +33,98 @@ parseFunction = do
     parameters (ParamList list _) = list
 
 -- POST: Parses a function body
-parseFunctionBody :: Parser Char Stat
-parseFunctionBody = do
+parseFunctionBody :: Type -> Parser Char Stat
+parseFunctionBody t = do
   body  <- parseStatement
-  checkExecutionPath body
+  if t /= Void
+    then checkExecutionPathsReturnNonVoid body
+    else checkVoidReturnOnly body
   return body
 
 {- HELPER FUNCTIONS -}
 
--- POST: Produces an error if an execution path does not end with exit or
---       return, or if there are trailing statements after an exit or return
---       statement. Checks for patterns (Seq Return{} _ _) and (Seq Exit{} _ _)
-checkExecutionPath :: Stat -> Parser Char ()
+-- POST: Produces an error if there is a return statement
+checkVoidReturnOnly :: Stat -> Parser Char ()
 
-checkExecutionPath s@Return{}
+checkVoidReturnOnly Return{} = do
+  pos <- getPosition
+  throwError ("Syntax Error: Cannot return from void function", pos)
+
+checkVoidReturnOnly ReturnVoid{}
   = return ()
 
-checkExecutionPath s@Exit{}
+checkVoidReturnOnly Exit{}
   = return ()
 
-checkExecutionPath (If _ s1 s2 _)
-  = checkExecutionPath s1 >> checkExecutionPath s2
+checkVoidReturnOnly (If _ s1 s2 _)
+  = checkVoidReturnOnly s1 >> checkVoidReturnOnly s2
 
-checkExecutionPath (While _ s1 _)
-  = checkExecutionPath s1
+checkVoidReturnOnly (While _ s _)
+  = checkVoidReturnOnly s
 
-checkExecutionPath (Block s1 _)
-  = checkExecutionPath s1
+checkVoidReturnOnly (Block s _)
+  = checkVoidReturnOnly s
 
-checkExecutionPath (Seq Return{} _ _) = do
+checkVoidReturnOnly (For _ _ _ s _)
+  = checkVoidReturnOnly s
+
+checkVoidReturnOnly (Seq ReturnVoid{} _ _) = do
   pos <- getPosition
   throwError ("Syntax Error: Unreachable statement after return", pos)
 
-checkExecutionPath (Seq Exit{} _ _) = do
+checkVoidReturnOnly (Seq Exit{} _ _) = do
   pos <- getPosition
   throwError ("Syntax Error: Unreachable statement after exit", pos)
 
-checkExecutionPath (Seq s1 s2 _)
-  = checkExecutionPath s2
+checkVoidReturnOnly (Seq s s' _)
+  = checkVoidReturnOnly s >> checkVoidReturnOnly s'
 
-checkExecutionPath _ = do
+checkVoidReturnOnly _
+  = return ()
+
+-- POST: Produces an error if an execution path does not end with exit or
+--       return, or if there are trailing statements after an exit or return
+--       statement. Checks for patterns (Seq Return{} _ _) and (Seq Exit{} _ _)
+checkExecutionPathsReturnNonVoid :: Stat -> Parser Char ()
+
+checkExecutionPathsReturnNonVoid Return{}
+  = return ()
+
+checkExecutionPathsReturnNonVoid Exit{}
+  = return ()
+
+checkExecutionPathsReturnNonVoid ReturnVoid{} = do
+  pos <- getPosition
+  throwError ("Syntax Error: Cannot return nothing from non-void function", pos)
+
+checkExecutionPathsReturnNonVoid (If _ s1 s2 _)
+  = checkExecutionPathsReturnNonVoid s1 >> checkExecutionPathsReturnNonVoid s2
+
+checkExecutionPathsReturnNonVoid (While _ s1 _)
+  = checkExecutionPathsReturnNonVoid s1
+
+checkExecutionPathsReturnNonVoid (Block s1 _)
+  = checkExecutionPathsReturnNonVoid s1
+
+checkExecutionPathsReturnNonVoid (For _ _ _ s _)
+  = checkExecutionPathsReturnNonVoid s
+
+checkExecutionPathsReturnNonVoid (Seq Return{} _ _) = do
+  pos <- getPosition
+  throwError ("Syntax Error: Unreachable statement after return", pos)
+
+checkExecutionPathsReturnNonVoid (Seq Exit{} _ _) = do
+  pos <- getPosition
+  throwError ("Syntax Error: Unreachable statement after exit", pos)
+
+checkExecutionPathsReturnNonVoid (Seq s1 s2 _)
+  = checkExecutionPathsReturnNonVoid s2
+
+checkExecutionPathsReturnNonVoid s = do
   pos <- getPosition
   throwError
     ("Syntax Error: Mising return or exit statement in function" ++
-     " body ending at: ", pos)
+     " body ending at: " ++ pretty s, pos)
 
 -- POST: Parses comma-delimited list of parameters
 parseParamList :: Parser Char ParamList

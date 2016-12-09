@@ -1,0 +1,10 @@
+begin
+  class foo is
+    init() is skip end
+
+    int x() is return 4 end
+  end
+
+  foo x = new foo();
+  int y = x.x()
+end

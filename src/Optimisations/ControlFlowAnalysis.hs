@@ -14,8 +14,8 @@ class ControlFlowAnalyser a where
   cfa :: a -> a
 
 instance ControlFlowAnalyser AST where
-  cfa (Program fs body)
-    = Program (map cfa fs) (cfa body)
+  cfa (Program c fs body)
+    = Program c (map cfa fs) (cfa body)
 
 instance ControlFlowAnalyser Func where
   cfa (Func t ident pl body pos)

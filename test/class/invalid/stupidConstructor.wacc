@@ -1,0 +1,12 @@
+begin
+  class stupid is
+    char c;
+
+    init(char c) is
+      c = self.c;
+      self.c = 'c'
+    end
+  end
+
+  skip
+end

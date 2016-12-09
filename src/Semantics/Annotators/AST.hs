@@ -1,4 +1,7 @@
-{- This module traverses through and annotates the AST.
+{-
+  TODO: THIS EXPLANATION IS DPERECATED -- UPDATE FOR CLASSES
+
+  This module traverses through and annotates the AST.
 
   These annotators descend the AST performing lexical scoping whilst
   simultaneously adding type information to each identifier encountered. This
@@ -39,29 +42,29 @@
 
 module Semantics.Annotators.AST (annotateAST) where
 
-import Control.Monad.State.Strict (runState)
+import Control.Monad.State.Strict (runState, runStateT, get)
 import qualified Data.Map as Map
 
 {- LOCAL IMPORTS -}
-import Semantics.Annotators.Function
+import Semantics.Annotators.Class (annotateClass, addClassDeclToST)
+import Semantics.Annotators.Function (annotateFunc, addFuncDeclToST)
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
 import Semantics.ErrorMessages
 import Utilities.Definitions
+import Debug.Trace
 
--- POST: Traverses the AST and annotates it
+-- POST: Traverses the AST anontating it and performing lexical scoping.
+--       Returns the annotated AST and the list of valid types.
 annotateAST :: AST -> AST
-annotateAST (Program fs main)
-  = newAST
+annotateAST (Program cs fs main)
+  = runScopeAnalysis annotateProgram
   where
-    (newAST, _) = runState annotateProgram (ST None Map.empty)
     annotateProgram = do
-      idents <- mapM addFuncDeclToST fs
-      let newFs = zipWith replaceIdent idents fs
+      -- populating global scope with the classes
+      newCs  <- mapM addClassDeclToST cs
+      newFs  <- mapM addFuncDeclToST fs
+      -- populating global scope with the functions
+      newCs' <- mapM annotateClass newCs
       newFs' <- mapM annotateFunc newFs
-      inChildScopeAndWrap (Program newFs') (annotateStat main)
-
--- POST: Replaces the identifier of the function
-replaceIdent :: Ident -> Func -> Func
-replaceIdent i (Func t _ pl st pos)
-  = Func t i pl st pos
+      inChildScopeAndWrap (Program newCs' newFs') (annotateStat main)

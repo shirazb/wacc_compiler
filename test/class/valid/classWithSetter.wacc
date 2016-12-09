@@ -1,0 +1,15 @@
+begin
+  class c is
+    int x;
+
+    init(int x) is
+      self.x = x
+    end
+
+    void setX(int x) is
+      self.x = x
+    end
+  end
+
+  skip
+end

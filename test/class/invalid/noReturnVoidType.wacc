@@ -1,0 +1,9 @@
+begin
+
+  void f() is
+    return 1
+  end
+  
+  println x
+
+end

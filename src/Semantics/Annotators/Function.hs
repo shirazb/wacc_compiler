@@ -3,7 +3,8 @@ functions -}
 
 module Semantics.Annotators.Function (
   annotateFunc,
-  addFuncDeclToST
+  addFuncDeclToST,
+  annotateParamList
 ) where
 
 import Control.Monad.State.Strict (get, put)
@@ -13,13 +14,16 @@ import qualified Data.Map as Map
 import Semantics.Annotators.Identifier
 import Semantics.Annotators.Statement
 import Semantics.Annotators.Util
+import Semantics.Annotators.Type
 import Semantics.ErrorMessages
 import Utilities.Definitions
 
 -- POST: Adds function name to the global symbol table
-addFuncDeclToST :: Func -> ScopeAnalysis Ident
-addFuncDeclToST (Func t ident paramList body pos)
-  = annotateNewIdent ident (Info t Function)
+addFuncDeclToST :: Func -> ScopeAnalysis Func
+addFuncDeclToST (Func t ident paramList body pos) = do
+  t'     <- scopeCheckType t
+  ident' <- annotateNewIdent ident (Info Static t' Function)
+  return $ Func t' ident' paramList body pos
 
 -- PRE:  Function name ident already annotated
 -- POST: Annotates all the identifiers within the function body.
@@ -45,5 +49,7 @@ annotateParamList (ParamList ps pos)
 
 -- POST: Annotates the input parameter
 annotateParam :: Param -> ScopeAnalysis Param
-annotateParam (Param t ident pos)
-  = Param t <$> annotateNewIdent ident (Info t Variable) <*> return pos
+annotateParam (Param t ident pos) = do
+  t'     <- scopeCheckType t
+  ident' <- annotateNewIdent ident (Info Static t' Variable)
+  return $ Param t' ident' pos

@@ -1,0 +1,15 @@
+begin
+ class Dog is
+  int x;
+  int y;
+  string z;
+
+  init (int x, int y, string z) is
+   self.x = x;
+   self.y = y
+  end
+ end
+
+ println 1
+
+end

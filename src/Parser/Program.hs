@@ -2,14 +2,15 @@
 
 module Parser.Program (parseProgram) where
 
-import Control.Applicative  (many, liftA2)
+import Control.Applicative  (many, liftA3)
 import Control.Monad.State  (MonadState (..), StateT (..))
 import Control.Monad.Except (throwError)
 
 {- LOCAL IMPORTS -}
-import Parser.Function
+import Parser.Function (parseFunction)
 import Parser.LexicalResolver
-import Parser.Statement
+import Parser.Statement (parseStatement, checkNoReturnStat)
+import Parser.Class (parseClass)
 import Parser.BasicCombinators
 import Semantics.Annotators.AST
 import Utilities.Definitions
@@ -23,9 +24,17 @@ parseProgram
       endingParse
   where
     parseProgram'
-      = liftA2 Program
+      = liftA3 Program
+          (many parseClass)
           (many parseFunction)
-          (require parseStatement "Invalid or missing program body")
+          parseMain
+
+-- POST: Parses the main program body, checking for returns too.
+parseMain :: Parser Char Stat
+parseMain = do
+  body <- require parseStatement "Invalid or missing program body"
+  checkNoReturnStat body
+  return body
 
 -- POST: Parses the end token of a WACC program and ensures there is nothing
 --       afterwards

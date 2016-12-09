@@ -1,0 +1,14 @@
+begin
+  int f(int x) is
+
+  return x * 2 end
+
+  void f1(int f) is
+    skip
+  end
+
+  int f = call f(3);
+  call f1(f);
+  call f1(f + 2 + 3)
+
+end

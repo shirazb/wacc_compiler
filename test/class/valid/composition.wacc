@@ -1,0 +1,25 @@
+begin
+  class x is
+    int x;
+    y y;
+
+    init(y y, int x) is
+      self.x = x;
+      self.y = y
+    end
+  end
+
+  class y is
+    bool b;
+    init() is skip; b =true end
+
+    void useAnX(x x) is
+      x.y.b = x.x == 2
+    end
+
+  end
+
+  y y = new y();
+  x x = new x(y, 5);
+  y.useAnX(x)
+end

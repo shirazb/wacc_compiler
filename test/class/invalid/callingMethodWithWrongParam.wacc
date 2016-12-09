@@ -1,0 +1,17 @@
+begin
+ class Dog is
+   int x;
+  
+   init (int x) is
+     self.x = x
+   end
+  
+   int f() is
+     return 1
+   end
+ end
+
+ Dog z = new Dog(1);
+ z.f(1)
+
+end

@@ -4,5 +4,4 @@
 Compiler
 dist/**
 *.s
-*.wacc
 

@@ -1,0 +1,31 @@
+begin
+  class A is
+    A a;
+    int x;
+
+    init(int x, int y) is
+      self.x = x;
+      self.a = new A(x, y + 1);
+      skip
+    end
+
+    A x(int y) is
+      int x = 1;
+        A a = new A(1, 2);
+        a.foo().bar(self).x = a.x().x;
+
+        return self
+    end
+
+    A foo() is
+      return self
+    end
+
+    A bar(A a) is
+      return a
+    end
+  end
+
+  A a = new A(10 ,12);
+  A b= a.a.foo()
+end

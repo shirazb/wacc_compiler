@@ -1,0 +1,14 @@
+begin
+  class Dog is
+   int x;
+  
+   init(int x) is
+     self.x = x
+   end
+
+  end
+
+  Dog d = new Dog(1);
+  int x = d.x + d.x
+
+end

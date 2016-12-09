@@ -25,3 +25,6 @@ typeCheckLHS (ArrayDeref arrayElem _)
 
 typeCheckLHS (PairDeref pairElem _)
   = typeCheckPairElem pairElem
+
+typeCheckLHS (MemberDeref ma _)
+  = typeCheckMemberAccess ma

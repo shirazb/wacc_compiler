@@ -7,16 +7,19 @@ as building blocks to build more complex parsers of expressions -}
 module Parser.Expression (
   parseExpr,
   parseExprList,
-  arrayElem
+  arrayElem,
+  parseMemberAccess,
+  parseFuncCall
 ) where
 
 import Control.Applicative  ((<*>), (<|>), some, many)
 import Control.Monad.Except (throwError)
 import Data.Maybe           (fromJust)
+import Data.List
 
 {- LOCAL IMPORTS -}
 import Parser.LexicalResolver
-import Parser.Identifier
+import Parser.Identifier (identifier)
 import Parser.BasicCombinators
 import Utilities.Definitions
 
@@ -36,6 +39,7 @@ parseExpr'
   <|> bracketedExpr
   <|> charLiteral
   <|> boolLiteral
+  <|> parseExprMemberAccess
   <|> stringLiter
   <|> exprIdent
   <|> pairLiteral
@@ -83,13 +87,13 @@ pairLiteral = do
 
 exprIdent :: Parser Char Expr
 exprIdent = do
-  pos <- getPosition
-  ident <- identifier
+  pos    <- getPosition
+  ident  <- identifier
   return $ IdentE ident pos
 
 stringLiter :: Parser Char Expr
 stringLiter = do
-  pos <- getPosition
+  pos    <- getPosition
   string <- quoted '\"' (require (many character) "Invalid char found in string")
   return $ StringLit string pos
 
@@ -208,8 +212,8 @@ chainr p op
   where
     rest x = (do
       pos <- getPosition
-      f <- op
-      xs <- chainr p op
+      f   <- op
+      xs  <- chainr p op
       rest $ BinaryApp f x xs pos
       ) <|> return x
 
@@ -252,3 +256,63 @@ parseExprList open close
       (punctuation open)
       (sepby parseExpr (punctuation ','))
       (punctuation close)
+
+-- POST: Parses a member access as an expression
+parseExprMemberAccess :: Parser Char Expr
+parseExprMemberAccess = do
+  pos       <- getPosition
+  memAccess <- parseMemberAccess
+  return $ ExprMemberAccess memAccess pos
+
+{- The following functions help us with parsing member accesses -}
+
+-- POST: Parses a member access, differentiating whether the obj whose member
+--       is a variable or the result of a method call.
+parseMemberAccess :: Parser Char MemberAccess
+parseMemberAccess = do
+  pos        <- getPosition
+  object     <- parseInstance
+  punctuation '.'
+  firstMem   <- parseMember
+  remMembers <- many $ punctuation '.' *> parseMember
+  return $ MemList object (firstMem : remMembers) pos
+
+-- POST: Parses the object on which a member is accessed
+parseInstance :: Parser Char Instance
+parseInstance = do
+  pos  <- getPosition
+  inst <- (FuncReturnsObj <$> parseFuncCall) <|> (VarObj <$> identifier)
+  return $ inst pos
+
+-- POST: Parses a list of member accesses
+-- Example Usage: Parse something of the form x.z.y
+parseMemList :: Parser Char [Member]
+parseMemList
+  = many $ punctuation '.' *> parseMember
+
+--POST: Parses either a method call or a field access
+parseMember :: Parser Char Member
+parseMember
+  =   parseClassMethod
+  <|> parseFieldMember
+
+-- POST: Parses a field
+parseFieldMember :: Parser Char Member
+parseFieldMember = do
+  pos       <- getPosition
+  fieldName <- identifier
+  return $ FieldAccess fieldName pos
+
+-- POST: Parses a method call
+parseClassMethod :: Parser Char Member
+parseClassMethod = do
+  pos <- getPosition
+  fc  <- parseFuncCall
+  return $ MethodCall fc pos
+
+-- POST: Parses a function call
+parseFuncCall :: Parser Char FuncCall
+parseFuncCall = do
+  ident <- identifier
+  es    <- parseExprList '(' ')'
+  return $ FuncCall ident es

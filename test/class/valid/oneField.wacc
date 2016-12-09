@@ -1,0 +1,8 @@
+begin
+  class c is
+    int x;
+    init() is skip; x = 1 end
+  end
+  
+ println 1
+end

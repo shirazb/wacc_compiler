@@ -1,0 +1,6 @@
+begin
+  class Dog is
+  end
+  int x = 0;
+  println x
+end

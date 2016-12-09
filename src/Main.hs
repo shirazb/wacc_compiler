@@ -6,7 +6,7 @@ import qualified Data.Map as Map
 import Data.List
 
 {- LOCAL IMPORTS -}
-import CodeGen.AssemblyGenerator
+-- import CodeGen.AssemblyGenerator
 import Parser.Statement
 import Parser.Program
 import Parser.BasicCombinators
@@ -14,13 +14,23 @@ import Semantics.Annotators.AST
 import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
-import Optimisations.Optimiser
+-- import Optimisations.Optimiser
 
 -- For debugging
 parseOp :: String -> AST
 parseOp s = a
   where
     Right (Just ((a,b),c)) = runParser parseProgram s
+
+-- Prints the given errors then exits with code 200
+semanticFailure :: [String] -> IO ()
+semanticFailure errors
+  = mapM_ putStrLn errors >> exitWith (ExitFailure 200)
+
+-- Prints the given err then exits with code 100
+syntacticFailure :: Err -> IO AST
+syntacticFailure err
+  = print err >> exitWith (ExitFailure 100)
 
 main = do
   -- Reads file from command line
@@ -33,7 +43,7 @@ main = do
   let ast       = runParser parseProgram contents
   a <- case ast of
          Right (Just ((a,b),_))  -> return a
-         Left err                -> do {print err; exitWith (ExitFailure 100)}
+         Left err                -> syntacticFailure err
 
   -- Annotation enriches the AST with type and scope error information
   let annotatedAST = annotateAST a
@@ -41,24 +51,26 @@ main = do
   -- Traverses the AST, prints any scope errors found and exits the program if
   -- any errors are found
   case scopeCheckProgram annotatedAST of
-    [] -> return ()
-    errors -> do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
+    []     -> return ()
+    errors -> semanticFailure errors
 
   -- Traverses the AST and type checks the program. If any type errors are
   -- found they are printed and the program terminates
   case generateTypeErrorMessages annotatedAST of
-    [] -> return ()
-    errors ->  do {mapM_ putStrLn errors; exitWith (ExitFailure 200)}
+    []     -> return ()
+    errors ->  semanticFailure errors
 
   -- Optimisations sequence
-  optimisedAST <- case optimiser annotatedAST of
-                    Right optAST -> return optAST
-                    Left errors  -> do
-                        mapM_ putStrLn errors
-                        exitWith (ExitFailure 200)
+  -- optimisedAST <- case optimiser annotatedAST of
+  --                   Right optAST -> return optAST
+  --                   Left errors  -> do
+  --                       mapM_ putStrLn errors
+  --                       exitWith (ExitFailure 200)
 
   -- Generates ARM11 Assembly code from the AST and prints to stdout
   -- Compile script pipes this in to a file and generates the assembly file.
-  putStrLn (makeInstr optimisedAST)
+  -- putStrLn (makeInstr optimisedAST)
+
+  putStrLn (pretty annotatedAST)
 
   exitSuccess

@@ -32,14 +32,11 @@ typeCheckRHS (NewPairAssign e e' _) = do
 typeCheckRHS (PairElemAssign p _)
   = typeCheckPairElem p
 
-typeCheckRHS expr@(FuncCallAssign (Ident funcName i) es pos) = do
-  ts <- mapM typeCheckExpr es
-  let FuncT t ts' = typeInfo i
-  if | length ts /= length ts' -> tell [typeMismatchList ts' ts pos expr]
-                                  >> return NoType
-     | ts == ts'               -> return t
-     | otherwise               -> tell [typeMismatchList ts' ts pos expr]
-                                  >> return NoType
+typeCheckRHS (FuncCallAssign fc pos)
+  = typeCheckFuncCall fc pos
+
+typeCheckRHS (ConstructAssign fc pos)
+  = typeCheckFuncCall fc pos
 
 {- HELPER FUNCTIONS -}
 
@@ -72,4 +69,4 @@ getPosRHS rhs
       ArrayLitAssign _ p    -> p
       NewPairAssign _ _ p   -> p
       PairElemAssign _ p    -> p
-      FuncCallAssign _ _ p  -> p
+      FuncCallAssign _ p    -> p

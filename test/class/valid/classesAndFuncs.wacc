@@ -1,0 +1,30 @@
+begin
+  class c is
+    int x;
+
+    init(char x) is int y = ord x; self.x = y * 15 / 4 ; skip end
+
+    void f() is skip; skip end
+
+    void g(int x) is skip; skip end
+
+    int x(int x) is
+       c c = new c('x'); 
+       call foo(c);
+       call foo(c);
+       return 5
+    end
+
+  end
+
+  void foo(c c) is
+    c c1 = new c('1');
+    char y = chr c1.x - 19;
+    c1.x = c.x + c.x(c.x);
+    c.g(c.x);
+    c.f();
+    c1.f()
+  end
+
+  skip
+end

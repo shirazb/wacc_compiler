@@ -1,0 +1,30 @@
+begin
+  class Dog is
+    int x;
+    Cat c;
+    
+    init (int x, Cat c) is
+      self.x = x;
+      self.c = c
+    end
+
+  end
+
+  class Cat is
+    int y;
+    
+    init(int x) is
+      self.y = x
+    end
+
+    int f() is
+     return 1
+    end
+  end
+  
+  Cat c = new Cat(1);
+  Dog d = new Dog(2, c);
+  d.c.f() = 1
+
+end
+

@@ -8,7 +8,7 @@ import Data.Maybe          (fromJust)
 
 {- LOCAL IMPORTS -}
 import Parser.BasicCombinators
-import Parser.Identifier
+import Parser.Identifier (ident)
 import Parser.LexicalResolver
 import Utilities.Definitions
 
@@ -18,6 +18,18 @@ parseType
   =   parseArrayType
   <|> parsePairType
   <|> parseBaseType
+  <|> parseVoidType
+  <|> parseClassIdentifer
+
+-- Parse class names as types
+parseClassIdentifer :: Parser Char Type
+parseClassIdentifer = do
+  identT <- ident
+  return $ ClassT identT
+
+-- POST: Parse Void type
+parseVoidType :: Parser Char Type
+parseVoidType = keyword "void" >> return Void
 
 -- POST: Parses base types
 parseBaseType :: Parser Char Type
