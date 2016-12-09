@@ -2,15 +2,15 @@
 
 module Parser.Program (parseProgram) where
 
-import Control.Applicative  (many, liftA3)
-import Control.Monad.State  (MonadState (..), StateT (..))
-import Control.Monad.Except (throwError)
+import Control.Applicative      (many, liftA3)
+import Control.Monad.State      (MonadState (..), StateT (..))
+import Control.Monad.Except     (throwError)
 
 {- LOCAL IMPORTS -}
-import Parser.Function (parseFunction)
+import Parser.Function          (parseFunction)
 import Parser.LexicalResolver
-import Parser.Statement (parseStatement, checkNoReturnStat)
-import Parser.Class (parseClass)
+import Parser.Statement         (parseStatement, checkNoReturnStat)
+import Parser.Class             (parseClass)
 import Parser.BasicCombinators
 import Semantics.Annotators.AST
 import Utilities.Definitions

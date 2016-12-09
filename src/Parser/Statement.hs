@@ -3,16 +3,17 @@ statements -}
 
 module Parser.Statement (parseStatement, checkNoReturnStat) where
 
-import Control.Applicative ((<|>), (<$>), liftA3)
-import Control.Monad.State (liftM2, unless, get)
+import Control.Applicative     ((<|>), (<$>), liftA3)
+import Control.Monad.State     (liftM2, unless, get)
 import Control.Monad.Except
 
 {- LOCAL IMPORTS -}
 import Parser.BasicCombinators
-import Parser.Expression (parseExpr, arrayElem, parseMemberAccess, parseFuncCall)
-import Parser.Identifier (identifier)
+import Parser.Expression       (parseExpr, arrayElem, parseMemberAccess,
+                                parseFuncCall)
+import Parser.Identifier       (identifier)
 import Parser.LexicalResolver
-import Parser.Type (parseType)
+import Parser.Type             (parseType)
 import Utilities.Definitions
 
 -- POST: Parses all valid statements in the WACC language
@@ -43,7 +44,6 @@ parseStatement'
   <|> parseKeywordStat "skip" Skip
   <|> parseKeywordStat "break" Break
   <|> parseKeywordStat "continue" Continue
-
 
 -- POST: Parses an if statement
 parseIfStat :: Parser Char Stat
@@ -81,7 +81,8 @@ parseForStat = do
   cond     <- require parseExpr "Invalid condition in for loop argument"
   require (punctuation ';') "Missing semicolon in for loop declaration"
   assign   <- require parseAssignment "Invalid assignment in for loop argument"
-  require (punctuation ')') "Missing closing parenthesis in for loop declaration"
+  require (punctuation ')') "Missing closing parenthesis in for loop\
+                             \ declaration"
   require (keyword "do") "Missing 'do' keyword"
   loopBody <- require parseStatement "Invalid statement in for loop body"
   require (keyword "done") "Missing 'done' keyword"
@@ -151,6 +152,7 @@ parseRead = do
   pos <- getPosition
   return $ Read lhs pos
 
+-- POST: Parses a CallMethod
 parseCallMethod :: Parser Char Stat
 parseCallMethod = do
   pos <- getPosition
@@ -158,11 +160,14 @@ parseCallMethod = do
   guard (checkIsMethodCall memberAccess)
   return $ CallMethod memberAccess pos
 
+-- POST: Checks whether a member access is a method call
+checkIsMethodCall :: MemberAccess -> Bool
 checkIsMethodCall (MemList inst mems _)
   = case last mems of
       MethodCall _ _ -> True
       _              -> False
 
+-- POST: Parses a CallFunc
 parseCallFunc :: Parser Char Stat
 parseCallFunc = do
   pos <- getPosition
@@ -183,11 +188,16 @@ parseRHS
 -- POST: Parses all valid left hand sides in WACC
 parseLHS :: Parser Char AssignLHS
 parseLHS
-  =   do {pos <- getPosition; element <- arrayElem; return $ ArrayDeref element pos}
-  <|> do {pos <- getPosition; pairE <- pairElem; return $ PairDeref pairE pos}
-  <|> do {pos <- getPosition; memAccess <- parseFieldLHS; return $ MemberDeref memAccess pos}
-  <|> do {pos <- getPosition; ident <- identifier; return $ Var ident pos}
+  =   do {pos <- getPosition; element <- arrayElem;
+          return $ ArrayDeref element pos}
+  <|> do {pos <- getPosition; pairE <- pairElem;
+          return $ PairDeref pairE pos}
+  <|> do {pos <- getPosition; memAccess <- parseFieldLHS;
+          return $ MemberDeref memAccess pos}
+  <|> do {pos <- getPosition; ident <- identifier;
+          return $ Var ident pos}
 
+-- POST: Parses the LHS of a field
 parseFieldLHS :: Parser Char MemberAccess
 parseFieldLHS = do
   pos <- getPosition
@@ -195,6 +205,7 @@ parseFieldLHS = do
   guard (checkIsFieldAccess memAccess)
   return memAccess
 
+-- POST: Checks if a member access is a field access
 checkIsFieldAccess :: MemberAccess -> Bool
 checkIsFieldAccess (MemList inst mems _)
   = case last mems of

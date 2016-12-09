@@ -1,5 +1,5 @@
 {- This module annotates identifiers with type information, or marks them as
-scope errors -}
+   scope errors -}
 
 module Semantics.Annotators.Identifier (
   annotateIdent,
@@ -20,7 +20,6 @@ import Debug.Trace
 -- POST: If the identifier is not a duplicate, adds it to the current ST.
 --       Otherwise, marks it as a duplicate
 annotateNewIdent :: Ident -> Info -> ScopeAnalysis Ident
-
 annotateNewIdent i@(Ident name NoInfo) info = do
   st            <- get
   let newIdent  = Ident name info
@@ -41,7 +40,6 @@ annotateNewIdent (Ident name info) info'
 --       For "self" identifiers, marks it as an error if not in a class, or
 --       sets its type according to the class name.
 annotateIdent :: Context -> Ident -> ScopeAnalysis Ident
-
 annotateIdent ctext ident@(Ident name NoInfo) = do
   st <- get
   return $ case lookUpIdent (name, ctext) st of

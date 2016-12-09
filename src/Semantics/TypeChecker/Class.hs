@@ -36,23 +36,6 @@ checkFieldInitialisedIn ident pos body f
   | searchForAssignment body f = return ()
   | otherwise                  = tell [unassignedField ident pos f]
 
--- checkField' :: Stat -> Field -> [Field] -> (Bool, [Field])
--- checkField' (Assignment lhs rhs _) f fs
---   = if isF
---       then (True && validRHS, f : fs)
---       else (False, fs)
---   where
---     isF      = identInfo (fieldIdent f) == identInfo (lhsIdent lhs)
---     validRHS = checkUseInRHS rhs
--- checkField' (If e s s' _) f fs
---   = (b && b' && validExpr, inited)
---   where
---     inited    = filter (`elem` fs') fs
---     (b, fs)   = checkField' s f fs
---     (b', fs') = checkField' s' f fs
---     validExpr = checkUseInExpr e fs
--- checkField' (While )
-
 tellE = lift . tell
 
 runCheck :: Stat -> Ident -> [String]

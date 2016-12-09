@@ -18,7 +18,7 @@ type AST                 = Program
 type Err                 = (String, Position)
 type ErrorMsg            = String
 type Position            = (Int, Int)
-type ScopeError         = (String, ScopeErrorType, Position)
+type ScopeError          = (String, ScopeErrorType, Position)
 type ArrayIndexes        = [Expr]
 type TypeChecker a       = Writer [ErrorMsg] a
 type ArithmeticErrors    = [String]
@@ -36,7 +36,7 @@ data FuncCall
 
 data Ident
   = Ident String Info
-  | Self Info -- should be ClassT and Variable
+  | Self Info
   deriving (Show, Eq)
 
 data MemberAccess
@@ -118,16 +118,15 @@ data Stat
   | Break Position
   | Continue Position
   | CallFunc FuncCall Position
-  | CallMethod MemberAccess Position -- we have to ensure that is only a function
-  | Seq Stat Stat Position               -- we could change it in to an expression and
-                                            -- typecheck that its an objet
+  | CallMethod MemberAccess Position
+  | Seq Stat Stat Position
   deriving (Eq, Show)
 
 data AssignLHS
   = Var Ident Position
   | ArrayDeref ArrayElem Position
   | PairDeref PairElem Position
-  | MemberDeref MemberAccess Position-- Check for method calls in semantics
+  | MemberDeref MemberAccess Position
   deriving (Eq, Show)
 
 data AssignRHS

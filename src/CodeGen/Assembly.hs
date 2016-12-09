@@ -23,14 +23,16 @@ class CodeGen a where
   codegen :: a -> CodeGenerator [Instr]
 
 genInstruction :: CodeGenerator a -> ((((((a, Functions), DataSegment),
-                  (Env, StackOffset)), LoopContext), FunctionContext), LabelNumber)
+                  (Env, StackOffset)), LoopContext), FunctionContext),
+                  LabelNumber)
 genInstruction p
   = runState (runStateT (runStateT (runStateStackT (runStateT (runStateT p [])
-    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) ([], [],[])) []) startLabelNum
+    (DataSeg mzero startMsgNum)) (Map.empty, startOffset)) ([], [],[])) [])
+    startLabelNum
   where
-  startMsgNum          = 0
-  startOffset          = 0
-  startLabelNum        = 0
+  startMsgNum   = 0
+  startOffset   = 0
+  startLabelNum = 0
 
 {- TYPE AND DATA INSTANCES -}
 
@@ -44,8 +46,8 @@ type Env             = Map.Map String Int
 type LoopContext     = ([Instr], String, String)
 type FunctionContext = [Instr]
 
-type CodeGenerator a = StateT Functions 
-                     ( StateT DataSegment 
+type CodeGenerator a = StateT Functions
+                     ( StateT DataSegment
                      ( StateStackT (Env, Int)
                      ( StateT LoopContext
                      ( StateT FunctionContext

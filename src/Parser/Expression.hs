@@ -66,6 +66,7 @@ boolLiteral = do
   if | boolean == "true" -> return (BoolLit True pos)
      | otherwise -> return (BoolLit False pos)
 
+-- POST: Parses input string after removing opening and closing delimiters
 quoted :: Char -> Parser Char b -> Parser Char b
 quoted c parser
   = bracket (char c) parser (char c)
@@ -85,16 +86,19 @@ pairLiteral = do
   keyword "null"
   return $ PairLiteral pos
 
+-- POST: Parses an expression identifier
 exprIdent :: Parser Char Expr
 exprIdent = do
   pos    <- getPosition
   ident  <- identifier
   return $ IdentE ident pos
 
+-- POST: Parses a string literal
 stringLiter :: Parser Char Expr
 stringLiter = do
   pos    <- getPosition
-  string <- quoted '\"' (require (many character) "Invalid char found in string")
+  string <- quoted '\"' (require (many character)
+            "Invalid char found in string")
   return $ StringLit string pos
 
 {- UNARY & BINARY EXPRESSION COMBINATORS -}

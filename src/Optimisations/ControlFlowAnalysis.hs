@@ -1,7 +1,6 @@
-{-
-  This module defines one of the phases in our optimisations,
-  it is done after constant evalaution. It removes redundant control flow.
--}
+{- This module defines one of the phases in our optimisations,
+  it is done after constant evalaution. It removes redundant control flow -}
+
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Optimisations.ControlFlowAnalysis (cfa) where

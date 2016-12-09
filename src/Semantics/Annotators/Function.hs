@@ -1,5 +1,5 @@
 {- This module annotates function identifiers and variables within the body of
-functions -}
+   functions -}
 
 module Semantics.Annotators.Function (
   annotateFunc,
@@ -30,14 +30,11 @@ addFuncDeclToST (Func t ident paramList body pos) = do
 annotateFunc :: Func -> ScopeAnalysis Func
 annotateFunc (Func t ident paramList body pos) = do
   globalST     <- get
-
   -- Enter new function scope
   put (ST globalST Map.empty)
-
   -- Annotate the function body
   newParamList <- annotateParamList paramList
   newBody      <- annotateStat body
-
   -- Exit function scope
   put globalST
   return $ Func t ident newParamList newBody pos

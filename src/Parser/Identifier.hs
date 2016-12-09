@@ -2,8 +2,8 @@
 
 module Parser.Identifier (identifier, ident) where
 
-import Control.Applicative  (Alternative (..))
-import Control.Monad        (liftM2, guard)
+import Control.Applicative (Alternative (..))
+import Control.Monad       (liftM2, guard)
 
 {- LOCAL IMPORTS -}
 import Parser.BasicCombinators
@@ -24,7 +24,7 @@ identifier = trimWS (do
     return $ Ident name NoInfo)
   <|> parseSelf
 
--- POST: Parses the keyword self
+-- POST: Parses the 'self' keyword
 parseSelf :: Parser Char Ident
 parseSelf
   = token "self" >> return (Self NoInfo)

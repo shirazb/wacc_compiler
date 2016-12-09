@@ -1,5 +1,6 @@
-{-# LANGUAGE MultiWayIf #-}
 {- This module annotates all the identifers found within expressions -}
+
+{-# LANGUAGE MultiWayIf #-}
 
 module Semantics.Annotators.Expression (
   annotateExpr,
@@ -8,7 +9,7 @@ module Semantics.Annotators.Expression (
   annotateMemberAccess
 ) where
 
-import Control.Monad.State (get)
+import Control.Monad.State       (get)
 import qualified Data.Map as Map
 
 {- LOCAL IMPORTS -}
@@ -19,10 +20,8 @@ import Utilities.Definitions
 import Debug.Trace
 import Data.Maybe
 
-
 -- POST: Annotates expressions
 annotateExpr :: Expr -> ScopeAnalysis Expr
-
 annotateExpr (IdentE ident pos) = do
   newIdent <- annotateIdent Variable ident
   return $ IdentE newIdent pos
@@ -58,7 +57,7 @@ annotateFuncCall (FuncCall f exprList)
   = FuncCall <$> annotateIdent Function f <*> annotateExprList exprList
 
 -- POST: Annotates a member access. From left to right, once a scope error has
--- been hit, the remaining members on the right are left as NoInfo
+--       been hit, the remaining members on the right are left as NoInfo
 annotateMemberAccess :: MemberAccess -> ScopeAnalysis MemberAccess
 annotateMemberAccess (MemList inst ms pos) = do
     newInst   <- annotateInstance inst
@@ -73,9 +72,11 @@ annotateMemberAccess (MemList inst ms pos) = do
 
       -- First case sets first member to not in scope, as it definitely cannot
       -- the member of a non-class type.
-      Info _ t _     -> return $ MemList newInst (setMemberNotInScope (head ms) : tail ms) pos
+      Info _ t _     -> return $ MemList newInst (setMemberNotInScope
+                        (head ms) : tail ms) pos
       ScopeError err -> return $ MemList newInst ms pos
-      NoInfo         -> error  $ "annotateMemberAccess: annotatsed instance near "
+      NoInfo         -> error  $ "annotateMemberAccess: annotatsed instance\
+                                 \ near "
                         ++ show pos ++ "has NoInfo. Instance: " ++ show newInst
 
 -- POST: Annotates the identifier of the instance
@@ -101,35 +102,32 @@ annotateMemberList cname [m] = do
       -- m is not a member of cname.
       []  -> return [setMemberNotInScope m]
 
-      is  -> error $ "annotateMemberList: \ncname: " ++ cname ++ "\nmember: " ++ show m ++ "\nidents: " ++ show is
+      is  -> error $ "annotateMemberList: \ncname: " ++ cname ++
+             "\nmember: " ++ show m ++ "\nidents: " ++ show is
 
-    -- Class does not exist
-    Nothing -> error $ "annotateMemberList: Class name not found: " ++ show cname
+    Nothing -> error $ "annotateMemberList: Class name not found: " ++
+               show cname
 
 annotateMemberList cname (m : ms) = do
   st <- get
   case lookUpIdent (cname, ClassName) st of
-    -- Class exists. Check if m is one of cname's members.
     Just ci@(ClassInfo _ is _) -> case [ i | i <- is, m ~= i ] of
-      -- m is a member of cname, recurse down the list.
       [i@(Ident _ (Info Instance (ClassT cname') _))] -> do
         newM  <- annotateMember m i
         newMs <- annotateMemberList cname' ms
         return $ newM : newMs
 
-      -- m is a member of cname, recurse down the list.
       [i@(Ident _ (Info Instance (FuncT (ClassT cname') _) _))] -> do
         newM  <- annotateMember m i
         newMs <- annotateMemberList cname' ms
         return $ newM : newMs
 
-      -- m is not a member of cname.
       [] -> return $ setMemberNotInScope m : ms
+      is -> error $ "annotateMemberList: \ncname: " ++ cname ++ "\nmember: " ++
+            show m ++ "\nidents: " ++ show is
 
-      is -> error $ "annotateMemberList: \ncname: " ++ cname ++ "\nmember: " ++ show m ++ "\nidents: " ++ show is
-
-    -- Class does not exist
-    Nothing -> error $ "annotateMemberList: Class name not found: " ++ show cname
+    Nothing -> error $ "annotateMemberList: Class name not found: " ++
+               show cname
 
 -- PRE:  The member is not annotated. The ident is.
 -- POST: Annotaes the member's identifier by replacing it with the given one.

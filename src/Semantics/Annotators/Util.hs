@@ -1,13 +1,11 @@
 {- This module defines a number of utility functions which are used whilst
-annotating the AST -}
-
--- TODO : abstract out the symbol table get
+   annotating the AST -}
 
 module Semantics.Annotators.Util where
 
 import qualified Data.Map as Map
 import Control.Monad.State.Strict (get, put, State (..), lift, runState)
-import Data.Maybe (fromJust)
+import Data.Maybe                 (fromJust)
 import Debug.Trace
 
 {- LOCAL IMPORTS -}
@@ -27,12 +25,6 @@ runScopeAnalysis analyser
   = ast
   where
     (ast, _) = runState analyser (ST None Map.empty)
---
--- -- POST: Add a new type to the list
--- addKnownType :: String -> ScopeAnalysis ()
--- addKnownType t = do
---   ts <- knownTypes
---   lift . put $ (t:ts)
 
 -- POST: Returns the identifier of a param
 paramIdent :: Param -> Ident
@@ -53,7 +45,8 @@ context c
 (~=) :: Member -> Ident -> Bool
 FieldAccess (Ident n NoInfo) _ ~= Ident n' (Info Instance _ Variable)
   = n == n'
-MethodCall (FuncCall (Ident n NoInfo) _) _ ~= Ident n' (Info Instance _ Function)
+MethodCall (FuncCall (Ident n NoInfo) _) _ ~= Ident n'
+  (Info Instance _ Function)
   = n == n'
 _ ~= _
   = False
@@ -74,6 +67,7 @@ identHasError (Self (ScopeError _))
 identHasError _
   = False
 
+-- POST: Keyword 'self'
 self :: String
 self
   = "self"
@@ -90,7 +84,7 @@ addToEnv :: Ident -> Env -> Env
 addToEnv ident
   = Map.insert (nameAndContext ident) (identInfo ident)
 
--- POST: identifiers are added to the environment
+-- POST: Identifiers are added to the environment
 populateEnvironment :: Env -> [Ident] -> Env
 populateEnvironment
   = foldl $ flip addToEnv
@@ -159,12 +153,14 @@ setErrType :: ScopeErrorType -> Ident -> Ident
 setErrType errType i@(Ident name _)
   = Ident name (ScopeError errType)
 
+-- POST: Gets the ident of the member
 memberIdent :: Member -> Ident
 memberIdent (FieldAccess i pos)
   = i
 memberIdent (MethodCall (FuncCall i _) _)
   = i
 
+-- POST: Gets the info of the member
 memberInfo :: Member -> Info
 memberInfo
   = identInfo . memberIdent
@@ -188,13 +184,6 @@ replaceIdent i (MethodCall (FuncCall _ es) pos)
 lookUpIdentCurrScope :: (String, Context) -> SymbolTable -> Maybe Info
 lookUpIdentCurrScope nameAndCtxt (ST _ env)
   = Map.lookup nameAndCtxt env
-
--- -- PRE: Ident is a class
--- -- POST: Returns the members of this class
--- availableMembers (Ident _ (ClassInfo _ mems _))
---   = mems
--- availableMembers i
---   = error $ "Cannot call availableMembers on the identifer: " ++ show i
 
 -- POST: Returns information about a given identifier if it is in
 --       any scope of the symbol table

@@ -15,15 +15,16 @@ scopeCheckProgram ast
 -- POST: Traverses the AST and collects generated scope error messages
 scopeErrorAST :: AST -> [ScopeError]
 scopeErrorAST (Program cs funcs main)
-  = concatMap scopeErrorFunc funcs ++ concatMap scopeErrorClass cs ++ scopeErrorStat main
+  = concatMap scopeErrorFunc funcs ++ concatMap scopeErrorClass cs ++
+    scopeErrorStat main
 
 -- POST: Traverses a classes and collects generated scope error messages
 scopeErrorClass :: Class -> [ScopeError]
 scopeErrorClass (Class ident fields constr methods pos)
-  = scopeErrorIdent ident pos
-  ++ concatMap scopeErrorField fields
-  ++ scopeErrorConstr constr
-  ++ concatMap scopeErrorFunc methods
+  = scopeErrorIdent ident pos        ++
+    concatMap scopeErrorField fields ++
+    scopeErrorConstr constr          ++
+    concatMap scopeErrorFunc methods
 
 scopeErrorField :: Field -> [ScopeError]
 scopeErrorField (Field t i pos)
@@ -36,12 +37,13 @@ scopeErrorConstr (Constructor (ParamList ps _) body pos)
 -- POST: Traverses functions and collects generated scope error messages
 scopeErrorFunc :: Func -> [ScopeError]
 scopeErrorFunc (Func t ident (ParamList params _) stat pos)
-  = scopeErrorType t pos ++ scopeErrorIdent ident pos ++ concatMap scopeErrorParam params
-      ++ scopeErrorStat stat
+  = scopeErrorType t pos             ++
+    scopeErrorIdent ident pos        ++
+    concatMap scopeErrorParam params ++
+    scopeErrorStat stat
 
 -- POST: Traverses statements and collects generated scope error messages
 scopeErrorStat :: Stat -> [ScopeError]
-
 scopeErrorStat (Declaration t ident rhs pos)
   = scopeErrorType t pos ++ scopeErrorIdent ident pos ++ scopeErrorRHS rhs
 
@@ -99,7 +101,6 @@ scopeErrorParam (Param _ ident pos)
 
 -- POST: Traverses RHS assignments and collects generated scope error messages
 scopeErrorRHS :: AssignRHS -> [ScopeError]
-
 scopeErrorRHS (ExprAssign expr _)
   = scopeErrorExpr expr
 
@@ -120,7 +121,6 @@ scopeErrorRHS (ConstructAssign fc pos)
 
 -- POST: Traverses LHS assignments and collects generated scope error messages
 scopeErrorLHS :: AssignLHS -> [ScopeError]
-
 scopeErrorLHS (Var ident pos)
   = scopeErrorIdent ident pos
 
@@ -135,7 +135,6 @@ scopeErrorLHS (MemberDeref ma _)
 
 -- POST: Traverses expressions and collects generated scope error messages
 scopeErrorExpr :: Expr -> [ScopeError]
-
 scopeErrorExpr (IdentE ident pos)
   = scopeErrorIdent ident pos
 
@@ -154,9 +153,10 @@ scopeErrorExpr (ExprMemberAccess ma pos)
 scopeErrorExpr expr
   = []
 
+-- POST: Checks whether a class type is in scope
 scopeErrorType :: Type -> Position -> [ScopeError]
 scopeErrorType (FuncT t ts) pos
-  = scopeErrorType t pos ++ concatMap (flip scopeErrorType pos) ts
+  = scopeErrorType t pos ++ concatMap (`scopeErrorType` pos) ts
 scopeErrorType (NotInScopeT cname) pos
   = [(cname, ClassNotInScope cname, pos)]
 scopeErrorType _ _
@@ -175,7 +175,7 @@ scopeErrorInst (VarObj i pos)
 scopeErrorInst (FuncReturnsObj fc pos)
   = scopeErrorFuncCall fc pos
 
--- POST:
+-- POST: Checks whether class members are in scope
 scopeErrorMem :: Member -> [ScopeError]
 scopeErrorMem (FieldAccess i pos)
   = scopeErrorIdent i pos
@@ -183,11 +183,10 @@ scopeErrorMem (FieldAccess i pos)
 scopeErrorMem (MethodCall fc pos)
   = scopeErrorFuncCall fc pos
 
--- POST :
+-- POST: Checks whether function calls are in scope
 scopeErrorFuncCall :: FuncCall -> Position -> [ScopeError]
 scopeErrorFuncCall (FuncCall ident es) pos
   = scopeErrorIdent ident pos ++ concatMap scopeErrorExpr es
-
 
 -- POST: Traverses identifiers and collects generated scope error messages
 scopeErrorIdent :: Ident -> Position -> [(String, ScopeErrorType, Position)]

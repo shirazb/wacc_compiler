@@ -1,20 +1,21 @@
 {- This module annotates statements -}
 
+{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
+
 module Semantics.Annotators.Statement (annotateStat) where
 
-import Control.Monad (liftM2, mapM)
+import Control.Monad                   (liftM2, mapM)
 import Control.Monad.State.Strict
 import qualified Data.Map as Map
 
 {- LOCAL IMPORTS -}
-import Semantics.Annotators.Expression ( annotateExpr, annotateExprList,
-                                         annotateFuncCall, annotateMemberAccess)
-import Semantics.Annotators.Identifier ( annotateIdent, annotateNewIdent )
-import Semantics.Annotators.Type (scopeCheckType)
+import Semantics.Annotators.Expression (annotateExpr, annotateExprList,
+                                        annotateFuncCall, annotateMemberAccess)
+import Semantics.Annotators.Identifier (annotateIdent, annotateNewIdent )
+import Semantics.Annotators.Type       (scopeCheckType)
 import Semantics.Annotators.Util
 import Semantics.ErrorMessages
 import Utilities.Definitions
-import Debug.Trace
 
 -- POST: Annotates statements
 annotateStat :: Stat -> ScopeAnalysis Stat

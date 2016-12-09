@@ -6,28 +6,22 @@ import qualified Data.Map as Map
 import Data.List
 
 {- LOCAL IMPORTS -}
--- import CodeGen.AssemblyGenerator
+import Optimisations.Optimiser
 import Parser.Statement
 import Parser.Program
+import Parser.BasicCombinators
 import Parser.BasicCombinators
 import Semantics.Annotators.AST
 import Semantics.ScopeErrorGenerator
 import Semantics.TypeChecker.Program
 import Utilities.Definitions
--- import Optimisations.Optimiser
 
--- For debugging
-parseOp :: String -> AST
-parseOp s = a
-  where
-    Right (Just ((a,b),c)) = runParser parseProgram s
-
--- Prints the given errors then exits with code 200
+-- POST: Prints the given errors then exits with code 200
 semanticFailure :: [String] -> IO ()
 semanticFailure errors
   = mapM_ putStrLn errors >> exitWith (ExitFailure 200)
 
--- Prints the given err then exits with code 100
+-- POST: Prints the given err then exits with code 100
 syntacticFailure :: Err -> IO AST
 syntacticFailure err
   = print err >> exitWith (ExitFailure 100)
@@ -60,17 +54,15 @@ main = do
     []     -> return ()
     errors ->  semanticFailure errors
 
-  -- Optimisations sequence
-  -- optimisedAST <- case optimiser annotatedAST of
-  --                   Right optAST -> return optAST
-  --                   Left errors  -> do
-  --                       mapM_ putStrLn errors
-  --                       exitWith (ExitFailure 200)
+  -- Performs constant evaluation and control flow analysis optimisations
+  optimisedAST <- case optimiser annotatedAST of
+                    Right optAST -> return optAST
+                    Left errors  -> do
+                        mapM_ putStrLn errors
+                        exitWith (ExitFailure 200)
 
   -- Generates ARM11 Assembly code from the AST and prints to stdout
   -- Compile script pipes this in to a file and generates the assembly file.
-  -- putStrLn (makeInstr optimisedAST)
-
-  putStrLn (pretty annotatedAST)
+  putStrLn (makeInstr optimisedAST)
 
   exitSuccess

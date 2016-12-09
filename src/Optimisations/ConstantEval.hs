@@ -1,9 +1,7 @@
-{-
-  This module defines one of the phases in our Optimisations, it takes an AST
-  and evaluates any constant expressions found within the AST. Detects an
-  reports all overflow or divide by zero errors found as a result of evaluating
-  the expressions.
--}
+{- This module defines one of the phases in our Optimisations, it takes an AST
+   and evaluates any constant expressions found within the AST. Detects an
+   reports all overflow or divide by zero errors found as a result of evaluating
+   the expressions -}
 
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -11,9 +9,9 @@
 
 module Optimisations.ConstantEval (optConstEval) where
 
-import Prelude hiding (LT, GT, EQ)
+import Prelude hiding              (LT, GT, EQ)
 import Control.Monad.Writer.Strict (Writer (..), tell, when, runWriter)
-import Data.Maybe (fromJust)
+import Data.Maybe                  (fromJust)
 
 {- LOCAL IMPORTS -}
 import Semantics.ErrorMessages (overFlowError, divideByZero)
@@ -26,7 +24,7 @@ optConstEval ast
   where
   (ast', errors)  = runWriter (constEval ast)
 
---POST: Evaluates any constant expressions found in the AST
+-- POST: Evaluates any constant expressions found in the AST
 class ConstEval a where
   constEval :: a -> ConstantEvaluator a
 
@@ -106,10 +104,9 @@ instance ConstEval AssignRHS where
     e' <- constEval e
     return $ PairElemAssign (PairElem s e' pos) pos'
 
-  constEval (FuncCallAssign i params pos) = do
+  constEval (FuncCallAssign fc@(FuncCall i params) pos) = do
     params' <- mapM constEval params
-    return $ FuncCallAssign i params' pos
-
+    return $ FuncCallAssign (FuncCall i params') pos
 
 instance ConstEval Expr where
   constEval expr@(BinaryApp (Arith Add) (IntLit i pos) (IntLit i' pos') posE)
@@ -174,21 +171,24 @@ instance ConstEval Expr where
       | otherwise
         -> return (BinaryApp (Arith Mul) e1' e2' pos)
 
-  constEval (BinaryApp (Logic (lookUpBoolOp -> op)) (BoolLit b pos) (BoolLit b' pos') pos'')
+  constEval (BinaryApp (Logic (lookUpBoolOp -> op)) (BoolLit b pos)
+    (BoolLit b' pos') pos'')
     = return (BoolLit (b `op` b') pos)
 
   constEval (BinaryApp (Logic op) e1 e2 pos) = do
-    e1' <- constEval e1
-    e2' <- constEval e2
+    e1'    <- constEval e1
+    e2'    <- constEval e2
     let opF = lookUpBoolOp op
     if | BoolLit b _ <- e1', BoolLit b' _ <- e2'
           -> return $ BoolLit (b `opF` b') pos
        | otherwise
           -> return $ BinaryApp (Logic op) e1' e2' pos
 
-  constEval (BinaryApp (RelOp (lookUpRelOp -> op)) (CharLit c pos) (CharLit c' pos') pos'')
+  constEval (BinaryApp (RelOp (lookUpRelOp -> op)) (CharLit c pos)
+    (CharLit c' pos') pos'')
     = return $ BoolLit (c `op` c') pos''
-  constEval (BinaryApp (RelOp (lookUpRelOp -> op)) (IntLit i pos) (IntLit i' pos') pos'')
+  constEval (BinaryApp (RelOp (lookUpRelOp -> op)) (IntLit i pos)
+    (IntLit i' pos') pos'')
     = return $ BoolLit (i `op` i') pos''
 
   constEval (BinaryApp (RelOp op) e1 e2 pos) = do
@@ -202,13 +202,16 @@ instance ConstEval Expr where
        | otherwise
           -> return $ BinaryApp (RelOp op) e1' e2' pos
 
-  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (CharLit c pos) (CharLit c' pos') pos'')
+  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (CharLit c pos)
+    (CharLit c' pos') pos'')
     = return $ BoolLit (c `op` c') pos''
 
-  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (IntLit i pos) (IntLit i' pos') pos'')
+  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (IntLit i pos)
+    (IntLit i' pos') pos'')
     = return $ BoolLit (i `op` i') pos''
 
-  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (BoolLit i pos) (BoolLit i' pos') pos'')
+  constEval (BinaryApp (EquOp (lookUpEqOp -> op)) (BoolLit i pos)
+    (BoolLit i' pos') pos'')
     = return $ BoolLit (i `op` i') pos'
 
   constEval (BinaryApp (EquOp op) e1 e2 pos) = do

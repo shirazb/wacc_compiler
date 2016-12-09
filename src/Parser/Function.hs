@@ -2,17 +2,16 @@
 
 module Parser.Function where
 
-import Control.Monad ( liftM3, when )
-import Control.Monad.Except ( throwError )
+import Control.Monad           (liftM3, when)
+import Control.Monad.Except    (throwError)
 
 {- LOCAL IMPORTS -}
-import Parser.BasicCombinators ( Parser (..), getPosition, require, sepby )
-import Parser.Identifier ( identifier )
+import Parser.BasicCombinators (Parser (..), getPosition, require, sepby)
+import Parser.Identifier       (identifier)
 import Parser.LexicalResolver
-import Parser.Statement ( parseStatement )
-import Parser.Type ( parseType )
+import Parser.Statement        (parseStatement)
+import Parser.Type             (parseType)
 import Utilities.Definitions
-
 
 -- POST: Parses a function defintion
 parseFunction :: Parser Char Func
