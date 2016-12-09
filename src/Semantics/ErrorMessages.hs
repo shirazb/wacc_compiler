@@ -25,6 +25,7 @@ noLoopBreak  = "Unexpected break found outside of loop"
 noLoopCont   = "Unexpected continue found oustide of loop"
 divByZero    = "Divide By Zero Error -- constant expression evalutes to zero"
 overFlowErr  = "OverFlow Error -- constant expression overflows"
+fieldErr     = "Field is not initialised in constructor."
 
 -- POST: Outputs a type mismatch error message
 typeMismatch :: Show a => Type -> Type -> Position -> a -> ErrorMsg
@@ -59,6 +60,12 @@ typeMismatchList expT actT pos expr'
     expe ++ show expT  ++ "\n" ++
     act  ++ show actT  ++ "\n" ++
     expr ++ show expr' ++ "\n"
+
+-- Use of uninitialised field in class
+uninitdUse :: Field -> Position -> ErrorMsg
+uninitdUse i pos
+  = err ++ "Using field \'" ++ pretty i ++ "\' before it has been initialised." ++ "\n" ++
+    loc ++ show pos ++ "\n"
 
 -- POST: Outputs an error if we have divide by zero
 divideByZero :: Position -> Expr -> ErrorMsg
@@ -97,16 +104,24 @@ continueWithoutLoop pos
   = err ++ noLoopCont ++ "\n" ++
     loc ++ show pos
 
+unassignedField :: Ident -> Position -> Field -> ErrorMsg
+unassignedField (Ident cname _) pos (Field t (Ident i _) _)
+  = err ++ fieldErr ++ "\n" ++
+  "   Field: " ++ pretty t ++ " " ++ i ++ "\n" ++
+  "   In Constructor declared at: " ++ show pos ++ "\n" ++
+  "   In the class: " ++ cname ++ "\n"
+
 -- POST: Outputs a scope error message
-mkScopeErrMsg :: ScopeError -> ErrorMsg
+mkScopeErrMsg :: (String, ScopeErrorType, Position) -> ErrorMsg
 mkScopeErrMsg (name, scopeErr, pos)
-  = err ++
-    (case scopeErr of
-      Duplicate  -> "Redeclaration of identifier \'" ++ name
-      NotInScope -> "Identifier \'" ++ name ++ "\' not in scope."
-      NoError    -> error "Assertion Failed: found NoError in ident said " ++
-                      "to have a scope error. ") ++
-                      "\n         Position: " ++ show pos
+  = err ++ (case scopeErr of
+          Duplicate  -> "Redeclaration of identifier \'" ++ name ++ "\'"
+          NotInScope -> "Identifier \'" ++ name ++ "\' not in scope."
+          ClassNotInScope cname -> "Class \'" ++ cname ++ "\' not in scope."
+          CyclicConstr cname    -> "Passing paramter of class type \'" ++ cname ++ "\' to constructor of the same class."
+          SelfNotInClass -> "Cannot use identifier \'self\' in non-class context."
+          NoError    -> error "Assertion Failed: found NoError in ident said " ++ "to have a scope error. ") ++
+        "\n         Position: " ++ show pos
 
 -- POST: Prepends a string with an assertion
 assertionFailed :: String -> ErrorMsg

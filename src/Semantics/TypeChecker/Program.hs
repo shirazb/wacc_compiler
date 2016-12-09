@@ -5,6 +5,7 @@ module Semantics.TypeChecker.Program (generateTypeErrorMessages) where
 import Control.Monad.Writer.Strict
 
 {- LOCAL IMPORTS -}
+import Semantics.TypeChecker.Class
 import Semantics.TypeChecker.Function
 import Semantics.TypeChecker.Statement
 import Semantics.ErrorMessages
@@ -12,10 +13,11 @@ import Utilities.Definitions
 
 -- POST: Type checks the program
 typeCheckProgram :: Program -> TypeChecker ()
-typeCheckProgram (Program fs main) = do
+typeCheckProgram (Program cs fs main) = do
   checkForReturnInMain main
   checkForBreakOutsideLoop main
   checkForContinueOutsideLoop main
+  mapM_ typeCheckClass cs
   mapM_ typeCheckFunc fs
   typeCheckStat main
 
@@ -33,7 +35,7 @@ checkForReturnInMain (If _ s1 s2 _) = do
   checkForReturnInMain s2
 checkForReturnInMain (While _ s _)
   = checkForReturnInMain s
-checkForReturnInMain (For _ _ _ s _) 
+checkForReturnInMain (For _ _ _ s _)
   = checkForReturnInMain s
 checkForReturnInMain (Block s _)
   = checkForReturnInMain s
