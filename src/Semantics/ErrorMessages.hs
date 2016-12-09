@@ -95,6 +95,14 @@ returnInMain pos
   = err ++ returnMain ++ "\n" ++
     loc ++ show pos
 
+-- POST: Assignment to self in class
+selfAssign :: AssignLHS -> Stat -> Position -> ErrorMsg
+selfAssign lhs stat pos
+  = err ++ "Attempting to assign to \'self\'" ++ "\n" ++
+  "   In the AssignLHS: " ++ pretty lhs ++ "\n" ++
+  "   In the Statement: " ++ pretty stat ++ "\n" ++
+  loc ++ show pos
+
 -- POST: Outputs an error message if break is not within a loop
 breakWithoutLoop :: Position -> ErrorMsg
 breakWithoutLoop pos

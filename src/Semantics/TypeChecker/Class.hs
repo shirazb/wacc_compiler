@@ -13,7 +13,7 @@ import Control.Monad.State.Strict
 {- LOCAL IMPORTS -}
 import Semantics.TypeChecker.Statement (typeCheckStat)
 import Semantics.TypeChecker.Function (typeCheckFunc)
-import Semantics.Annotators.Util (identInfo)
+import Semantics.Annotators.Util (identInfo, lhsIdent)
 import Semantics.ErrorMessages
 import Utilities.Definitions
 
@@ -169,14 +169,3 @@ searchForAssignment (Seq s s' _) f
   = searchForAssignment s f || searchForAssignment s' f
 searchForAssignment _ _
   = False
-
-lhsIdent :: AssignLHS -> Ident
-lhsIdent (Var i _)
-  = i
-lhsIdent (MemberDeref (MemList _ ms _) _)
-  = i
-  where
-    (FieldAccess i _) = last ms
--- Not an ident -- return dummy ident that cannot be matched by a field
-lhsIdent _
-  = Ident "" (Info Static Void Function)

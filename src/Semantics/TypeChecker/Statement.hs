@@ -1,5 +1,6 @@
 {- This module type checks statements -}
 
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Semantics.TypeChecker.Statement (typeCheckStat) where
@@ -7,6 +8,7 @@ module Semantics.TypeChecker.Statement (typeCheckStat) where
 import Control.Monad.Writer.Strict
 
 {- LOCAL IMPORTS -}
+import Semantics.Annotators.Util
 import Semantics.TypeChecker.AssignLHS
 import Semantics.TypeChecker.AssignRHS
 import Semantics.TypeChecker.Expression
@@ -22,10 +24,14 @@ typeCheckStat stat@(Declaration t ident rhs pos) = do
   typeRHS <- typeCheckRHS rhs
   when (typeRHS /= t) (tell [typeMismatch t typeRHS (getPosRHS rhs) stat])
 
-typeCheckStat stat@(Assignment lhs rhs pos) = do
-  typeLHS <- typeCheckLHS lhs
-  typeRHS <- typeCheckRHS rhs
-  when (typeLHS /= typeRHS) (tell [typeMismatch typeLHS typeRHS (getPosRHS rhs) stat])
+-- If we see Self, we know from the success of the scope checking that we must
+-- be in a class
+typeCheckStat stat@(Assignment lhs rhs pos) =
+  if |  Self _  <- lhsIdent lhs -> tell [selfAssign lhs stat pos]
+     |  otherwise -> do
+        typeLHS <- typeCheckLHS lhs
+        typeRHS <- typeCheckRHS rhs
+        when (typeLHS /= typeRHS) (tell [typeMismatch typeLHS typeRHS (getPosRHS rhs) stat])
 
 typeCheckStat (Read lhs pos) = do
   t <- typeCheckLHS lhs

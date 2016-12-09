@@ -51,6 +51,18 @@ MethodCall (FuncCall (Ident n NoInfo) _) _ ~= Ident n'
 _ ~= _
   = False
 
+-- POST: Returns the Ident of a lhs
+lhsIdent :: AssignLHS -> Ident
+lhsIdent (Var i _)
+  = i
+lhsIdent (MemberDeref (MemList _ ms _) _)
+  = i
+  where
+    (FieldAccess i _) = last ms
+-- Not an ident -- return dummy ident that cannot be matched by a field
+lhsIdent _
+  = Ident "" (Info Static Void Function)
+
 -- POST: Returns the identifier of the instance
 identOfInst :: Instance -> Ident
 identOfInst (VarObj i _)
