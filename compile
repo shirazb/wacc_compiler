@@ -17,10 +17,10 @@ file = getFileName.split(".wacc")[0]
 output = `stack exec WACC-HASKELL  #{filename}`
 exitCode = $?.exitstatus
 
-#out_file = File.new(file + ".s", "w")
-#
-#out_file.puts(output)
-#out_file.close
+out_file = File.new(file + ".s", "w")
+
+out_file.puts(output)
+out_file.close
 
 puts output
 
