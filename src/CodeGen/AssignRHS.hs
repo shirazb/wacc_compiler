@@ -11,6 +11,7 @@ import Data.Maybe                 (fromJust)
 import CodeGen.Assembly
 import CodeGen.Expression
 import CodeGen.PairElem           (codegen)
+import Semantics.Annotators.Util
 import Utilities.Definitions
 
 -- POST: Generates code for AssignRHS
@@ -81,7 +82,7 @@ instance CodeGen AssignRHS where
     let getElem     = [LDR size NoIdx R0 [RegOp R0]]
     return $ getPairElemAddr ++ getElem
 
-  codegen (FuncCallAssign ident@(Ident name info) es _) = do
+  codegen (FuncCallAssign (FuncCall ident@(Ident name info) es) _) = do
     let FuncT retType paramTypes  = typeInfo info
     params                       <- mapM codeGenParams (reverse es)
     let pushParams                = concat params

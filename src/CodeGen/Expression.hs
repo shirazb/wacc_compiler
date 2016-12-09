@@ -12,6 +12,7 @@ import Data.Maybe (fromJust)
 {- LOCAL IMPORTS -}
 import CodeGen.Assembly
 import CodeGen.InBuiltFunctions
+import Semantics.Annotators.Util
 import Utilities.Definitions
 
 -- POST: generates ARM11 Assembly code for expressions
@@ -36,7 +37,7 @@ instance CodeGen Expr where
   codegen (PairLiteral _)
     = return [Mov R0 (ImmI 0)]
 
-  codegen (IdentE (Ident name (Info t _)) _) = do
+  codegen (IdentE (Ident name (Info _ t _)) _) = do
     let size    = sizeFromType typeSizesLDR t
     (env, _)   <- getStackInfo
     let offset  = fromJust (Map.lookup name env)
@@ -94,8 +95,9 @@ instance CodeGen Expr where
       binOpInstr
 
 instance CodeGen ArrayElem where
-  codegen (ArrayElem ident@(Ident name (Info (BaseT BaseString) ctxt)) [i] pos)
-    = codegen (ArrayElem (Ident name (Info (ArrayT 1 (BaseT BaseChar)) ctxt))
+  codegen (ArrayElem ident@(Ident name (Info s (BaseT BaseString) ctxt)) [i]
+    pos)
+    = codegen (ArrayElem (Ident name (Info s (ArrayT 1 (BaseT BaseChar)) ctxt))
       [i] pos)
 
   codegen ae@(ArrayElem ident@(Ident _ info) idxs _) = do
@@ -259,7 +261,7 @@ typeOfExpr e = case e of
 
 -- POST: Returns the type of an array.
 typeOfArrayElem :: ArrayElem -> Type
-typeOfArrayElem (ArrayElem (Ident _ (Info (BaseT BaseString) _)) idxs _)
+typeOfArrayElem (ArrayElem (Ident _ (Info _ (BaseT BaseString) _)) idxs _)
   = BaseT BaseChar
 
 typeOfArrayElem (ArrayElem (Ident _ info) idxs _)

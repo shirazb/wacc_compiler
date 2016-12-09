@@ -1,3 +1,4 @@
+import CodeGen.AssemblyGenerator
 import Control.Monad.Writer.Strict
 import System.Environment
 import System.Exit

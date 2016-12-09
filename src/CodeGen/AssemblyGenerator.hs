@@ -20,7 +20,7 @@ makeInstr a
     textInstrs           ++ "\n"   ++
     funcInstrs
   where
-    ((((((textSeg, functions), DataSeg dataSeg _), _), _), _), _) 
+    ((((((textSeg, functions), DataSeg dataSeg _), _), _), _), _)
       = genInstruction (genInstrFromAST a)
     textInstrs = showInstrs textSeg
     dataInstrs = intercalate "\n" (map show dataSeg)

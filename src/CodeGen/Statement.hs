@@ -46,7 +46,7 @@ instance CodeGen Stat where
   codegen (Continue _) = do
     (clearStackSpace, loopCondLabel, _) <- getLoopContext
     return $ clearStackSpace ++ [BT loopCondLabel]
-    
+
   codegen (Free e _) = do
     evalE     <- codegen e
     freeInstr <- getFreeExprInstr (typeOfExpr e)
@@ -127,10 +127,10 @@ instance CodeGen Stat where
     --Include assignment in look clearup context
     previousLoopContext                 <- getLoopContext
     putLoopContext (execAssign ++ clearStackSpace, loopCondLabel, loopEndLabel)
-    
+
     -- Generate both body and assignment in this new scope
     execBody   <- codegen body
-    
+
     putLoopContext previousLoopContext
     restoreStackInfo
 

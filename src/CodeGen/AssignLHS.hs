@@ -65,7 +65,7 @@ loadArrayElemAddrR1 arrayElem@(ArrayElem ident idxs _) = do
 
 -- POST: Returns the Size (word, byte etc.) of an AssignLHS
 sizeOfLHS :: AssignLHS -> Size
-sizeOfLHS (Var (Ident _ (Info t _)) _)
+sizeOfLHS (Var (Ident _ (Info _ t _)) _)
   = sizeFromType typeSizesSTR t
 sizeOfLHS (ArrayDeref ae _)
   = sizeFromType typeSizesSTR (typeOfArrayElem ae)
@@ -76,7 +76,7 @@ sizeOfLHS (PairDeref pe _)
 
 -- POST: Returns the type of the AssignLHS
 typeOfLHS :: AssignLHS -> Type
-typeOfLHS (Var (Ident _ (Info t _)) _)
+typeOfLHS (Var (Ident _ (Info _ t _)) _)
   = t
 typeOfLHS (ArrayDeref ae _)
   = typeOfArrayElem ae
