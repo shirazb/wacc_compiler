@@ -4,6 +4,7 @@ types -}
 module Parser.Type (parseType) where
 
 import Control.Applicative (Alternative (..))
+import Control.Monad       (guard)
 import Data.Maybe          (fromJust)
 
 {- LOCAL IMPORTS -}
@@ -25,6 +26,7 @@ parseType
 parseClassIdentifer :: Parser Char Type
 parseClassIdentifer = do
   identT <- ident
+  guard (identT `notElem` keywords)
   return $ ClassT identT
 
 -- POST: Parse Void type

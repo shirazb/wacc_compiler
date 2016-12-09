@@ -6,7 +6,7 @@ module Parser.Statement (parseStatement, checkNoReturnStat) where
 import Control.Applicative     ((<|>), (<$>), liftA3)
 import Control.Monad.State     (liftM2, unless, get)
 import Control.Monad.Except
-
+import Debug.Trace
 {- LOCAL IMPORTS -}
 import Parser.BasicCombinators
 import Parser.Expression       (parseExpr, arrayElem, parseMemberAccess,
@@ -121,6 +121,8 @@ parseDeclaration = do
   varType    <- parseType
   ident      <- identifier
   punctuation '='
+  traceM $ "varType: " ++ show varType
+  traceM $ "ident: " ++ show ident
   assignRHS  <- require parseRHS "Invalid RHS in declaration"
   return $ Declaration varType ident assignRHS pos
 
